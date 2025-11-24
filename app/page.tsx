@@ -114,9 +114,9 @@ export default function Home() {
             router.push('/decentralized-id/complete')
           }, 1500)
         } else if (status === 'pending' || status === 'submitted') {
-          // Redirect to review screen
+          // Redirect to under review screen
           setTimeout(() => {
-            router.push('/verify/review')
+            router.push('/verify/under-review')
           }, 1500)
         } else if (status === 'cancelled' || status === 'rejected') {
           // Redirect to rejected screen
@@ -195,7 +195,7 @@ export default function Home() {
               router.push('/decentralized-id/complete')
               return
             } else if (contractStatus.status === 'pending') {
-              router.push('/verify/review')
+              router.push('/verify/under-review')
               return
             }
           }

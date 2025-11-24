@@ -180,52 +180,104 @@ export default function ReviewContent() {
       setError(null)
       setNetworkError(null)
       
-      // Check if MetaMask is available
-      const isMetaMaskAvailable = typeof window !== 'undefined' && typeof (window as any).ethereum !== 'undefined'
-      console.log('🔍 MetaMask available:', isMetaMaskAvailable)
+      if (typeof window === 'undefined') {
+        throw new Error('Window object not available')
+      }
       
-      // Try MetaMask first if available
-      const metaMaskConnector = connectors.find(c => c.id === 'metaMask' || c.id === 'injected')
-      if (metaMaskConnector && isMetaMaskAvailable) {
-        console.log('🔗 Attempting to connect via MetaMask...')
-        try {
-          await connect({ connector: metaMaskConnector })
-          console.log('✅ MetaMask connection successful')
-          // The useEffect will trigger checkNetworkAndBalance when address becomes available
-          return
-        } catch (err: any) {
-          console.error('❌ MetaMask connection error:', err)
-          if (err.message?.includes('rejected') || err.message?.includes('denied')) {
-            setError('Wallet connection was rejected. Please try again.')
-            return
-          }
-          // Continue to WalletConnect fallback
-          console.log('⚠️ MetaMask connection failed, trying WalletConnect...')
+      const win = window as any
+      
+      // Specifically detect MetaMask only (ignore other wallets)
+      let metaMaskProvider = null
+      
+      // Check if main ethereum is MetaMask
+      if (win.ethereum?.isMetaMask) {
+        metaMaskProvider = win.ethereum
+        console.log('✅ MetaMask detected (main ethereum provider)')
+      }
+      // Check providers array for MetaMask (when multiple wallets installed)
+      else if (win.ethereum?.providers && Array.isArray(win.ethereum.providers)) {
+        metaMaskProvider = win.ethereum.providers.find((p: any) => p.isMetaMask)
+        if (metaMaskProvider) {
+          console.log('✅ MetaMask detected (in providers array)')
         }
       }
       
-      // Fallback to WalletConnect
-      const walletConnectConnector = connectors.find(c => c.id === 'walletConnect')
-      if (walletConnectConnector) {
-        console.log('🔗 Attempting to connect via WalletConnect...')
+      if (!metaMaskProvider) {
+        throw new Error('MetaMask not found. Please install MetaMask extension to continue.')
+      }
+      
+      // Use wagmi's MetaMask connector to trigger popup
+      // This will properly open MetaMask for permission
+      console.log('📱 Connecting via MetaMask connector - popup should appear...')
+      
+      // Find MetaMask connector specifically
+      const metaMaskConnector = connectors.find(c => c.id === 'metaMask')
+      
+      if (metaMaskConnector) {
         try {
-          await connect({ connector: walletConnectConnector })
-          console.log('✅ WalletConnect connection successful')
+          // Use wagmi connect with MetaMask connector - this will trigger MetaMask popup
+          console.log('🔗 Calling wagmi connect with MetaMask connector...')
+          await connect({ connector: metaMaskConnector })
+          console.log('✅ MetaMask connected via wagmi')
+          setConnecting(false)
           return
         } catch (err: any) {
-          console.error('❌ WalletConnect connection error:', err)
-          if (err.message?.includes('rejected') || err.message?.includes('denied')) {
-            setError('Wallet connection was rejected. Please try again.')
+          console.error('❌ MetaMask connector error:', err)
+          const errorMessage = err?.message || err?.toString() || ''
+          
+          if (err?.code === 4001 || errorMessage.includes('rejected') || errorMessage.includes('denied') || errorMessage.includes('User rejected')) {
+            setError('Wallet connection was rejected. Please approve the connection in MetaMask.')
+            setConnecting(false)
             return
           }
-          throw new Error('Failed to connect wallet. Please try again.')
+          
+          // If MetaMask connector fails, fallback to direct API
+          console.log('⚠️ MetaMask connector failed, trying direct API...')
         }
-      } else {
-        throw new Error('No wallet connectors available. Please install MetaMask or use WalletConnect.')
+
+      }
+      
+      // Fallback: Use direct API call if connector not found or failed
+      console.log('📱 Using direct MetaMask API - popup should appear...')
+      try {
+        const accounts = await metaMaskProvider.request({
+          method: 'eth_requestAccounts'
+        })
+        
+        if (!accounts || accounts.length === 0) {
+          throw new Error('No accounts returned from MetaMask')
+        }
+        
+        console.log('✅ MetaMask permission granted, address:', accounts[0])
+        
+        // Now sync with wagmi using injected connector
+        const injectedConnector = connectors.find(c => c.id === 'injected')
+        if (injectedConnector) {
+          try {
+            await connect({ connector: injectedConnector })
+            console.log('✅ Wagmi synced with MetaMask')
+          } catch (wagmiErr: any) {
+            console.warn('⚠️ Wagmi sync warning (but MetaMask connected):', wagmiErr)
+          }
+        }
+        
+        setConnecting(false)
+        return
+      } catch (err: any) {
+        console.error('❌ MetaMask connection error:', err)
+        const errorCode = err?.code
+        const errorMessage = err?.message || err?.toString() || ''
+        
+        if (errorCode === 4001 || errorMessage.includes('rejected') || errorMessage.includes('denied') || errorMessage.includes('User rejected')) {
+          setError('Wallet connection was rejected. Please approve the connection in MetaMask.')
+          setConnecting(false)
+          return
+        }
+        throw err
       }
     } catch (err: any) {
       console.error('❌ Error connecting wallet:', err)
-      setError(err.message || 'Failed to connect wallet. Please try again.')
+      setError(err.message || 'Failed to connect wallet. Please install MetaMask extension.')
     } finally {
       setConnecting(false)
     }
@@ -792,3 +844,5 @@ export default function ReviewContent() {
     </div>
   )
 }
+
+

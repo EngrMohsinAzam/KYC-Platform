@@ -7,6 +7,14 @@ import { Header } from '@/components/layout/Header'
 import { checkStatusByEmail, updateKYCDocuments } from '@/lib/api'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
+import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
+import { Modal } from '@/components/ui/Modal'
+
+const idTypeLabels: Record<string, string> = {
+  'passport': 'Passport',
+  'national-id': 'National ID Card',
+  'drivers-license': "Driver's License",
+}
 
 export default function Rejected() {
   const router = useRouter()
@@ -28,8 +36,48 @@ export default function Rejected() {
   const [documentBack, setDocumentBack] = useState<string | null>(state.documentImageBack || null)
   const [selfie, setSelfie] = useState<string | null>(state.selfieImage || null)
   
+  // Document upload modal states
+  const [showDocumentModal, setShowDocumentModal] = useState(false)
+  const [documentCurrentSide, setDocumentCurrentSide] = useState<'front' | 'back'>('front')
+  const [documentModalFront, setDocumentModalFront] = useState<string | null>(documentFront)
+  const [documentModalBack, setDocumentModalBack] = useState<string | null>(documentBack)
+  const [isDocumentCameraActive, setIsDocumentCameraActive] = useState(false)
+  const [isDocumentCameraLoading, setIsDocumentCameraLoading] = useState(false)
+  const [documentStream, setDocumentStream] = useState<MediaStream | null>(null)
+  
+  // Selfie upload modal states
+  const [showSelfieModal, setShowSelfieModal] = useState(false)
+  const [isSelfieCameraActive, setIsSelfieCameraActive] = useState(false)
+  const [isSelfieCameraLoading, setIsSelfieCameraLoading] = useState(false)
+  const [selfieStream, setSelfieStream] = useState<MediaStream | null>(null)
+  
   const documentInputRef = useRef<HTMLInputElement>(null)
+  const documentCameraInputRef = useRef<HTMLInputElement>(null)
+  const documentVideoRef = useRef<HTMLVideoElement>(null)
+  const documentCanvasRef = useRef<HTMLCanvasElement>(null)
+  
   const selfieInputRef = useRef<HTMLInputElement>(null)
+  const selfieCameraInputRef = useRef<HTMLInputElement>(null)
+  const selfieVideoRef = useRef<HTMLVideoElement>(null)
+  const selfieCanvasRef = useRef<HTMLCanvasElement>(null)
+
+  // Get document type from rejection data or state
+  const getDocumentType = () => {
+    if (rejectionData?.documentType) {
+      // Map API document types to our format
+      const typeMap: Record<string, string> = {
+        'Passport': 'passport',
+        'CNIC': 'national-id',
+        'License': 'drivers-license',
+      }
+      return typeMap[rejectionData.documentType] || state.selectedIdType || 'national-id'
+    }
+    return state.selectedIdType || 'national-id'
+  }
+
+  const documentType = getDocumentType()
+  const idTypeLabel = idTypeLabels[documentType] || 'ID Document'
+  const needsBackSide = documentType !== 'passport'
 
   useEffect(() => {
     // Get email from URL params or context
@@ -41,6 +89,40 @@ export default function Rejected() {
       setLoading(false)
     }
   }, [searchParams, state.personalInfo?.email])
+
+  // Set document type in context when rejection data is loaded
+  useEffect(() => {
+    if (rejectionData?.documentType && !state.selectedIdType) {
+      const typeMap: Record<string, string> = {
+        'Passport': 'passport',
+        'CNIC': 'national-id',
+        'License': 'drivers-license',
+      }
+      const mappedType = typeMap[rejectionData.documentType]
+      if (mappedType) {
+        dispatch({ type: 'SET_ID_TYPE', payload: mappedType })
+      }
+    }
+  }, [rejectionData?.documentType, state.selectedIdType, dispatch])
+
+  const handleUploadDocuments = () => {
+    if (rejectionData?.email) {
+      router.push(`/verify/identity?update=true&email=${encodeURIComponent(rejectionData.email)}`)
+    }
+  }
+
+  // Sync modal states with main states
+  useEffect(() => {
+    if (showDocumentModal) {
+      setDocumentModalFront(documentFront)
+      setDocumentModalBack(documentBack)
+      if (documentFront && needsBackSide && !documentBack) {
+        setDocumentCurrentSide('back')
+      } else {
+        setDocumentCurrentSide('front')
+      }
+    }
+  }, [showDocumentModal, documentFront, documentBack, needsBackSide])
 
   const checkRejectionStatus = async (email: string) => {
     setLoading(true)
@@ -55,11 +137,9 @@ export default function Rejected() {
         
         // Use timeRemaining from API response
         if (result.data.timeRemaining) {
-          // API provides timeRemaining object
           setTimeRemaining(result.data.timeRemaining)
           setCanRetry(result.data.timeRemaining.canReapply)
         } else {
-          // No timeRemaining means they can reapply immediately (e.g., blur rejection)
           setCanRetry(true)
           setTimeRemaining(null)
         }
@@ -71,24 +151,328 @@ export default function Rejected() {
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'document' | 'selfie') => {
+  // Document Camera Functions
+  const startDocumentCamera = async () => {
+    try {
+      setIsDocumentCameraLoading(true)
+      
+      if (documentStream) {
+        documentStream.getTracks().forEach(track => track.stop())
+        setDocumentStream(null)
+      }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      })
+      
+      setDocumentStream(mediaStream)
+      setIsDocumentCameraActive(true)
+      setIsDocumentCameraLoading(false)
+      
+      setTimeout(() => {
+        if (documentVideoRef.current) {
+          documentVideoRef.current.srcObject = mediaStream
+          documentVideoRef.current.play().catch(err => {
+            console.error('Error playing video:', err)
+          })
+        }
+      }, 100)
+    } catch (error) {
+      console.error('Error accessing camera:', error)
+      setIsDocumentCameraActive(false)
+      setIsDocumentCameraLoading(false)
+      documentCameraInputRef.current?.click()
+    }
+  }
+
+  const stopDocumentCamera = () => {
+    if (documentStream) {
+      documentStream.getTracks().forEach(track => track.stop())
+      setDocumentStream(null)
+    }
+    setIsDocumentCameraActive(false)
+    setIsDocumentCameraLoading(false)
+    if (documentVideoRef.current) {
+      documentVideoRef.current.srcObject = null
+    }
+  }
+
+  const captureDocumentPhoto = () => {
+    if (documentVideoRef.current && documentCanvasRef.current) {
+      const video = documentVideoRef.current
+      const canvas = documentCanvasRef.current
+      const context = canvas.getContext('2d')
+      
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9)
+        
+        if (documentCurrentSide === 'front') {
+          setDocumentModalFront(imageData)
+        } else {
+          setDocumentModalBack(imageData)
+        }
+        
+        stopDocumentCamera()
+      }
+    }
+  }
+
+  const handleDocumentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
         const result = reader.result as string
-        if (type === 'document') {
-          setDocumentFront(result)
-          dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: result })
+        if (documentCurrentSide === 'front') {
+          setDocumentModalFront(result)
         } else {
-          setSelfie(result)
-          dispatch({ type: 'SET_SELFIE_IMAGE', payload: result })
+          setDocumentModalBack(result)
         }
       }
       reader.readAsDataURL(file)
     }
     if (e.target) e.target.value = ''
   }
+
+  const handleDocumentCameraClick = async () => {
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      await startDocumentCamera()
+    } else {
+      documentCameraInputRef.current?.click()
+    }
+  }
+
+  const saveDocumentImages = () => {
+    // If front is uploaded and back is needed but not uploaded, switch to back side
+    if (documentCurrentSide === 'front' && needsBackSide && documentModalFront && !documentModalBack) {
+      setDocumentCurrentSide('back')
+      return // Don't close modal, just switch sides
+    }
+    
+    // Both sides are complete (or passport is complete)
+    if ((needsBackSide && documentModalFront && documentModalBack) || (!needsBackSide && documentModalFront)) {
+      setDocumentFront(documentModalFront)
+      setDocumentBack(documentModalBack)
+      if (documentModalFront) {
+        dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: documentModalFront })
+      }
+      if (documentModalBack) {
+        dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: documentModalBack })
+      }
+      setShowDocumentModal(false)
+      stopDocumentCamera()
+    }
+  }
+
+  // Selfie Camera Functions
+  const startSelfieCamera = async () => {
+    try {
+      setIsSelfieCameraLoading(true)
+      setIsSelfieCameraActive(false)
+      
+      if (selfieStream) {
+        selfieStream.getTracks().forEach(track => track.stop())
+        setSelfieStream(null)
+      }
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      })
+      
+      console.log('✅ Selfie camera stream obtained')
+      setSelfieStream(mediaStream)
+      setIsSelfieCameraActive(true)
+      
+      // Set up video element immediately
+      const setupVideo = () => {
+        if (selfieVideoRef.current) {
+          const video = selfieVideoRef.current
+          video.srcObject = mediaStream
+          video.muted = true
+          video.playsInline = true
+          video.setAttribute('autoplay', 'true')
+          video.setAttribute('playsinline', 'true')
+          video.setAttribute('webkit-playsinline', 'true')
+          ;(video as any).webkitPlaysInline = true
+          ;(video as any).playsInline = true
+          
+          const handlePlaying = () => {
+            console.log('✅ Selfie video is playing')
+            setIsSelfieCameraLoading(false)
+            video.removeEventListener('playing', handlePlaying)
+          }
+          
+          video.addEventListener('playing', handlePlaying)
+          
+          const playPromise = video.play()
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('✅ Selfie video play promise resolved')
+                setIsSelfieCameraLoading(false)
+              })
+              .catch(err => {
+                console.error('Error playing selfie video:', err)
+                setIsSelfieCameraLoading(false)
+              })
+          }
+        } else {
+          // Retry if video element not ready
+          setTimeout(setupVideo, 50)
+        }
+      }
+      
+      // Try immediately, then retry if needed
+      setupVideo()
+      setTimeout(setupVideo, 100)
+    } catch (error) {
+      console.error('Error accessing camera:', error)
+      setIsSelfieCameraActive(false)
+      setIsSelfieCameraLoading(false)
+      alert('Unable to access camera. Please allow camera permissions and try again.')
+    }
+  }
+
+  // Handle selfie video element initialization
+  useEffect(() => {
+    if (selfieStream && selfieVideoRef.current) {
+      const video = selfieVideoRef.current
+      
+      // Set stream if not already set
+      if (video.srcObject !== selfieStream) {
+        console.log('📹 Setting selfie video stream in useEffect')
+        video.srcObject = selfieStream
+        video.muted = true
+        video.playsInline = true
+        video.setAttribute('autoplay', 'true')
+        video.setAttribute('playsinline', 'true')
+        video.setAttribute('webkit-playsinline', 'true')
+        ;(video as any).webkitPlaysInline = true
+        ;(video as any).playsInline = true
+      }
+      
+      const handleLoadedMetadata = () => {
+        console.log('✅ Selfie video metadata loaded')
+        video.play().catch(err => {
+          console.error('Error playing video:', err)
+        })
+      }
+      
+      const handleCanPlay = () => {
+        console.log('✅ Selfie video can play')
+        setIsSelfieCameraLoading(false)
+        video.play().catch(err => {
+          console.error('Error playing video on canplay:', err)
+        })
+      }
+      
+      const handlePlaying = () => {
+        console.log('✅ Selfie video is playing')
+        setIsSelfieCameraLoading(false)
+      }
+      
+      video.addEventListener('loadedmetadata', handleLoadedMetadata)
+      video.addEventListener('canplay', handleCanPlay)
+      video.addEventListener('playing', handlePlaying)
+      
+      // If already ready, try to play immediately
+      if (video.readyState >= 3) {
+        handlePlaying()
+      } else if (video.readyState >= 2) {
+        video.play().catch(err => {
+          console.error('Error playing video:', err)
+        })
+      }
+      
+      return () => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+        video.removeEventListener('canplay', handleCanPlay)
+        video.removeEventListener('playing', handlePlaying)
+      }
+    }
+  }, [selfieStream])
+
+  const stopSelfieCamera = () => {
+    if (selfieStream) {
+      selfieStream.getTracks().forEach(track => track.stop())
+      setSelfieStream(null)
+    }
+    setIsSelfieCameraActive(false)
+    setIsSelfieCameraLoading(false)
+    if (selfieVideoRef.current) {
+      selfieVideoRef.current.srcObject = null
+    }
+  }
+
+  const captureSelfiePhoto = () => {
+    if (selfieVideoRef.current && selfieCanvasRef.current) {
+      const video = selfieVideoRef.current
+      const canvas = selfieCanvasRef.current
+      const context = canvas.getContext('2d')
+      
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        context.translate(canvas.width, 0)
+        context.scale(-1, 1)
+        context.drawImage(video, 0, 0)
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9)
+        setSelfie(imageData)
+        dispatch({ type: 'SET_SELFIE_IMAGE', payload: imageData })
+        
+        stopSelfieCamera()
+        setShowSelfieModal(false)
+      }
+    }
+  }
+
+  const handleSelfieFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setSelfie(result)
+        dispatch({ type: 'SET_SELFIE_IMAGE', payload: result })
+        setShowSelfieModal(false)
+      }
+      reader.readAsDataURL(file)
+    }
+    if (e.target) e.target.value = ''
+  }
+
+  const handleSelfieCameraClick = async () => {
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      await startSelfieCamera()
+    } else {
+      selfieCameraInputRef.current?.click()
+    }
+  }
+
+  // Cleanup streams on unmount
+  useEffect(() => {
+    return () => {
+      if (documentStream) {
+        documentStream.getTracks().forEach(track => track.stop())
+      }
+      if (selfieStream) {
+        selfieStream.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [documentStream, selfieStream])
 
   const handleUpdateDocuments = async () => {
     if (!rejectionData?.email) return
@@ -100,6 +484,11 @@ export default function Rejected() {
       return
     }
 
+    if (needsBackSide && !documentBack) {
+      alert('Please upload both front and back sides of your document')
+      return
+    }
+
     setUpdatingDocuments(true)
     try {
       const idTypeMap: Record<string, string> = {
@@ -107,7 +496,7 @@ export default function Rejected() {
         'passport': 'Passport',
         'drivers-license': 'License'
       }
-      const idType = idTypeMap[state.selectedIdType || ''] || rejectionData.documentType || 'CNIC'
+      const idType = idTypeMap[documentType] || rejectionData.documentType || 'CNIC'
 
       const result = await updateKYCDocuments({
         email,
@@ -141,6 +530,11 @@ export default function Rejected() {
     )
   }
 
+  const currentDocumentImage = documentCurrentSide === 'front' ? documentModalFront : documentModalBack
+  const canSaveDocument = needsBackSide 
+    ? (documentModalFront && documentModalBack) 
+    : documentModalFront
+
   return (
     <div className="min-h-screen bg-white md:bg-surface-gray flex flex-col">
       <Header showClose />
@@ -166,7 +560,6 @@ export default function Rejected() {
               </div>
             )}
 
-            {/* Wait period message using timeRemaining from API */}
             {!canRetry && timeRemaining && (
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm font-semibold text-blue-900 mb-2">
@@ -194,109 +587,20 @@ export default function Rejected() {
               </div>
             )}
 
-            {/* Blur rejection - allow document update */}
+            {/* Blur rejection - show upload button */}
             {isBlurRejection && canRetry && (
-              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg space-y-4">
-                <div>
-                  <p className="text-sm font-semibold text-green-900 mb-2">
-                    Update Your Documents
-                  </p>
-                  <p className="text-sm text-green-800 mb-4">
-                    Since your rejection was due to blurry pictures, you can update your document and selfie images without starting a new verification.
-                  </p>
-                </div>
-
-                {/* Document Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-green-900 mb-2">
-                    Document Photo
-                  </label>
-                  <div className="mb-2">
-                    {documentFront ? (
-                      <div className="relative">
-                        <img src={documentFront} alt="Document" className="w-full max-w-xs mx-auto rounded-lg border-2 border-green-300" />
-                        <button
-                          onClick={() => {
-                            setDocumentFront(null)
-                            dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: '' })
-                          }}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => documentInputRef.current?.click()}
-                        className="w-full p-4 border-2 border-dashed border-green-300 rounded-lg text-green-700 hover:bg-green-100"
-                      >
-                        Click to upload document
-                      </button>
-                    )}
-                    <input
-                      ref={documentInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, 'document')}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-
-                {/* Selfie Upload */}
-                <div>
-                  <label className="block text-sm font-medium text-green-900 mb-2">
-                    Selfie Photo
-                  </label>
-                  <div className="mb-2">
-                    {selfie ? (
-                      <div className="relative">
-                        <img src={selfie} alt="Selfie" className="w-full max-w-xs mx-auto rounded-lg border-2 border-green-300" />
-                        <button
-                          onClick={() => {
-                            setSelfie(null)
-                            dispatch({ type: 'SET_SELFIE_IMAGE', payload: '' })
-                          }}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => selfieInputRef.current?.click()}
-                        className="w-full p-4 border-2 border-dashed border-green-300 rounded-lg text-green-700 hover:bg-green-100"
-                      >
-                        Click to upload selfie
-                      </button>
-                    )}
-                    <input
-                      ref={selfieInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => handleFileChange(e, 'selfie')}
-                      className="hidden"
-                    />
-                  </div>
-                </div>
-
+              <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-sm font-semibold text-green-900 mb-2">
+                  Update Your Documents
+                </p>
+                <p className="text-sm text-green-800 mb-4">
+                  Since your rejection was due to blurry pictures, you can update your document and selfie images.
+                </p>
                 <Button
-                  onClick={handleUpdateDocuments}
-                  disabled={updatingDocuments || !documentFront || !selfie}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2"
+                  onClick={handleUploadDocuments}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
                 >
-                  {updatingDocuments ? (
-                    <>
-                      <LoadingDots size="sm" color="#ffffff" />
-                      <span>Updating...</span>
-                    </>
-                  ) : (
-                    'Update Documents & Submit'
-                  )}
+                  Upload Your Documents
                 </Button>
               </div>
             )}
@@ -331,7 +635,300 @@ export default function Rejected() {
           </div>
         </div>
       </main>
+
+      {/* Document Upload Modal */}
+      {showDocumentModal && (
+        <Modal
+          isOpen={showDocumentModal}
+          onClose={() => {
+            setShowDocumentModal(false)
+            stopDocumentCamera()
+          }}
+        >
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Update {idTypeLabel}
+            </h2>
+            {needsBackSide && (
+              <div className="mb-4">
+                <p className="text-sm font-medium text-gray-900 mb-1">
+                  {documentCurrentSide === 'front' ? 'Step 1 of 2: Front Side' : 'Step 2 of 2: Back Side'}
+                </p>
+                {documentCurrentSide === 'back' && documentModalFront && (
+                  <p className="text-xs text-green-600 font-semibold mb-2">
+                    ✓ Front side uploaded! Now take a photo of the BACK side.
+                  </p>
+                )}
+                <div className="flex gap-2 mb-2">
+                  <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${documentModalFront ? 'bg-gray-900' : 'bg-gray-200'}`} />
+                  <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${documentModalBack ? 'bg-gray-900' : 'bg-gray-200'}`} />
+                </div>
+                <div className="flex gap-2 text-xs">
+                  <div className={`flex-1 text-center ${documentModalFront ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
+                    Front {documentModalFront ? '✓' : '○'}
+                  </div>
+                  <div className={`flex-1 text-center ${documentModalBack ? 'text-gray-900 font-semibold' : 'text-gray-400'}`}>
+                    Back {documentModalBack ? '✓' : '○'}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div 
+              className={`
+                relative w-full aspect-[3/2] rounded-2xl overflow-hidden mb-4 transition-all duration-300
+                ${currentDocumentImage ? 'bg-white border border-gray-200' : 'bg-gray-50 border-2 border-dashed border-gray-300'}
+              `}
+            >
+              {isDocumentCameraLoading ? (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-black rounded-2xl">
+                  <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <p className="text-white text-sm">Starting camera...</p>
+                </div>
+              ) : isDocumentCameraActive ? (
+                <div className="relative w-full h-full bg-black rounded-2xl overflow-hidden">
+                  <video
+                    ref={documentVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover"
+                  />
+                  <canvas ref={documentCanvasRef} className="hidden" />
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
+                    <button
+                      onClick={stopDocumentCamera}
+                      disabled={isDocumentCameraLoading}
+                      className="px-6 py-3 bg-white text-gray-900 rounded-full font-medium shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={captureDocumentPhoto}
+                      disabled={isDocumentCameraLoading}
+                      className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Capture Photo
+                    </button>
+                  </div>
+                </div>
+              ) : currentDocumentImage ? (
+                <div className="relative w-full h-full group">
+                  <img
+                    src={currentDocumentImage}
+                    alt={`ID Document ${documentCurrentSide}`}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-6">
+                  <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <p className="text-sm text-gray-500 text-center mb-6">
+                    Make sure all information is visible and easy to read
+                  </p>
+
+                  <div className="flex flex-col gap-3 w-full">
+                    <button
+                      onClick={handleDocumentCameraClick}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                    >
+                      <HiOutlineCamera className="w-5 h-5" />
+                      <span>Take Photo</span>
+                    </button>
+                    <button
+                      onClick={() => documentInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
+                    >
+                      <HiOutlinePhotograph className="w-5 h-5" />
+                      <span>Choose File</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <input
+              ref={documentInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleDocumentFileChange}
+              className="hidden"
+            />
+            <input
+              ref={documentCameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleDocumentFileChange}
+              className="hidden"
+            />
+
+            <div className="space-y-3">
+              <Button
+                onClick={saveDocumentImages}
+                disabled={!canSaveDocument}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {needsBackSide && documentCurrentSide === 'front' && documentModalFront
+                  ? 'Continue to Back Side →'
+                  : needsBackSide && documentCurrentSide === 'back' && documentModalBack && documentModalFront
+                  ? 'Save Document'
+                  : !needsBackSide && documentModalFront
+                  ? 'Save Document'
+                  : 'Upload Document to Continue'}
+              </Button>
+              {currentDocumentImage && (
+                <button
+                  onClick={() => {
+                    if (documentCurrentSide === 'front') {
+                      setDocumentModalFront(null)
+                    } else {
+                      setDocumentModalBack(null)
+                    }
+                  }}
+                  className="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-full font-medium"
+                >
+                  Retake Photo
+                </button>
+              )}
+              {needsBackSide && documentCurrentSide === 'front' && documentModalFront && (
+                <button
+                  onClick={() => setDocumentCurrentSide('back')}
+                  className="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-full font-medium"
+                >
+                  Continue to Back Side →
+                </button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Selfie Upload Modal */}
+      {showSelfieModal && (
+        <Modal
+          isOpen={showSelfieModal}
+          onClose={() => {
+            setShowSelfieModal(false)
+            stopSelfieCamera()
+          }}
+        >
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              Update Selfie
+            </h2>
+            <div className="relative w-full aspect-square bg-gray-900 rounded-2xl overflow-hidden mb-4">
+              {/* Always render video element - never remove from DOM */}
+              <video
+                ref={selfieVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover absolute inset-0"
+                style={{ 
+                  transform: 'scaleX(-1)',
+                  opacity: (isSelfieCameraActive && selfieStream && !isSelfieCameraLoading) ? 1 : 0,
+                  transition: 'opacity 0.3s ease-in-out',
+                  zIndex: 1,
+                  pointerEvents: 'none'
+                }}
+              />
+              <canvas ref={selfieCanvasRef} className="hidden" />
+              
+              {isSelfieCameraLoading ? (
+                <div className="w-full h-full flex items-center justify-center absolute inset-0 z-20 bg-gray-900">
+                  <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-white text-sm">Starting camera...</p>
+                  </div>
+                </div>
+              ) : isSelfieCameraActive && selfieStream ? (
+                <div className="relative w-full h-full pointer-events-none">
+                  <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10 pointer-events-auto">
+                    <button
+                      onClick={stopSelfieCamera}
+                      disabled={isSelfieCameraLoading}
+                      className="px-6 py-3 bg-white text-gray-900 rounded-full font-medium shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={captureSelfiePhoto}
+                      disabled={isSelfieCameraLoading}
+                      className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Capture Photo
+                    </button>
+                  </div>
+                </div>
+              ) : selfie ? (
+                <div className="relative w-full h-full group">
+                  <img
+                    src={selfie}
+                    alt="Selfie"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-6">
+                  <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <p className="text-sm text-gray-500 text-center mb-6">
+                    Make sure your face is clearly visible
+                  </p>
+                  <div className="flex flex-col gap-3 w-full">
+                    <button
+                      onClick={handleSelfieCameraClick}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                    >
+                      <HiOutlineCamera className="w-5 h-5" />
+                      <span>Take Photo</span>
+                    </button>
+                    <button
+                      onClick={() => selfieInputRef.current?.click()}
+                      className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
+                    >
+                      <HiOutlinePhotograph className="w-5 h-5" />
+                      <span>Choose File</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {selfie && (
+              <button
+                onClick={() => {
+                  setSelfie(null)
+                  dispatch({ type: 'SET_SELFIE_IMAGE', payload: '' })
+                }}
+                className="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-full font-medium"
+              >
+                Retake Photo
+              </button>
+            )}
+
+            <input
+              ref={selfieInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleSelfieFileChange}
+              className="hidden"
+            />
+            <input
+              ref={selfieCameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="user"
+              onChange={handleSelfieFileChange}
+              className="hidden"
+            />
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }
-

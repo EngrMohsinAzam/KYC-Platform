@@ -1,22 +1,41 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineDocumentText, HiOutlineUser } from 'react-icons/hi'
+import { updateKYCDocuments } from '@/lib/api'
+import { LoadingDots } from '@/components/ui/LoadingDots'
 
 export default function VerifyIdentity() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { state } = useAppContext()
+  const [isUpdating, setIsUpdating] = useState(false)
+  
+  // Check if we're in update mode (from blur rejection)
+  const isUpdateMode = searchParams.get('update') === 'true'
+  const updateEmail = searchParams.get('email') || state.personalInfo?.email
 
   const handleDocumentClick = () => {
-    router.push('/verify/upload-document')
+    // Preserve update mode query params if in update mode
+    if (isUpdateMode && updateEmail) {
+      router.push(`/verify/upload-document?update=true&email=${encodeURIComponent(updateEmail)}`)
+    } else {
+      router.push('/verify/upload-document')
+    }
   }
 
   const handleSelfieClick = () => {
-    router.push('/verify/upload-selfie')
+    // Preserve update mode query params if in update mode
+    if (isUpdateMode && updateEmail) {
+      router.push(`/verify/upload-selfie?update=true&email=${encodeURIComponent(updateEmail)}`)
+    } else {
+      router.push('/verify/upload-selfie')
+    }
   }
 
   const hasDocument = state.documentImageFront || state.documentImage
@@ -25,8 +44,64 @@ export default function VerifyIdentity() {
   const documentComplete = hasDocument && hasBackImage
   const canContinue = documentComplete && state.selfieImage
 
+  const handleUpdateDocuments = useCallback(async () => {
+    if (!updateEmail || !state.documentImageFront || !state.selfieImage) {
+      return
+    }
+
+    if (needsBackSide && !state.documentImageBack) {
+      return
+    }
+
+    setIsUpdating(true)
+    try {
+      const idTypeMap: Record<string, string> = {
+        'national-id': 'CNIC',
+        'passport': 'Passport',
+        'drivers-license': 'License'
+      }
+      const idType = idTypeMap[state.selectedIdType || ''] || 'CNIC'
+
+      const result = await updateKYCDocuments({
+        email: updateEmail,
+        idType,
+        identityDocumentFront: state.documentImageFront,
+        identityDocumentBack: state.documentImageBack || state.documentImageFront,
+        liveInImage: state.selfieImage
+      })
+
+      if (result.success) {
+        // Navigate to under review page after successful update
+        router.push('/verify/under-review')
+      } else {
+        alert(result.message || 'Failed to update documents. Please try again.')
+        setIsUpdating(false)
+      }
+    } catch (err: any) {
+      alert(err.message || 'An error occurred. Please try again.')
+      setIsUpdating(false)
+    }
+  }, [updateEmail, state.documentImageFront, state.documentImageBack, state.selfieImage, state.selectedIdType, needsBackSide, router])
+
+  // Auto-update when both documents are ready in update mode
+  useEffect(() => {
+    if (isUpdateMode && canContinue && updateEmail && !isUpdating) {
+      handleUpdateDocuments()
+    }
+  }, [isUpdateMode, canContinue, updateEmail, isUpdating, handleUpdateDocuments])
+
   const handleContinue = () => {
-    router.push('/verify/personal-info')
+    if (isUpdateMode) {
+      // In update mode, never go to personal-info, only update documents
+      // handleUpdateDocuments will be called automatically when both are ready
+      // But if user clicks manually, call it here too
+      if (canContinue && !isUpdating) {
+        handleUpdateDocuments()
+      }
+    } else {
+      // Normal flow - go to personal-info
+      router.push('/verify/personal-info')
+    }
   }
 
   return (
@@ -60,19 +135,34 @@ export default function VerifyIdentity() {
             {/* Title */}
             <div className="text-center mb-6">
               <h1 className="text-xl font-semibold text-gray-900 mb-2">
-                Verify your identity
+                {isUpdateMode ? 'Update your documents' : 'Verify your identity'}
               </h1>
               <p className="text-sm text-gray-400">
-                It will only take 2 minutes
+                {isUpdateMode 
+                  ? 'Please upload clear photos of your document and selfie'
+                  : 'It will only take 2 minutes'}
               </p>
             </div>
 
+            {/* Uploading Status - Prominent Display */}
+            {isUpdateMode && isUpdating && (
+              <div className="mb-6 p-5 bg-blue-50 border-2 border-blue-300 rounded-xl shadow-sm">
+                <div className="flex flex-col items-center justify-center gap-3">
+                  <LoadingDots size="lg" color="#2563eb" />
+                  <div className="text-center">
+                    <p className="text-base font-bold text-blue-900 mb-1">Uploading your documents to backend...</p>
+                    <p className="text-sm text-blue-700">Please wait, this may take a moment</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Cards */}
-            <div className="space-y-3 flex-1">
+            <div className={`space-y-3 flex-1 ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}>
               {/* Identity Document Card */}
               <div 
-                onClick={handleDocumentClick}
-                className="bg-gray-50 rounded-xl p-4 cursor-pointer hover:bg-gray-100 transition-all"
+                onClick={isUpdating ? undefined : handleDocumentClick}
+                className={`bg-gray-50 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}`}
               >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
@@ -92,8 +182,8 @@ export default function VerifyIdentity() {
 
               {/* Selfie Card */}
               <div 
-                onClick={handleSelfieClick}
-                className="bg-gray-50 rounded-xl p-4 cursor-pointer hover:bg-gray-100 transition-all"
+                onClick={isUpdating ? undefined : handleSelfieClick}
+                className={`bg-gray-50 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}`}
               >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
@@ -119,21 +209,36 @@ export default function VerifyIdentity() {
               {/* Title */}
               <div className="text-center mb-8">
                 <h1 className="text-3xl font-semibold text-gray-900 mb-2">
-                  Verify your identity
+                  {isUpdateMode ? 'Update your documents' : 'Verify your identity'}
                 </h1>
                 <p className="text-sm text-gray-500">
-                  It will only take 2 minutes
+                  {isUpdateMode 
+                    ? 'Please upload clear photos of your document and selfie'
+                    : 'It will only take 2 minutes'}
                 </p>
               </div>
 
+              {/* Uploading Status - Prominent Display */}
+              {isUpdateMode && isUpdating && (
+                <div className="mb-8 p-6 bg-blue-50 border-2 border-blue-300 rounded-xl shadow-sm">
+                  <div className="flex flex-col items-center justify-center gap-4">
+                    <LoadingDots size="lg" color="#2563eb" />
+                    <div className="text-center">
+                      <p className="text-lg font-bold text-blue-900 mb-2">Uploading your documents to backend...</p>
+                      <p className="text-sm text-blue-700">Please wait, this may take a moment</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Cards Container */}
-              <div className="space-y-4 mb-8">
+              <div className={`space-y-4 mb-8 ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}>
                 {/* Identity Document Card */}
                 <div 
-                  onClick={handleDocumentClick}
+                  onClick={isUpdating ? undefined : handleDocumentClick}
                   className={`
-                    bg-gray-50 rounded-xl p-5 cursor-pointer transition-all
-                    hover:bg-gray-100 flex items-center gap-4
+                    bg-gray-50 rounded-xl p-5 transition-all flex items-center gap-4
+                    ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
                     ${documentComplete ? 'ring-2 ring-green-500' : ''}
                   `}
                 >
@@ -170,10 +275,10 @@ export default function VerifyIdentity() {
 
                 {/* Selfie Card */}
                 <div 
-                  onClick={handleSelfieClick}
+                  onClick={isUpdating ? undefined : handleSelfieClick}
                   className={`
-                    bg-gray-50 rounded-xl p-5 cursor-pointer transition-all
-                    hover:bg-gray-100 flex items-center gap-4
+                    bg-gray-50 rounded-xl p-5 transition-all flex items-center gap-4
+                    ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
                     ${state.selfieImage ? 'ring-2 ring-green-500' : ''}
                   `}
                 >
@@ -207,10 +312,14 @@ export default function VerifyIdentity() {
 
               <Button 
                 onClick={handleContinue} 
-                disabled={!canContinue} 
+                disabled={!canContinue || isUpdating} 
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
-                Continue
+                {isUpdateMode && isUpdating 
+                  ? 'Updating...' 
+                  : isUpdateMode 
+                  ? 'Update Documents' 
+                  : 'Continue'}
               </Button>
               <p className="text-xs text-gray-500 text-center mt-3">
                 Powered by Mira
@@ -224,10 +333,14 @@ export default function VerifyIdentity() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
         <Button 
           onClick={handleContinue} 
-          disabled={!canContinue} 
+          disabled={!canContinue || isUpdating} 
           className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
-          Continue
+          {isUpdateMode && isUpdating 
+            ? 'Updating...' 
+            : isUpdateMode 
+            ? 'Update Documents' 
+            : 'Continue'}
         </Button>
         <p className="text-xs text-gray-500 text-center mt-2">
           Powered by Mira

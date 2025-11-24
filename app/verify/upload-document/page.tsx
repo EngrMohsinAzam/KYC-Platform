@@ -389,7 +389,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -404,7 +404,12 @@ const idTypeLabels: Record<string, string> = {
 
 export default function UploadDocument() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { state, dispatch } = useAppContext()
+  
+  // Check if we're in update mode
+  const isUpdateMode = searchParams.get('update') === 'true'
+  const updateEmail = searchParams.get('email')
   
   const idTypeLabel = state.selectedIdType ? idTypeLabels[state.selectedIdType] || 'ID Document' : 'ID Document'
   const needsBackSide = state.selectedIdType !== 'passport'
@@ -421,9 +426,14 @@ export default function UploadDocument() {
   const [backImage, setBackImage] = useState<string | null>(state.documentImageBack || null)
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
+  const [isCameraActive, setIsCameraActive] = useState(false)
+  const [isCameraLoading, setIsCameraLoading] = useState(false)
+  const [stream, setStream] = useState<MediaStream | null>(null)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   
   useEffect(() => {
     // Preload animation (optional, won't break if it fails)
@@ -526,9 +536,150 @@ export default function UploadDocument() {
     }
   }
 
-  const handleCameraClick = () => {
-    cameraInputRef.current?.click()
+  const startCamera = async () => {
+    try {
+      setIsCameraLoading(true)
+      
+      // Stop any existing stream first
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+        setStream(null)
+      }
+      
+      if (typeof window === 'undefined' || !navigator.mediaDevices) {
+        throw new Error('Camera not available')
+      }
+      
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment', // Use back camera on mobile
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      })
+      
+      setStream(mediaStream)
+      setIsCameraActive(true)
+      setIsCameraLoading(false)
+    } catch (error) {
+      console.error('Error accessing camera:', error)
+      setIsCameraActive(false)
+      setIsCameraLoading(false)
+      // Fallback to file input if camera access fails
+      cameraInputRef.current?.click()
+    }
   }
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop())
+      setStream(null)
+    }
+    setIsCameraActive(false)
+    setIsCameraLoading(false)
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+  }
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current
+      const canvas = canvasRef.current
+      const context = canvas.getContext('2d')
+      
+      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
+        // Set canvas dimensions to match video
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        
+        // Draw the video frame to canvas
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9)
+        
+        // Process the captured image
+        if (currentSide === 'front') {
+          setFrontImage(imageData)
+          dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: imageData })
+          dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: imageData })
+        } else if (currentSide === 'back') {
+          setBackImage(imageData)
+          dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: imageData })
+        }
+        
+        stopCamera()
+      } else {
+        console.error('Video not ready for capture')
+        alert('Camera not ready. Please wait a moment and try again.')
+      }
+    }
+  }
+
+  const handleCameraClick = async () => {
+    // Check if MediaDevices API is available (browser only)
+    if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+      await startCamera()
+    } else {
+      // Fallback to file input with capture attribute
+      cameraInputRef.current?.click()
+    }
+  }
+
+  // Handle video element ready
+  useEffect(() => {
+    if (isCameraActive && videoRef.current && stream) {
+      const video = videoRef.current
+      
+      // Set the stream
+      if (video.srcObject !== stream) {
+        video.srcObject = stream
+      }
+      
+      const handleLoadedMetadata = () => {
+        video.play().catch(err => {
+          console.error('Error playing video:', err)
+        })
+      }
+      
+      const handleCanPlay = () => {
+        setIsCameraLoading(false)
+        video.play().catch(err => {
+          console.error('Error playing video on canplay:', err)
+        })
+      }
+      
+      const handlePlaying = () => {
+        setIsCameraLoading(false)
+      }
+      
+      video.addEventListener('loadedmetadata', handleLoadedMetadata)
+      video.addEventListener('canplay', handleCanPlay)
+      video.addEventListener('playing', handlePlaying)
+      
+      // Try to play immediately if video is ready
+      if (video.readyState >= 2) {
+        video.play().catch(err => {
+          console.error('Error playing video:', err)
+        })
+      }
+      
+      return () => {
+        video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+        video.removeEventListener('canplay', handleCanPlay)
+        video.removeEventListener('playing', handlePlaying)
+      }
+    }
+  }, [isCameraActive, stream])
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [stream])
 
   const handleFileClick = () => {
     fileInputRef.current?.click()
@@ -572,7 +723,12 @@ export default function UploadDocument() {
       }
       
       setTimeout(() => {
-        router.push('/verify/identity')
+        // Preserve update mode query params if in update mode
+        if (isUpdateMode && updateEmail) {
+          router.push(`/verify/identity?update=true&email=${encodeURIComponent(updateEmail)}`)
+        } else {
+          router.push('/verify/identity')
+        }
       }, 300)
       return
     }
@@ -580,7 +736,12 @@ export default function UploadDocument() {
     if (currentSide === 'front' && !needsBackSide && frontImage) {
       dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: frontImage })
       setTimeout(() => {
-        router.push('/verify/identity')
+        // Preserve update mode query params if in update mode
+        if (isUpdateMode && updateEmail) {
+          router.push(`/verify/identity?update=true&email=${encodeURIComponent(updateEmail)}`)
+        } else {
+          router.push('/verify/identity')
+        }
       }, 200)
       return
     }
@@ -675,6 +836,42 @@ export default function UploadDocument() {
                       </svg>
                     </div>
                     <p className="text-sm text-gray-600 font-medium">Processing document...</p>
+                  </div>
+                ) : isCameraActive || isCameraLoading ? (
+                  <div className="relative w-full h-full bg-black rounded-2xl overflow-hidden">
+                    {isCameraLoading ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center">
+                        <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                        <p className="text-white text-sm">Starting camera...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          muted
+                          className="w-full h-full object-cover"
+                        />
+                        <canvas ref={canvasRef} className="hidden" />
+                      </>
+                    )}
+                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
+                      <button
+                        onClick={stopCamera}
+                        disabled={isCameraLoading}
+                        className="px-6 py-3 bg-white text-gray-900 rounded-full font-medium shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={capturePhoto}
+                        disabled={isCameraLoading}
+                        className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Capture Photo
+                      </button>
+                    </div>
                   </div>
                 ) : currentImage ? (
                   <div className="relative w-full h-full group">
@@ -795,6 +992,42 @@ export default function UploadDocument() {
                       </div>
                       <p className="text-sm text-gray-600 font-medium">Processing document...</p>
                     </div>
+                  ) : isCameraActive || isCameraLoading ? (
+                    <div className="relative w-full h-full bg-black rounded-2xl overflow-hidden">
+                      {isCameraLoading ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center">
+                          <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                          <p className="text-white text-sm">Starting camera...</p>
+                        </div>
+                      ) : (
+                        <>
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            className="w-full h-full object-cover"
+                          />
+                          <canvas ref={canvasRef} className="hidden" />
+                        </>
+                      )}
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
+                        <button
+                          onClick={stopCamera}
+                          disabled={isCameraLoading}
+                          className="px-6 py-3 bg-white text-gray-900 rounded-full font-medium shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={capturePhoto}
+                          disabled={isCameraLoading}
+                          className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Capture Photo
+                        </button>
+                      </div>
+                    </div>
                   ) : currentImage ? (
                     <div className="relative w-full h-full group">
                       <img
@@ -896,41 +1129,43 @@ export default function UploadDocument() {
       </main>
 
       {/* Mobile Fixed Button */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
-        <div className="space-y-2">
-          {currentImage ? (
-            <>
+      {!isCameraActive && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
+          <div className="space-y-2">
+            {currentImage ? (
+              <>
+                <Button 
+                  onClick={handleContinue} 
+                  disabled={!canContinue}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  {currentSide === 'front' && needsBackSide && frontImage 
+                    ? 'Continue to Back Side →' 
+                    : currentSide === 'back' && backImage && frontImage
+                    ? 'Continue'
+                    : currentSide === 'back' && !backImage
+                    ? 'Upload Back Side to Continue'
+                    : 'Continue'}
+                </Button>
+                <button 
+                  onClick={handleRetake}
+                  className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium"
+                >
+                  Retake Photo
+                </button>
+              </>
+            ) : (
               <Button 
-                onClick={handleContinue} 
-                disabled={!canContinue}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                onClick={handleCameraClick}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
               >
-                {currentSide === 'front' && needsBackSide && frontImage 
-                  ? 'Continue to Back Side →' 
-                  : currentSide === 'back' && backImage && frontImage
-                  ? 'Continue'
-                  : currentSide === 'back' && !backImage
-                  ? 'Upload Back Side to Continue'
-                  : 'Continue'}
+                Take Photo
               </Button>
-              <button 
-                onClick={handleRetake}
-                className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium"
-              >
-                Retake Photo
-              </button>
-            </>
-          ) : (
-            <Button 
-              onClick={handleCameraClick}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-            >
-              Take Photo
-            </Button>
-          )}
+            )}
+          </div>
+          <p className="text-xs text-gray-500 text-center mt-2">Powered by Mira</p>
         </div>
-        <p className="text-xs text-gray-500 text-center mt-2">Powered by Mira</p>
-      </div>
+      )}
     </div>
   )
 }

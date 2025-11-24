@@ -512,16 +512,7 @@ export default function OTPVerification() {
                 disabled={sendingOTP || resendTimer > 0 || loading}
                 className="text-sm text-primary hover:underline disabled:text-text-light disabled:no-underline flex items-center gap-2 justify-center"
               >
-                {sendingOTP ? (
-                  <>
-                    <LoadingDots size="sm" color="currentColor" />
-                    <span>Sending...</span>
-                  </>
-                ) : resendTimer > 0 ? (
-                  `Resend code in ${resendTimer}s`
-                ) : (
-                  'Resend code'
-                )}
+                {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
               </button>
             </div>
           </div>

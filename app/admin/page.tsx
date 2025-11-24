@@ -128,7 +128,7 @@ export default function AdminLogin() {
             {loading ? (
               <>
                 <LoadingDots size="sm" color="#ffffff" />
-                <span>Signing in...</span>
+                <span>Signing in</span>
               </>
             ) : (
               'Sign in'

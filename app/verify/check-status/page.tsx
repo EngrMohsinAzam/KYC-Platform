@@ -58,7 +58,7 @@ export default function CheckStatus() {
         } else if (result.data.verificationStatus === 'pending' || result.data.verificationStatus === 'submitted') {
           // Show under review screen
           setTimeout(() => {
-            router.push('/verify/review')
+            router.push('/verify/under-review')
           }, 2000)
         } else if (result.data.verificationStatus === 'cancelled' || result.data.verificationStatus === 'rejected') {
           // Show rejected screen with email parameter
@@ -139,7 +139,8 @@ export default function CheckStatus() {
                 )}
                 <p className="text-xs text-blue-600 mt-2">
                   {statusData.verificationStatus === 'approved' && 'Redirecting to your verified ID...'}
-                  {statusData.verificationStatus === 'pending' && 'Redirecting to review page...'}
+                  {statusData.verificationStatus === 'pending' && 'Redirecting to under review page...'}
+                  {statusData.verificationStatus === 'submitted' && 'Redirecting to under review page...'}
                   {statusData.verificationStatus === 'cancelled' && 'Redirecting...'}
                   {statusData.verificationStatus === 'not_found' && 'Redirecting to start verification...'}
                 </p>

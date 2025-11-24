@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
@@ -17,17 +17,35 @@ type LivenessStep = 'center' | 'left' | 'right' | 'up' | 'down' | 'complete'
 
 export default function UploadSelfie() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { state, dispatch } = useAppContext()
+  
+  // Check if we're in update mode
+  const isUpdateMode = searchParams.get('update') === 'true'
+  const updateEmail = searchParams.get('email')
   const [stream, setStream] = useState<MediaStream | null>(null)
   const [isCameraActive, setIsCameraActive] = useState(false)
+  const [isCameraLoading, setIsCameraLoading] = useState(false)
+  const [isVideoReady, setIsVideoReady] = useState(false)
   const [currentStep, setCurrentStep] = useState<LivenessStep>('center')
   const [progress, setProgress] = useState(0)
   const [capturedImage, setCapturedImage] = useState<string | null>(state.selfieImage || null)
   const [animationData, setAnimationData] = useState<any>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
+  const videoRefMobile = useRef<HTMLVideoElement>(null)
+  const videoRefDesktop = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number>()
   const isLivenessRunningRef = useRef(false)
+  
+  // Get the active video ref based on screen size
+  const getActiveVideoRef = () => {
+    if (typeof window !== 'undefined') {
+      const isMobile = window.innerWidth < 768
+      return isMobile ? videoRefMobile : videoRefDesktop
+    }
+    return videoRefMobile // Default to mobile
+  }
 
   // Load animation
   useEffect(() => {
@@ -52,6 +70,141 @@ export default function UploadSelfie() {
     complete: 'Face verification complete! ✓',
   }
 
+  // Handle video element initialization - stable stream management
+  useEffect(() => {
+    if (!stream) return
+    
+    // Set stream on both video elements to ensure it works on mobile and desktop
+    const videos = [videoRefMobile.current, videoRefDesktop.current].filter(Boolean) as HTMLVideoElement[]
+    
+    if (videos.length === 0) {
+      console.warn('⚠️ No video elements found')
+      return
+    }
+    
+    videos.forEach((video, index) => {
+      
+      // Only set stream if it's different to prevent unnecessary updates
+      if (video.srcObject !== stream) {
+        console.log(`📹 Setting video stream on video ${index + 1} (${index === 0 ? 'mobile' : 'desktop'})`)
+        
+        // Clear any existing stream tracks first
+        if (video.srcObject) {
+          const oldStream = video.srcObject as MediaStream
+          oldStream.getTracks().forEach(track => track.stop())
+        }
+        
+        // Set video attributes for better compatibility, especially mobile
+        video.muted = true
+        video.playsInline = true
+        video.setAttribute('autoplay', 'true')
+        video.setAttribute('playsinline', 'true')
+        video.setAttribute('webkit-playsinline', 'true')
+        video.setAttribute('x5-playsinline', 'true')
+        video.setAttribute('x-webkit-airplay', 'allow')
+        ;(video as any).webkitPlaysInline = true
+        ;(video as any).playsInline = true
+        ;(video as any).x5PlaysInline = true
+        
+        video.srcObject = stream
+        
+        // Reset ready state when stream changes (only once, on first video)
+        if (index === 0) {
+          setIsVideoReady(false)
+          setIsCameraLoading(true)
+        }
+      }
+      
+      // Only add listeners to the first video to avoid duplicate events
+      if (index === 0 && !isVideoReady && stream.active && video.paused) {
+        const handleLoadedMetadata = () => {
+          console.log('✅ Video metadata loaded')
+          video.play().catch(err => {
+            console.error('Error playing video:', err)
+          })
+        }
+        
+        const handleCanPlay = () => {
+          console.log('✅ Video can play')
+          video.play().catch(err => {
+            console.error('Error playing video on canplay:', err)
+          })
+        }
+        
+        const handlePlaying = () => {
+          console.log('✅ Video is playing (useEffect)')
+          setIsVideoReady(true)
+          setIsCameraLoading(false)
+          setIsCameraActive(true)
+          
+          // Remove all listeners once playing
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+          video.removeEventListener('canplay', handleCanPlay)
+          video.removeEventListener('playing', handlePlaying)
+        }
+        
+        video.addEventListener('loadedmetadata', handleLoadedMetadata)
+        video.addEventListener('canplay', handleCanPlay)
+        video.addEventListener('playing', handlePlaying)
+        
+        // If already ready, trigger immediately
+        if (video.readyState >= 3) {
+          handlePlaying()
+        } else if (video.readyState >= 2) {
+          // Force play on mobile
+          const playPromise = video.play()
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => {
+                console.log('✅ Video play promise resolved')
+                handlePlaying()
+              })
+              .catch(err => {
+                console.error('Error playing video:', err)
+                // Try again after a short delay
+                setTimeout(() => {
+                  video.play().catch(e => console.error('Retry play failed:', e))
+                }, 100)
+              })
+          }
+        }
+        
+        return () => {
+          video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+          video.removeEventListener('canplay', handleCanPlay)
+          video.removeEventListener('playing', handlePlaying)
+        }
+      } else if (index === 0 && isVideoReady && video.paused && stream.active) {
+        // If video is ready but paused, try to play
+        console.log('🔄 Video paused but ready, resuming...')
+        video.play().catch(err => {
+          console.error('Error resuming video:', err)
+        })
+      }
+      
+      // Try to play all videos
+      if (video.paused && stream.active) {
+        video.play().catch(err => {
+          console.error(`Error playing video ${index + 1}:`, err)
+        })
+      }
+    })
+    
+    // Debug: Log video state for mobile debugging
+    if (videos.length > 0) {
+      const firstVideo = videos[0]
+      console.log('📱 Video state:', {
+        videoCount: videos.length,
+        readyState: firstVideo.readyState,
+        paused: firstVideo.paused,
+        isVideoReady,
+        streamActive: stream.active,
+        videoWidth: firstVideo.videoWidth,
+        videoHeight: firstVideo.videoHeight
+      })
+    }
+  }, [stream, isVideoReady])
+
   useEffect(() => {
     return () => {
       if (stream) {
@@ -66,6 +219,8 @@ export default function UploadSelfie() {
   const startCamera = async () => {
     try {
       console.log('🎥 Starting camera...')
+      setIsCameraLoading(true)
+      setIsVideoReady(false)
       
       // Stop any existing stream first
       if (stream) {
@@ -85,7 +240,9 @@ export default function UploadSelfie() {
       setProgress(0)
       
       // Mobile-friendly camera constraints with better mobile support
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      const isMobile = typeof window !== 'undefined' && typeof navigator !== 'undefined' 
+        ? /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+        : false
       
       // Try with ideal constraints first, fallback to basic if needed
       let mediaStream: MediaStream | null = null
@@ -116,6 +273,10 @@ export default function UploadSelfie() {
         }
       ]
       
+      if (typeof window === 'undefined' || !navigator.mediaDevices) {
+        throw new Error('Camera not available')
+      }
+      
       for (const constraints of constraintSets) {
         try {
           mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
@@ -135,81 +296,12 @@ export default function UploadSelfie() {
       // Set stream first
       setStream(mediaStream)
       
-      // Wait for video element and set up with retry limit
-      await new Promise<void>((resolve, reject) => {
-        let retries = 0
-        const maxRetries = 50 // Maximum 2.5 seconds (50 * 50ms)
-        
-        const setupVideo = () => {
-          if (!videoRef.current) {
-            retries++
-            if (retries >= maxRetries) {
-              console.error('❌ Video ref not available after maximum retries')
-              reject(new Error('Video element not found'))
-              return
-            }
-            setTimeout(setupVideo, 50)
-            return
-          }
-
-          console.log('✅ Video ref found, setting up video element')
-          const video = videoRef.current
-          
-          // Clear any existing stream
-          if (video.srcObject) {
-            const oldStream = video.srcObject as MediaStream
-            oldStream.getTracks().forEach(track => track.stop())
-          }
-          
-          video.srcObject = mediaStream
-          video.muted = true
-          video.playsInline = true
-          video.setAttribute('autoplay', 'true')
-          video.setAttribute('playsinline', 'true')
-          // Mobile-specific attributes for better compatibility
-          video.setAttribute('webkit-playsinline', 'true')
-          video.setAttribute('x5-playsinline', 'true')
-          // Ensure video plays on mobile browsers
-          ;(video as any).webkitPlaysInline = true
-          ;(video as any).playsInline = true
-          
-          const handleCanPlay = () => {
-            console.log('✅ Video can play')
-            video.removeEventListener('canplay', handleCanPlay)
-            video.removeEventListener('loadedmetadata', handleCanPlay)
-            
-            video.play()
-            .then(() => {
-                console.log('✅ Video is playing')
-                setIsCameraActive(true)
-                resolve()
-            })
-            .catch((error) => {
-                console.error('❌ Error playing video:', error)
-                // Still resolve to allow manual retry
-                resolve()
-              })
-          }
-          
-          // Try both canplay and loadedmetadata events
-          video.addEventListener('canplay', handleCanPlay)
-          video.addEventListener('loadedmetadata', handleCanPlay)
-          
-          // If already ready, trigger immediately
-          if (video.readyState >= 3) {
-            handleCanPlay()
-          }
-        }
-        
-        setupVideo()
-      }).catch((error) => {
-        console.error('❌ Failed to setup video:', error)
-        setIsCameraActive(false)
-        if (mediaStream) {
-          mediaStream.getTracks().forEach(track => track.stop())
-        }
-        setStream(null)
-      })
+      // Set stream state - useEffect will handle video element setup
+      // This ensures stable stream management without race conditions
+      console.log('✅ Stream obtained, setting state for useEffect to handle')
+      
+      // Small delay to ensure state is set and video elements are rendered
+      await new Promise(resolve => setTimeout(resolve, 100))
 
       // Start liveness check after video is playing
       setTimeout(() => {
@@ -231,6 +323,8 @@ export default function UploadSelfie() {
       }
       alert(errorMessage)
       setIsCameraActive(false)
+      setIsCameraLoading(false)
+      setIsVideoReady(false)
       if (stream) {
         stream.getTracks().forEach(track => track.stop())
         setStream(null)
@@ -289,8 +383,11 @@ export default function UploadSelfie() {
   const captureFinalPhoto = () => {
     console.log('📸 Capturing final photo...')
     
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current
+    // Get the active video element
+    const activeVideoRef = getActiveVideoRef()
+    const video = activeVideoRef.current || videoRefMobile.current || videoRefDesktop.current
+    
+    if (video && canvasRef.current) {
       const canvas = canvasRef.current
       const context = canvas.getContext('2d')
 
@@ -335,10 +432,19 @@ export default function UploadSelfie() {
       setStream(null)
     }
     
-      setIsCameraActive(false)
+    setIsCameraActive(false)
+    setIsCameraLoading(false)
+    setIsVideoReady(false)
     
-      if (videoRef.current) {
-        videoRef.current.srcObject = null
+    // Clear all video refs
+    if (videoRefMobile.current) {
+      videoRefMobile.current.srcObject = null
+    }
+    if (videoRefDesktop.current) {
+      videoRefDesktop.current.srcObject = null
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
     }
   }
 
@@ -346,8 +452,13 @@ export default function UploadSelfie() {
     if (capturedImage) {
       console.log('✅ Continuing with selfie image saved')
       dispatch({ type: 'SET_SELFIE_IMAGE', payload: capturedImage })
-    router.push('/verify/identity')
-  }
+      // Preserve update mode query params if in update mode
+      if (isUpdateMode && updateEmail) {
+        router.push(`/verify/identity?update=true&email=${encodeURIComponent(updateEmail)}`)
+      } else {
+        router.push('/verify/identity')
+      }
+    }
   }
 
   const handleRetake = () => {
@@ -366,18 +477,20 @@ export default function UploadSelfie() {
     if (!state.selfieImage && !isCameraActive && !capturedImage) {
       // Wait longer to ensure video element is rendered
       const timer = setTimeout(() => {
-        // Double check video ref is available before starting
-        if (videoRef.current) {
+        // Check if any video ref is available before starting
+        const hasVideoRef = videoRefMobile.current || videoRefDesktop.current || videoRef.current
+        if (hasVideoRef) {
           console.log('🚀 Auto-starting camera...')
           startCamera()
         } else {
           console.warn('⚠️ Video ref not ready, will retry on next render')
           // Retry after a longer delay
           setTimeout(() => {
-            if (videoRef.current) {
+            const hasVideoRefRetry = videoRefMobile.current || videoRefDesktop.current || videoRef.current
+            if (hasVideoRefRetry) {
               console.log('🚀 Retrying camera start...')
               startCamera()
-  }
+            }
           }, 1000)
         }
       }, 800)
@@ -435,21 +548,37 @@ export default function UploadSelfie() {
 
             <div className="flex-1 flex flex-col min-h-0">
               <div className="relative w-full flex-1 min-h-[400px] max-h-[70vh] bg-gray-900 rounded-2xl overflow-hidden mb-4">
-                {/* Always render video element (hidden when not active) */}
+                {/* Always render video element - never remove from DOM */}
                         <video
-                          ref={videoRef}
+                          ref={videoRefMobile}
                           autoPlay
                           playsInline
                           muted
-                  className={`w-full h-full object-cover ${isCameraActive && stream ? 'block' : 'hidden'}`}
-                          style={{ transform: 'scaleX(-1)' }}
+                          className="w-full h-full object-cover absolute inset-0"
+                          style={{ 
+                            transform: 'scaleX(-1)',
+                            opacity: (isVideoReady && isCameraActive && stream) ? 1 : 0,
+                            transition: isVideoReady ? 'opacity 0.3s ease-in-out' : 'none',
+                            pointerEvents: 'none',
+                            zIndex: 0,
+                            backgroundColor: '#000',
+                            display: 'block',
+                            visibility: (isVideoReady && isCameraActive && stream) ? 'visible' : 'hidden'
+                          }}
                         />
                         <canvas ref={canvasRef} className="hidden" />
                         
-                {isCameraActive && stream ? (
+                {isCameraLoading && !isVideoReady ? (
+                  <div className="w-full h-full flex items-center justify-center absolute inset-0 z-20 bg-gray-900">
+                    <div className="text-center">
+                      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-white text-sm">Starting camera...</p>
+                    </div>
+                  </div>
+                ) : isVideoReady && isCameraActive && stream ? (
                   <>
                         {/* Face frame overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                       <div className="relative w-full h-full flex items-center justify-center">
                           <div className="w-[70%] aspect-square rounded-full border-4 border-green-500 relative">
                             <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -503,14 +632,14 @@ export default function UploadSelfie() {
                       </>
                 ) : capturedImage ? (
                   <img src={capturedImage} alt="Selfie" className="w-full h-full object-contain" />
-                    ) : (
+                    ) : !isCameraLoading ? (
                       <div className="w-full h-full flex items-center justify-center">
                         <div className="text-center">
-                          <div className="w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                          <p className="text-white text-sm">Starting camera...</p>
+                          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                          <p className="text-white text-sm">Initializing camera...</p>
                         </div>
                       </div>
-                    )}
+                    ) : null}
               </div>
 
               <p className="text-sm text-gray-600 text-center mb-4">
@@ -535,20 +664,36 @@ export default function UploadSelfie() {
 
               <div className="mb-6">
                 <div className="relative w-full aspect-[3/2] bg-gray-900 rounded-lg overflow-hidden mb-4">
-                  {/* Always render video element */}
+                  {/* Always render video element - never remove from DOM */}
                         <video
-                          ref={videoRef}
+                          ref={videoRefDesktop}
                           autoPlay
                           playsInline
                           muted
-                          className={`w-full h-full object-cover ${isCameraActive && stream ? 'block' : 'hidden'}`}
-                          style={{ transform: 'scaleX(-1)' }}
+                          className="w-full h-full object-cover absolute inset-0"
+                          style={{ 
+                            transform: 'scaleX(-1)',
+                            opacity: (isVideoReady && isCameraActive && stream) ? 1 : 0,
+                            transition: isVideoReady ? 'opacity 0.3s ease-in-out' : 'none',
+                            pointerEvents: 'none',
+                            zIndex: 0,
+                            backgroundColor: '#000',
+                            display: 'block',
+                            visibility: (isVideoReady && isCameraActive && stream) ? 'visible' : 'hidden'
+                          }}
                         />
                           <canvas ref={canvasRef} className="hidden" />
                           
-                  {isCameraActive && stream ? (
+                  {isCameraLoading && !isVideoReady ? (
+                    <div className="w-full h-full flex items-center justify-center absolute inset-0 z-20 bg-gray-900">
+                      <div className="text-center">
+                        <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                        <p className="text-white text-sm">Starting camera...</p>
+                      </div>
+                    </div>
+                  ) : isVideoReady && isCameraActive && stream ? (
                     <>
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
                         <div className="relative w-full h-full flex items-center justify-center">
                             <div className="w-[70%] max-w-[256px] aspect-square rounded-full border-4 border-green-500 relative">
                               <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
@@ -599,14 +744,14 @@ export default function UploadSelfie() {
                         </>
                   ) : capturedImage ? (
                     <img src={capturedImage} alt="Selfie" className="w-full h-full object-contain" />
-                      ) : (
+                      ) : !isCameraLoading ? (
                         <div className="w-full h-full flex items-center justify-center">
                           <div className="text-center">
-                            <div className="w-16 h-16 border-4 border-green-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                             <p className="text-white text-sm">Initializing camera...</p>
                           </div>
                         </div>
-                      )}
+                      ) : null}
                 </div>
               </div>
 
