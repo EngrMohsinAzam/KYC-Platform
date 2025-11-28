@@ -539,6 +539,7 @@ export default function UploadDocument() {
   const startCamera = async () => {
     try {
       setIsCameraLoading(true)
+      setIsCameraActive(false) // Reset to ensure clean state
       
       // Stop any existing stream first
       if (stream) {
@@ -546,10 +547,16 @@ export default function UploadDocument() {
         setStream(null)
       }
       
+      // Clear video element
+      if (videoRef.current) {
+        videoRef.current.srcObject = null
+      }
+      
       if (typeof window === 'undefined' || !navigator.mediaDevices) {
         throw new Error('Camera not available')
       }
       
+      console.log('📷 Requesting camera access...')
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment', // Use back camera on mobile
@@ -558,15 +565,133 @@ export default function UploadDocument() {
         }
       })
       
-      setStream(mediaStream)
+      console.log('✅ Camera access granted, setting up video...')
+      console.log('  - Stream active:', mediaStream.active)
+      console.log('  - Video tracks:', mediaStream.getVideoTracks().length)
+      
+      // CRITICAL: Set camera active FIRST so React renders the video element
       setIsCameraActive(true)
       setIsCameraLoading(false)
-    } catch (error) {
-      console.error('Error accessing camera:', error)
+      
+      // Wait for React to render the video element
+      await new Promise(resolve => setTimeout(resolve, 150))
+      
+      // Now set the stream - this will trigger useEffect
+      setStream(mediaStream)
+      
+      // Wait a bit more for useEffect to run and video to be set up
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Double-check and force video to play
+      if (videoRef.current) {
+        const video = videoRef.current
+        console.log('  - Video ref available, verifying setup...')
+        
+        // Ensure stream is set
+        if (video.srcObject !== mediaStream) {
+          console.log('  - Stream not set, setting now...')
+          video.srcObject = mediaStream
+        }
+        
+        // Ensure all attributes are set
+        video.autoplay = true
+        video.playsInline = true
+        video.muted = true
+        video.setAttribute('webkit-playsinline', 'true')
+        video.setAttribute('x5-playsinline', 'true')
+        
+        // CRITICAL: Force video to be visible - override any React style props
+        // Use setProperty to ensure styles override React style prop
+        video.style.setProperty('display', 'block', 'important')
+        video.style.setProperty('width', '100%', 'important')
+        video.style.setProperty('height', '100%', 'important')
+        video.style.setProperty('object-fit', 'cover', 'important')
+        video.style.setProperty('background-color', '#000', 'important')
+        video.style.setProperty('position', 'absolute', 'important')
+        video.style.setProperty('top', '0', 'important')
+        video.style.setProperty('left', '0', 'important')
+        video.style.setProperty('z-index', '10', 'important')
+        video.style.setProperty('opacity', '1', 'important')
+        video.style.setProperty('visibility', 'visible', 'important')
+        video.style.setProperty('pointer-events', 'auto', 'important')
+        
+        // Force a reflow to ensure styles are applied
+        void video.offsetHeight
+        
+        console.log('  - Video style forced with setProperty')
+        console.log('  - Video computed opacity:', window.getComputedStyle(video).opacity)
+        console.log('  - Video computed display:', window.getComputedStyle(video).display)
+        console.log('  - Video computed visibility:', window.getComputedStyle(video).visibility)
+        
+        console.log('  - Video srcObject:', !!video.srcObject)
+        console.log('  - Video readyState:', video.readyState)
+        console.log('  - Video paused:', video.paused)
+        console.log('  - Video width:', video.videoWidth)
+        console.log('  - Video height:', video.videoHeight)
+        console.log('  - Stream active:', mediaStream.active)
+        console.log('  - Stream tracks enabled:', mediaStream.getVideoTracks().every(t => t.enabled))
+        
+        // Force play - try multiple times
+        const forcePlay = async (attempt = 1) => {
+          try {
+            if (video.paused) {
+              console.log(`  - Attempting to play (attempt ${attempt})...`)
+              await video.play()
+              console.log('✅ Video playing!')
+              
+              // Double check it's actually playing
+              setTimeout(() => {
+                if (video.videoWidth > 0 && video.videoHeight > 0) {
+                  console.log('✅ Video confirmed playing with dimensions')
+                } else {
+                  console.warn('⚠️ Video playing but no dimensions - may need more time')
+                }
+              }, 500)
+            } else {
+              console.log('✅ Video already playing')
+            }
+          } catch (error: any) {
+            console.warn(`⚠️ Play attempt ${attempt} failed:`, error.message)
+            if (attempt < 5) {
+              setTimeout(() => forcePlay(attempt + 1), 500)
+            }
+          }
+        }
+        
+        // Try to play immediately
+        forcePlay()
+        
+        // Also set up a listener for when video becomes ready
+        const onReady = () => {
+          if (video.videoWidth > 0 && video.videoHeight > 0 && video.paused) {
+            console.log('  - Video ready, forcing play...')
+            forcePlay()
+          }
+        }
+        
+        video.addEventListener('loadedmetadata', onReady, { once: true })
+        video.addEventListener('canplay', onReady, { once: true })
+      } else {
+        console.warn('⚠️ Video ref still not available after wait')
+        // The useEffect will handle it when ref becomes available
+      }
+    } catch (error: any) {
+      console.error('❌ Error accessing camera:', error)
       setIsCameraActive(false)
       setIsCameraLoading(false)
-      // Fallback to file input if camera access fails
-      cameraInputRef.current?.click()
+      
+      // On mobile, if getUserMedia fails, use file input with capture
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      if (isMobile) {
+        console.log('📱 Mobile detected, using file input with capture attribute')
+        // Small delay to ensure UI updates
+        setTimeout(() => {
+          cameraInputRef.current?.click()
+        }, 100)
+      } else {
+        // Desktop fallback
+        alert('Could not access camera. Please check permissions or use file upload.')
+      }
     }
   }
 
@@ -626,48 +751,257 @@ export default function UploadDocument() {
     }
   }
 
-  // Handle video element ready
+  // Handle video element ready - ensure video displays properly
   useEffect(() => {
-    if (isCameraActive && videoRef.current && stream) {
-      const video = videoRef.current
-      
-      // Set the stream
-      if (video.srcObject !== stream) {
-        video.srcObject = stream
+    // Only run when we have both camera active, video ref, and stream
+    if (!isCameraActive || !videoRef.current || !stream) {
+      if (isCameraActive && !stream) {
+        console.log('⚠️ Camera active but no stream yet')
       }
-      
-      const handleLoadedMetadata = () => {
-        video.play().catch(err => {
-          console.error('Error playing video:', err)
-        })
+      return
+    }
+    
+    const video = videoRef.current
+    let playAttempts = 0
+    const maxPlayAttempts = 10
+    let animationFrameId: number | null = null
+    
+    console.log('🎥 Video element effect triggered')
+    console.log('  - Stream active:', stream.active)
+    console.log('  - Stream tracks:', stream.getVideoTracks().length)
+    console.log('  - Video element exists:', !!video)
+    console.log('  - Current srcObject:', !!video.srcObject)
+    console.log('  - Video readyState:', video.readyState)
+    
+    // CRITICAL: Set the stream FIRST - this is the most important step
+    if (video.srcObject !== stream) {
+      console.log('  - Setting video srcObject to stream...')
+      video.srcObject = stream
+      console.log('  - Video srcObject now set:', !!video.srcObject)
+      console.log('  - Stream tracks after setting:', stream.getVideoTracks().map(t => ({ enabled: t.enabled, readyState: t.readyState })))
+    }
+    
+    // Ensure video attributes are set
+    video.autoplay = true
+    video.playsInline = true
+    video.muted = true
+    video.setAttribute('webkit-playsinline', 'true')
+    video.setAttribute('x5-playsinline', 'true') // For some Android browsers
+    
+    // CRITICAL: Force video to be visible with inline styles
+    // Remove ALL React style props and control everything via inline styles
+    // This is the ONLY way to ensure video is visible on mobile
+    
+    // First, remove any existing inline styles that might conflict
+    video.removeAttribute('style')
+    
+    // Now set all styles with !important to override everything
+    const styles = [
+      'display: block !important',
+      'width: 100% !important',
+      'height: 100% !important',
+      'object-fit: cover !important',
+      'background-color: #000 !important',
+      'position: absolute !important',
+      'top: 0 !important',
+      'left: 0 !important',
+      'right: 0 !important',
+      'bottom: 0 !important',
+      'z-index: 5 !important',
+      'opacity: 1 !important',
+      'visibility: visible !important',
+      'pointer-events: auto !important',
+      'transform: none !important',
+      'will-change: auto !important'
+    ]
+    
+    video.style.cssText = styles.join('; ')
+    
+    // Also remove className styles that might hide it
+    video.className = 'w-full h-full object-cover'
+    
+    console.log('  - Video style applied via cssText')
+    console.log('  - Video computed display:', window.getComputedStyle(video).display)
+    console.log('  - Video computed opacity:', window.getComputedStyle(video).opacity)
+    console.log('  - Video computed visibility:', window.getComputedStyle(video).visibility)
+    console.log('  - Video computed z-index:', window.getComputedStyle(video).zIndex)
+    console.log('  - Video computed position:', window.getComputedStyle(video).position)
+    
+    // Force a reflow
+    void video.offsetHeight
+    
+    // Double-check after a moment
+    setTimeout(() => {
+      const computed = window.getComputedStyle(video)
+      if (computed.display === 'none') {
+        console.error('❌ Video display is still none after style application!')
+        video.style.setProperty('display', 'block', 'important')
       }
-      
-      const handleCanPlay = () => {
-        setIsCameraLoading(false)
-        video.play().catch(err => {
-          console.error('Error playing video on canplay:', err)
-        })
+      if (computed.opacity === '0') {
+        console.error('❌ Video opacity is still 0 after style application!')
+        video.style.setProperty('opacity', '1', 'important')
       }
-      
-      const handlePlaying = () => {
-        setIsCameraLoading(false)
+      if (computed.visibility === 'hidden') {
+        console.error('❌ Video visibility is still hidden after style application!')
+        video.style.setProperty('visibility', 'visible', 'important')
       }
+    }, 200)
+    
+    // Also verify parent container isn't hiding the video
+    if (video.parentElement) {
+      const parent = video.parentElement as HTMLElement
+      const parentComputed = window.getComputedStyle(parent)
+      console.log('  - Parent container styles:')
+      console.log('    - Display:', parentComputed.display)
+      console.log('    - Visibility:', parentComputed.visibility)
+      console.log('    - Opacity:', parentComputed.opacity)
+      console.log('    - Overflow:', parentComputed.overflow)
+      console.log('    - Z-index:', parentComputed.zIndex)
+      console.log('    - Position:', parentComputed.position)
       
-      video.addEventListener('loadedmetadata', handleLoadedMetadata)
-      video.addEventListener('canplay', handleCanPlay)
-      video.addEventListener('playing', handlePlaying)
-      
-      // Try to play immediately if video is ready
-      if (video.readyState >= 2) {
-        video.play().catch(err => {
-          console.error('Error playing video:', err)
-        })
+      // Ensure parent is visible and positioned correctly
+      if (parentComputed.display === 'none') {
+        console.warn('⚠️ Parent container is hidden!')
+        parent.style.setProperty('display', 'block', 'important')
       }
+      if (parentComputed.position !== 'relative' && parentComputed.position !== 'absolute') {
+        parent.style.setProperty('position', 'relative', 'important')
+      }
+    }
+    
+    // CRITICAL: Add a visual test - set a temporary background color to verify video is visible
+    // This will help us see if the video element itself is visible
+    setTimeout(() => {
+      const testColor = 'rgba(255, 0, 0, 0.1)' // Light red tint
+      video.style.setProperty('background-color', testColor, 'important')
+      console.log('🔴 TEST: Video background set to light red - if you see red, video element is visible')
       
-      return () => {
-        video.removeEventListener('loadedmetadata', handleLoadedMetadata)
-        video.removeEventListener('canplay', handleCanPlay)
-        video.removeEventListener('playing', handlePlaying)
+      // After 2 seconds, set back to black
+      setTimeout(() => {
+        video.style.setProperty('background-color', '#000', 'important')
+      }, 2000)
+    }, 500)
+    
+    // Function to attempt playing the video
+    const attemptPlay = async () => {
+      playAttempts++
+      console.log(`  - Play attempt ${playAttempts}/${maxPlayAttempts}`)
+      
+      try {
+        if (video.paused) {
+          await video.play()
+          console.log('✅ Video playing successfully!')
+          setIsCameraLoading(false)
+          
+          // Verify video is actually showing frames
+          if (video.videoWidth > 0 && video.videoHeight > 0) {
+            console.log('✅ Video has dimensions:', video.videoWidth, 'x', video.videoHeight)
+          } else {
+            console.warn('⚠️ Video playing but no dimensions yet')
+          }
+        } else {
+          console.log('✅ Video is already playing')
+          setIsCameraLoading(false)
+        }
+      } catch (error: any) {
+        console.warn(`⚠️ Play attempt ${playAttempts} failed:`, error.message)
+        if (playAttempts < maxPlayAttempts) {
+          // Retry after a delay
+          setTimeout(attemptPlay, 300)
+        } else {
+          console.error('❌ Max play attempts reached')
+        }
+      }
+    }
+    
+    const handleLoadedMetadata = () => {
+      console.log('📹 Video metadata loaded')
+      console.log('  - Video width:', video.videoWidth)
+      console.log('  - Video height:', video.videoHeight)
+      console.log('  - Video readyState:', video.readyState)
+      attemptPlay()
+    }
+    
+    const handleCanPlay = () => {
+      console.log('✅ Video can play')
+      setIsCameraLoading(false)
+      attemptPlay()
+    }
+    
+    const handlePlaying = () => {
+      console.log('▶️ Video is playing!')
+      setIsCameraLoading(false)
+      // Verify it's actually showing
+      if (video.videoWidth > 0 && video.videoHeight > 0) {
+        console.log('✅ Video confirmed playing with dimensions:', video.videoWidth, 'x', video.videoHeight)
+      }
+    }
+    
+    const handleLoadedData = () => {
+      console.log('📊 Video data loaded')
+      attemptPlay()
+    }
+    
+    const handleError = (e: Event) => {
+      console.error('❌ Video error:', e)
+      const error = (e.target as HTMLVideoElement).error
+      if (error) {
+        console.error('  - Error code:', error.code)
+        console.error('  - Error message:', error.message)
+      }
+    }
+    
+    // Remove old listeners first to prevent duplicates
+    video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+    video.removeEventListener('loadeddata', handleLoadedData)
+    video.removeEventListener('canplay', handleCanPlay)
+    video.removeEventListener('playing', handlePlaying)
+    video.removeEventListener('error', handleError)
+    
+    // Add new listeners
+    video.addEventListener('loadedmetadata', handleLoadedMetadata)
+    video.addEventListener('loadeddata', handleLoadedData)
+    video.addEventListener('canplay', handleCanPlay)
+    video.addEventListener('playing', handlePlaying)
+    video.addEventListener('error', handleError)
+    
+    // Try to play immediately if ready
+    if (video.readyState >= 2) {
+      console.log('🎬 Video ready (readyState >= 2), attempting to play immediately...')
+      attemptPlay()
+    } else {
+      console.log('⏳ Waiting for video to be ready (readyState:', video.readyState, ')')
+      // Also try after a short delay
+      setTimeout(attemptPlay, 500)
+    }
+    
+    // Use requestAnimationFrame to continuously check if video is playing
+    const checkVideoPlaying = () => {
+      if (video.videoWidth > 0 && video.videoHeight > 0 && !video.paused) {
+        // Video is playing and has dimensions - good!
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId)
+          animationFrameId = null
+        }
+      } else if (playAttempts < maxPlayAttempts) {
+        // Keep checking
+        animationFrameId = requestAnimationFrame(checkVideoPlaying)
+      }
+    }
+    
+    // Start checking after a delay
+    setTimeout(() => {
+      animationFrameId = requestAnimationFrame(checkVideoPlaying)
+    }, 1000)
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      video.removeEventListener('loadeddata', handleLoadedData)
+      video.removeEventListener('canplay', handleCanPlay)
+      video.removeEventListener('playing', handlePlaying)
+      video.removeEventListener('error', handleError)
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
       }
     }
   }, [isCameraActive, stream])
@@ -846,13 +1180,44 @@ export default function UploadDocument() {
                       </div>
                     ) : (
                       <>
+                        {/* Always render video element when camera is active - make it always visible */}
                         <video
-                          ref={videoRef}
+                          ref={(el) => {
+                            if (el) {
+                              (videoRef as any).current = el
+                              if (stream) {
+                                // Immediately set up video when ref is set
+                                console.log('🎬 Video ref callback - setting up immediately')
+                                el.srcObject = stream
+                                el.style.cssText = `
+                                  display: block !important;
+                                  width: 100% !important;
+                                  height: 100% !important;
+                                  object-fit: cover !important;
+                                  background-color: #000 !important;
+                                  position: absolute !important;
+                                  top: 0 !important;
+                                  left: 0 !important;
+                                  z-index: 5 !important;
+                                  opacity: 1 !important;
+                                  visibility: visible !important;
+                                `
+                                el.play().catch(err => console.warn('Play error in ref callback:', err))
+                              }
+                            }
+                          }}
                           autoPlay
                           playsInline
                           muted
-                          className="w-full h-full object-cover"
                         />
+                        {!stream && (
+                          <div className="w-full h-full flex items-center justify-center absolute inset-0 z-0">
+                            <div className="text-center">
+                              <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+                              <p className="text-white text-sm">Preparing camera...</p>
+                            </div>
+                          </div>
+                        )}
                         <canvas ref={canvasRef} className="hidden" />
                       </>
                     )}
@@ -993,7 +1358,7 @@ export default function UploadDocument() {
                       <p className="text-sm text-gray-600 font-medium">Processing document...</p>
                     </div>
                   ) : isCameraActive || isCameraLoading ? (
-                    <div className="relative w-full h-full bg-black rounded-2xl overflow-hidden">
+                    <div className="relative w-full h-full bg-black rounded-2xl" style={{ overflow: 'hidden' }}>
                       {isCameraLoading ? (
                         <div className="w-full h-full flex flex-col items-center justify-center">
                           <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -1001,13 +1366,44 @@ export default function UploadDocument() {
                         </div>
                       ) : (
                         <>
+                          {/* Always render video element when camera is active - make it always visible */}
                           <video
-                            ref={videoRef}
+                            ref={(el) => {
+                              if (el) {
+                                (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el
+                                if (stream) {
+                                  // Immediately set up video when ref is set
+                                  console.log('🎬 Video ref callback - setting up immediately')
+                                  el.srcObject = stream
+                                  el.style.cssText = `
+                                    display: block !important;
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    object-fit: cover !important;
+                                    background-color: #000 !important;
+                                    position: absolute !important;
+                                    top: 0 !important;
+                                    left: 0 !important;
+                                    z-index: 5 !important;
+                                    opacity: 1 !important;
+                                    visibility: visible !important;
+                                  `
+                                  el.play().catch(err => console.warn('Play error in ref callback:', err))
+                                }
+                              }
+                            }}
                             autoPlay
                             playsInline
                             muted
-                            className="w-full h-full object-cover"
                           />
+                          {!stream && (
+                            <div className="w-full h-full flex items-center justify-center absolute inset-0 z-0">
+                              <div className="text-center">
+                                <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
+                                <p className="text-white text-sm">Preparing camera...</p>
+                              </div>
+                            </div>
+                          )}
                           <canvas ref={canvasRef} className="hidden" />
                         </>
                       )}

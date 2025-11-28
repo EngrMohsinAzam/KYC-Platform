@@ -162,7 +162,7 @@ export default function VerifyIdentity() {
               {/* Identity Document Card */}
               <div 
                 onClick={isUpdating ? undefined : handleDocumentClick}
-                className={`bg-gray-50 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}`}
+                className={`bg-gray-100 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-800'}`}
               >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
@@ -183,7 +183,7 @@ export default function VerifyIdentity() {
               {/* Selfie Card */}
               <div 
                 onClick={isUpdating ? undefined : handleSelfieClick}
-                className={`bg-gray-50 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}`}
+                className={`bg-gray-100 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-800'}`}
               >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
@@ -237,8 +237,8 @@ export default function VerifyIdentity() {
                 <div 
                   onClick={isUpdating ? undefined : handleDocumentClick}
                   className={`
-                    bg-gray-50 rounded-xl p-5 transition-all flex items-center gap-4
-                    ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
+                    bg-gray-100 rounded-xl p-5 transition-all flex items-center gap-4
+                    ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-200'}
                     ${documentComplete ? 'ring-2 ring-green-500' : ''}
                   `}
                 >
@@ -277,8 +277,8 @@ export default function VerifyIdentity() {
                 <div 
                   onClick={isUpdating ? undefined : handleSelfieClick}
                   className={`
-                    bg-gray-50 rounded-xl p-5 transition-all flex items-center gap-4
-                    ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'}
+                    bg-gray-100 rounded-xl p-5 transition-all flex items-center gap-4
+                    ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-200'}
                     ${state.selfieImage ? 'ring-2 ring-green-500' : ''}
                   `}
                 >

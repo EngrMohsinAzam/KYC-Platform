@@ -73,7 +73,7 @@ export default function VerificationStart() {
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-yellow-600 mt-1">•</span>
-                        <span>Have your wallet ready for the $2 KYC fee payment</span>
+                        <span>Have your wallet ready with BNB for the $2 KYC fee payment</span>
                       </li>
                       <li className="flex items-start gap-2">
                         <span className="text-yellow-600 mt-1">•</span>
@@ -125,7 +125,7 @@ export default function VerificationStart() {
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="text-yellow-600 mt-1.5">•</span>
-                        <span>Have your wallet ready for the $2 KYC fee payment</span>
+                        <span>Have your wallet ready with BNB for the $2 KYC fee payment</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="text-yellow-600 mt-1.5">•</span>

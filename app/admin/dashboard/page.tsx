@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { getAdminToken, removeAdminToken, getDashboardStats, getUsers, User } from '@/lib/admin-api'
 import { useAccount, useConnect } from 'wagmi'
-import { getContractBalance, getTotalWithdrawals, verifyOwner, withdrawContractFunds } from '@/lib/web3'
+import { getContractBalance, getTotalCollectedFees, getTotalWithdrawals, verifyOwner, withdrawContractFunds } from '@/lib/web3'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts'
 import Link from 'next/link'
 import { LoadingPage } from '@/components/ui/LoadingDots'
@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const [showWithdrawModal, setShowWithdrawModal] = useState(false)
   const [contractBalance, setContractBalance] = useState<string | null>(null)
+  const [totalCollectedFees, setTotalCollectedFees] = useState<string | null>(null)
   const [totalWithdrawals, setTotalWithdrawals] = useState<string | null>(null)
   const [loadingContractData, setLoadingContractData] = useState(false)
   const { isConnected } = useAccount()
@@ -140,14 +141,14 @@ export default function AdminDashboard() {
   const loadContractData = async (preserveOnRateLimit: boolean = false) => {
     try {
       setLoadingContractData(true)
-      const [balance, withdrawals] = await Promise.all([
-        getContractBalance().catch((err) => {
-          console.error('Error fetching contract balance:', err)
+      const [totalCollected, withdrawals] = await Promise.all([
+        getTotalCollectedFees().catch((err) => {
+          console.error('Error fetching total collected fees:', err)
           // Keep last known value if available
-          if (preserveOnRateLimit && contractBalance) {
-            return contractBalance // Return current value so we can check and preserve it
+          if (preserveOnRateLimit && totalCollectedFees) {
+            return totalCollectedFees // Return current value so we can check and preserve it
           }
-          return contractBalance || '0'
+          return totalCollectedFees || '0'
         }),
         getTotalWithdrawals().catch((err) => {
           console.error('Error fetching total withdrawals:', err)
@@ -178,23 +179,34 @@ export default function AdminDashboard() {
       ])
       
       // Only update if we got valid data (not null from error handlers when preserveOnRateLimit is true)
-      if (balance !== null && balance !== undefined) {
-        const balanceNum = parseFloat(balance)
+      if (totalCollected !== null && totalCollected !== undefined) {
+        const collectedNum = parseFloat(totalCollected)
         // If preserveOnRateLimit is true and we got '0' or invalid value, keep the current value
-        if (preserveOnRateLimit && (isNaN(balanceNum) || balanceNum === 0) && contractBalance) {
+        if (preserveOnRateLimit && (isNaN(collectedNum) || collectedNum === 0) && totalCollectedFees) {
           // Rate limited or got 0 - preserve the instant update value
-          console.log('✅ Preserving contract balance value due to rate limit or invalid data:', contractBalance)
+          console.log('✅ Preserving total collected fees value due to rate limit or invalid data:', totalCollectedFees)
           // Don't update - keep the current value
-        } else if (!isNaN(balanceNum) && balanceNum >= 0) {
+        } else if (!isNaN(collectedNum) && collectedNum >= 0) {
           // Only update if we got a valid positive number
-          setContractBalance(balance)
-        } else if (!contractBalance) {
+          setTotalCollectedFees(totalCollected)
+        } else if (!totalCollectedFees) {
           // If we don't have a value and got invalid data, set to 0
-          setContractBalance('0')
+          setTotalCollectedFees('0')
         }
-      } else if (preserveOnRateLimit && contractBalance) {
+      } else if (preserveOnRateLimit && totalCollectedFees) {
         // If we got null/undefined and preserveOnRateLimit is true, keep current value
-        console.log('✅ Preserving contract balance value (got null/undefined):', contractBalance)
+        console.log('✅ Preserving total collected fees value (got null/undefined):', totalCollectedFees)
+      }
+      
+      // Also fetch current contract balance for withdraw modal
+      try {
+        const currentBalance = await getContractBalance()
+        const balanceNum = parseFloat(currentBalance)
+        if (!isNaN(balanceNum) && balanceNum >= 0) {
+          setContractBalance(currentBalance)
+        }
+      } catch (err) {
+        console.warn('Could not fetch current contract balance for withdraw modal:', err)
       }
       
       if (withdrawals !== null && withdrawals !== undefined) {
@@ -252,8 +264,9 @@ export default function AdminDashboard() {
       console.error('Error loading contract data:', error)
       // Don't overwrite existing values on error when preserveOnRateLimit is true
       if (!preserveOnRateLimit) {
-        if (!contractBalance) setContractBalance('0')
+        if (!totalCollectedFees) setTotalCollectedFees('0')
         if (!totalWithdrawals) setTotalWithdrawals('0')
+        if (!contractBalance) setContractBalance('0')
       }
     } finally {
       setLoadingContractData(false)
@@ -583,15 +596,15 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           <FinancialCard
             title="Total Collection"
-            value={loadingContractData ? 'Loading...' : `$${contractBalance ? parseFloat(contractBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}`}
-            change="Contract balance"
+            value={loadingContractData ? 'Loading...' : `${totalCollectedFees ? parseFloat(totalCollectedFees).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 }) : '0.00000000'} BNB`}
+            change="Total collected fees"
             changeType="positive"
             icon="dollar"
             color="blue"
           />
           <FinancialCard
             title="Total Withdrawals"
-            value={loadingContractData ? 'Loading...' : `$${totalWithdrawals ? parseFloat(totalWithdrawals).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}`}
+            value={loadingContractData ? 'Loading...' : `${totalWithdrawals ? parseFloat(totalWithdrawals).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 }) : '0.00000000'} BNB`}
             change="All time"
             changeType="negative"
             icon="dollar"
@@ -694,7 +707,7 @@ export default function AdminDashboard() {
           }}
           onWithdrawSuccess={(withdrawnAmount: string) => {
             // Instantly update UI with the withdrawal amount
-            console.log('💰 Instantly updating UI with withdrawal:', withdrawnAmount, 'USDT')
+            console.log('💰 Instantly updating UI with withdrawal:', withdrawnAmount, 'BNB')
             
             const withdrawalAmountNum = parseFloat(withdrawnAmount)
             if (isNaN(withdrawalAmountNum) || withdrawalAmountNum <= 0) {
@@ -1265,7 +1278,7 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
         // Fetch contract balance - this works without wallet connection (uses public RPC)
         const balance = await getContractBalance()
         setContractBalance(parseFloat(balance))
-        console.log('✅ Contract balance fetched:', balance, 'USDT')
+        console.log('✅ Contract balance fetched:', balance, 'USD')
       } catch (error: any) {
         console.error('Error fetching contract balance:', error)
         // Don't set error here - just log it, balance will show as unavailable
@@ -1344,7 +1357,7 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
     }
 
     if (contractBalance !== null && amountNum > contractBalance) {
-      setError(`Insufficient contract balance. Available: ${contractBalance.toFixed(2)} USDT`)
+      setError(`Insufficient contract balance. Available: ${contractBalance.toFixed(8)} BNB`)
       return
     }
 
@@ -1448,7 +1461,7 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
               {loadingBalance ? (
                 <span className="text-gray-400">Loading...</span>
               ) : contractBalance !== null ? (
-                `${contractBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDT`
+                `${contractBalance.toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 })} BNB`
               ) : (
                 <span className="text-gray-400">
                   Unable to fetch balance
@@ -1459,11 +1472,11 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Withdrawal Amount (USDT)
+              Withdrawal Amount (BNB)
             </label>
             <input
               type="number"
-              step="0.01"
+              step="0.00000001"
               min="0"
               value={amount}
               onChange={(e) => {
@@ -1490,7 +1503,7 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
                   e.preventDefault()
                 }
               }}
-              placeholder="0.00"
+              placeholder="0.00000000"
               disabled={!isConnected || !isOwner}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
             />

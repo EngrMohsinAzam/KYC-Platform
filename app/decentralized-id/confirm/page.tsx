@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
-import { checkUSDTBalance, submitKYCVerification, isMetaMaskInstalled, getNetworkInfo, connectWallet, checkKYCStatus } from '@/lib/web3'
+import { checkBNBBalance, submitKYCVerification, isMetaMaskInstalled, getNetworkInfo, connectWallet, checkKYCStatus } from '@/lib/web3'
 import { submitKYCData } from '@/lib/api'
 import { ethers } from 'ethers'
 
@@ -20,7 +20,7 @@ export default function ConfirmBlockstamp() {
   const router = useRouter()
   const { state, dispatch } = useAppContext()
   const [loading, setLoading] = useState(false)
-  const [usdtBalance, setUsdtBalance] = useState<string | null>(null)
+  const [bnbBalance, setBnbBalance] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [checkingBalance, setCheckingBalance] = useState(true)
   const [currentNetwork, setCurrentNetwork] = useState<string | null>(null)
@@ -86,10 +86,10 @@ export default function ConfirmBlockstamp() {
 
       // If on correct network, check balance and KYC status
       const [balance, kycStatusResult] = await Promise.all([
-        checkUSDTBalance(state.connectedWallet),
+        checkBNBBalance(state.connectedWallet),
         checkKYCStatus(state.connectedWallet)
       ])
-      setUsdtBalance(balance)
+      setBnbBalance(balance)
       setKycStatus(kycStatusResult)
       setError(null)
       
@@ -102,7 +102,7 @@ export default function ConfirmBlockstamp() {
     } catch (err: any) {
       console.error('Error checking balance:', err)
       if (err.message.includes('not found') || err.message.includes('BAD_DATA')) {
-        setError(`Contract Error: The USDT contract was not found. This usually means you're on the wrong network. Please switch to Binance Smart Chain Testnet (BSC Testnet) in MetaMask.`)
+        setError(`Contract Error: The KYC contract was not found. This usually means you're on the wrong network. Please switch to Binance Smart Chain Testnet (BSC Testnet) in MetaMask.`)
       } else {
         setError(err.message || 'Failed to check balance. Please ensure you are on the correct network.')
       }
@@ -221,7 +221,7 @@ export default function ConfirmBlockstamp() {
       // Create metadata URL (optional, can be empty string)
       const metadataUrl = `https://kyx-platform.com/kyc/${state.connectedWallet}`
 
-      // Submit KYC verification to smart contract (this will deduct $2 USDT)
+      // Submit KYC verification to smart contract (this will pay $2 USD in BNB)
       const transactionHash = await submitKYCVerification(anonymousId, metadataUrl)
       
       // Show success state
@@ -433,8 +433,8 @@ export default function ConfirmBlockstamp() {
                   {state.connectedWallet ? displayWalletAddress : 'None'}
                 </span>
               </div>
-              {state.connectedWallet && usdtBalance && (
-                <p className="text-xs text-gray-600 mt-2">Balance: {usdtBalance} USDT</p>
+              {state.connectedWallet && bnbBalance && (
+                <p className="text-xs text-gray-600 mt-2">Balance: {bnbBalance} BNB</p>
               )}
             </div>
 
@@ -559,7 +559,7 @@ export default function ConfirmBlockstamp() {
             <div className="fixed md:relative bottom-0 left-0 right-0 p-4 md:p-0 bg-white md:bg-transparent border-t md:border-t-0">
               <Button 
                 onClick={handleConfirm}
-                disabled={loading || checkingBalance || checkingKYC || (usdtBalance !== null && parseFloat(usdtBalance) < 2) || (kycStatus?.isVerified || kycStatus?.hasSubmitted) || !isCorrectNetwork || transactionStatus === 'success'}
+                disabled={loading || checkingBalance || checkingKYC || (bnbBalance !== null && parseFloat(bnbBalance) < 0.01) || (kycStatus?.isVerified || kycStatus?.hasSubmitted) || !isCorrectNetwork || transactionStatus === 'success'}
                 className={`w-full rounded-lg py-3 font-medium transition-all duration-300 ${
                   transactionStatus === 'success' 
                     ? 'bg-green-600 hover:bg-green-600 text-white' 

@@ -58,13 +58,17 @@ if (typeof window !== 'undefined') {
     const combinedString = args.map(String).join(' ')
     const hasWalletConnectWarning = args.some(arg => {
       if (typeof arg === 'string') {
-        return isWalletConnectExtensionError(arg)
+        return isWalletConnectExtensionError(arg) || 
+               arg.includes('WalletConnect Core is already initialized') ||
+               arg.includes('Init() was called')
       }
       if (arg && typeof arg === 'object') {
         return isWalletConnectExtensionError(arg)
       }
       return false
-    }) || isWalletConnectExtensionError(combinedString)
+    }) || isWalletConnectExtensionError(combinedString) ||
+         combinedString.includes('WalletConnect Core is already initialized') ||
+         combinedString.includes('Init() was called')
     
     if (hasWalletConnectWarning) {
       return // Suppress silently

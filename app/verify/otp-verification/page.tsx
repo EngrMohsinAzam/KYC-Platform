@@ -526,7 +526,7 @@ export default function OTPVerification() {
               {loading ? (
                 <>
                   <LoadingDots size="sm" color="#ffffff" />
-                  <span>Submitting to backend...</span>
+                  <span>Submitting to backend</span>
                 </>
               ) : (
                 'Verify & Continue'

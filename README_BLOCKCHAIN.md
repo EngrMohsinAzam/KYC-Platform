@@ -2,8 +2,7 @@
 
 ## Smart Contract Addresses
 
-- **USDT Contract**: `0x08DB56aB63cB3ac8921bcb1e9bE57a0A0fD91F1a`
-- **KYC Contract**: `0x927f6773D3B777F1d04f22893cbf9Fe69F624EB9`
+- **KYC Contract**: `0xeaF70C9Cc7bD5CdbB8aF4cd07B6a2452f0AB4E36` (BSC Testnet)
 
 ## Setup Instructions
 
@@ -25,9 +24,9 @@
 ## How It Works
 
 1. **User connects wallet** - MetaMask integration
-2. **Balance check** - Verifies user has at least 2 USDT
-3. **USDT Approval** - Approves KYC contract to spend 2 USDT
-4. **KYC Submission** - Calls KYC contract with anonymous ID
+2. **Balance check** - Verifies user has sufficient BNB (for $2 USD fee + gas)
+3. **BNB Fee Calculation** - Contract calculates required BNB amount from Chainlink price feed
+4. **KYC Submission** - Calls KYC contract with anonymous ID and BNB payment (payable function)
 5. **Transaction Hash** - Displays the blockchain transaction ID
 
 ## Important Notes
@@ -41,12 +40,13 @@
 
 Your KYC contract should have a function that:
 - Accepts the anonymous ID (bytes32)
-- Accepts the USDT amount (uint256)
-- Transfers USDT from user to contract
+- Accepts BNB payment (payable function)
+- Fetches BNB/USD price from Chainlink
+- Validates the payment amount equals $2 USD
 - Records the verification on-chain
 
 Example function signature:
 ```solidity
-function submitKYCVerification(bytes32 anonymousId, uint256 amount) external returns (uint256)
+function submitKYC(bytes32 _combinedDataHash, string memory _metadataUrl) external payable
 ```
 
