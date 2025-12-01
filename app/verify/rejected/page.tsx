@@ -129,19 +129,48 @@ export default function Rejected() {
     try {
       const result = await checkStatusByEmail(email)
       if (result.success && result.data) {
-        setRejectionData(result.data)
+        // Check both verificationStatus and kycStatus
+        const status = result.data.verificationStatus || result.data.kycStatus
         
-        // Check if rejection reason is "Picture is blur"
-        const rejectionReason = result.data.rejectionReason || ''
-        setIsBlurRejection(rejectionReason.toLowerCase().includes('blur') || rejectionReason === 'Picture is blur')
+        console.log('📊 Rejected page - Status check:', {
+          verificationStatus: result.data.verificationStatus,
+          kycStatus: result.data.kycStatus,
+          finalStatus: status
+        })
         
-        // Use timeRemaining from API response
-        if (result.data.timeRemaining) {
-          setTimeRemaining(result.data.timeRemaining)
-          setCanRetry(result.data.timeRemaining.canReapply)
+        // If status is no longer rejected (e.g., pending, under_review, submitted), redirect to under-review
+        if (status === 'pending' || status === 'submitted' || status === 'under_review' || status === 'underReview') {
+          console.log('✅ Status changed to pending/under_review, redirecting to under-review page')
+          router.push('/verify/under-review')
+          return
+        }
+        
+        // If status is approved, redirect to complete page
+        if (status === 'approved') {
+          router.push('/decentralized-id/complete')
+          return
+        }
+        
+        // Only show rejected page if status is actually rejected or cancelled
+        if (status === 'rejected' || status === 'cancelled') {
+          setRejectionData(result.data)
+          
+          // Check if rejection reason is "Picture is blur"
+          const rejectionReason = result.data.rejectionReason || ''
+          setIsBlurRejection(rejectionReason.toLowerCase().includes('blur') || rejectionReason === 'Picture is blur')
+          
+          // Use timeRemaining from API response
+          if (result.data.timeRemaining) {
+            setTimeRemaining(result.data.timeRemaining)
+            setCanRetry(result.data.timeRemaining.canReapply)
+          } else {
+            setCanRetry(true)
+            setTimeRemaining(null)
+          }
         } else {
-          setCanRetry(true)
-          setTimeRemaining(null)
+          // Unknown status or not found - redirect to under review as default
+          console.warn('⚠️ Unknown status on rejected page, redirecting to under-review:', status)
+          router.push('/verify/under-review')
         }
       }
     } catch (err) {
@@ -507,8 +536,15 @@ export default function Rejected() {
       })
 
       if (result.success) {
+        // Check if status was updated in the response
+        const updatedStatus = result.data?.verificationStatus || result.data?.kycStatus
+        console.log('✅ Documents updated. New status:', updatedStatus)
+        
         alert('Documents updated successfully! Your application is now under review.')
-        router.push('/verify/review')
+        
+        // Redirect to under-review page instead of review page
+        // This ensures the status check will show under review
+        router.push('/verify/under-review')
       } else {
         alert(result.message || 'Failed to update documents. Please try again.')
       }

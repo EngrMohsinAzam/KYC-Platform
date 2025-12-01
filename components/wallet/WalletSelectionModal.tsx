@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { detectInstalledWallets, DetectedWallet } from '@/lib/wallet-detection'
 import { switchToBSCTestnet } from '@/lib/network-switch'
+import { isMobileDevice, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
 
 interface WalletSelectionModalProps {
   isOpen: boolean
@@ -26,15 +27,25 @@ export function WalletSelectionModal({
   const wallets = detectInstalledWallets()
   
   // Check if mobile device
-  const isMobile = typeof window !== 'undefined' && 
-    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  const isMobile = isMobileDevice()
   
   // Prioritize MetaMask - separate it from other wallets
   const metaMaskWallet = wallets.find(w => w.id === 'metamask')
   
-  // On mobile, always show MetaMask as available (can use deep link or mobile browser)
-  if (isMobile && metaMaskWallet && !metaMaskWallet.isInstalled) {
-    metaMaskWallet.isInstalled = true
+  // On mobile, always show MetaMask, Trust Wallet, and Coinbase as available
+  // They can use WalletConnect QR code or deep links
+  if (isMobile) {
+    if (metaMaskWallet && !metaMaskWallet.isInstalled) {
+      metaMaskWallet.isInstalled = true
+    }
+    const trustWallet = wallets.find(w => w.id === 'trustwallet')
+    if (trustWallet && !trustWallet.isInstalled) {
+      trustWallet.isInstalled = true
+    }
+    const coinbaseWallet = wallets.find(w => w.id === 'coinbase')
+    if (coinbaseWallet && !coinbaseWallet.isInstalled) {
+      coinbaseWallet.isInstalled = true
+    }
   }
   
   const installedWallets = wallets.filter(w => w.isInstalled && w.id !== 'metamask')
@@ -46,8 +57,45 @@ export function WalletSelectionModal({
     : installedWallets
 
   const handleWalletClick = async (wallet: DetectedWallet) => {
+    const isMobile = isMobileDevice()
+    
     if (!wallet.isInstalled) {
-      // Open wallet installation page
+      // On mobile, try deep link first, then fallback to installation page
+      if (isMobile) {
+        const deepLink = getMobileWalletDeepLink(wallet.id)
+        if (deepLink) {
+          console.log('📱 Opening mobile wallet via deep link:', wallet.name)
+          window.location.href = deepLink
+          // Give user time to open the app
+          setTimeout(() => {
+            // If still on page after 3 seconds, show install option
+            const installUrls: Record<string, string> = {
+              metamask: isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)
+                ? 'https://apps.apple.com/app/metamask/id1438144202'
+                : isMobile && /Android/i.test(navigator.userAgent)
+                ? 'https://play.google.com/store/apps/details?id=io.metamask'
+                : 'https://metamask.io/download/',
+              trustwallet: isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)
+                ? 'https://apps.apple.com/app/trust-crypto-bitcoin-wallet/id1288339409'
+                : isMobile && /Android/i.test(navigator.userAgent)
+                ? 'https://play.google.com/store/apps/details?id=com.wallet.crypto.trustapp'
+                : 'https://trustwallet.com/download',
+              coinbase: isMobile && /iPhone|iPad|iPod/i.test(navigator.userAgent)
+                ? 'https://apps.apple.com/app/coinbase-wallet/id1278383455'
+                : isMobile && /Android/i.test(navigator.userAgent)
+                ? 'https://play.google.com/store/apps/details?id=org.toshi'
+                : 'https://www.coinbase.com/wallet',
+            }
+            const url = installUrls[wallet.id]
+            if (url && confirm('Wallet app not found. Would you like to install it?')) {
+              window.open(url, '_blank')
+            }
+          }, 3000)
+          return
+        }
+      }
+      
+      // Desktop or no deep link: Open wallet installation page
       const installUrls: Record<string, string> = {
         metamask: 'https://metamask.io/download/',
         trustwallet: 'https://trustwallet.com/download',
@@ -64,15 +112,33 @@ export function WalletSelectionModal({
     }
 
     try {
-      // Auto-switch to BSC Testnet before connecting
-      setSwitchingNetwork(true)
-      await switchToBSCTestnet(wallet.provider)
-      setSwitchingNetwork(false)
+      // On mobile, if no provider detected, try deep link first
+      if (isMobile && !wallet.provider) {
+        const deepLink = getMobileWalletDeepLink(wallet.id)
+        if (deepLink) {
+          console.log('📱 Mobile wallet detected but no provider, using deep link:', wallet.name)
+          // Try to connect via WalletConnect or use deep link
+          // For now, proceed with connection attempt (WalletConnect will handle it)
+        }
+      }
+      
+      // Auto-switch to BSC Testnet before connecting (if provider exists)
+      if (wallet.provider) {
+        try {
+          setSwitchingNetwork(true)
+          await switchToBSCTestnet(wallet.provider)
+          setSwitchingNetwork(false)
+        } catch (err: any) {
+          console.error('Error switching network:', err)
+          setSwitchingNetwork(false)
+          // Continue with connection even if network switch fails
+        }
+      }
       
       // Connect wallet
       await onWalletSelect(wallet)
     } catch (err: any) {
-      console.error('Error switching network:', err)
+      console.error('Error in wallet connection:', err)
       setSwitchingNetwork(false)
       // Still try to connect even if network switch fails
       await onWalletSelect(wallet)
@@ -260,6 +326,15 @@ export function WalletSelectionModal({
                 </button>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Mobile Help Message */}
+        {isMobile && sortedInstalledWallets.length > 0 && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-800 text-center">
+              <strong>Mobile Tip:</strong> Tap a wallet to connect. If a QR code appears, scan it with your mobile wallet app. If the app opens, approve the connection.
+            </p>
           </div>
         )}
 

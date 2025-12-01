@@ -105,7 +105,15 @@ export default function Home() {
           })
         }
         
-        const status = result.data.verificationStatus
+        // Check both verificationStatus and kycStatus
+        const status = result.data.verificationStatus || result.data.kycStatus
+        
+        console.log('📊 Status check result:', {
+          verificationStatus: result.data.verificationStatus,
+          kycStatus: result.data.kycStatus,
+          finalStatus: status,
+          fullData: result.data
+        })
         
         // Handle different statuses
         if (status === 'approved') {
@@ -113,8 +121,8 @@ export default function Home() {
           setTimeout(() => {
             router.push('/decentralized-id/complete')
           }, 1500)
-        } else if (status === 'pending' || status === 'submitted') {
-          // Redirect to under review screen
+        } else if (status === 'pending' || status === 'submitted' || status === 'under_review' || status === 'underReview') {
+          // Redirect to under review screen - prioritize pending/under_review over rejected
           setTimeout(() => {
             router.push('/verify/under-review')
           }, 1500)
@@ -129,6 +137,12 @@ export default function Home() {
           setTimeout(() => {
             router.push('/verify/select-id-type')
           }, 500)
+        } else if (status) {
+          // Unknown status - default to under review
+          console.warn('⚠️ Unknown status, defaulting to under review:', status)
+          setTimeout(() => {
+            router.push('/verify/under-review')
+          }, 1500)
         }
       } else {
         // Email not found - allow KYC, proceed to verification

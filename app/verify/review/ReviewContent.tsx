@@ -16,6 +16,7 @@ import { ethers } from 'ethers'
 import { DetectedWallet } from '@/lib/wallet-detection'
 import { switchToBSCTestnet } from '@/lib/network-switch'
 import { setMetaMaskProvider } from '@/lib/wagmi-config'
+import { isMobileDevice, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
 import '@/lib/wagmi-config'
 
 export default function ReviewContent() {
@@ -218,11 +219,11 @@ export default function ReviewContent() {
       setError(null)
       setNetworkError(null)
       
+      const isMobile = isMobileDevice()
+      const win = window as any
+      
       // For MetaMask, handle both desktop and mobile
       if (wallet.id === 'metamask') {
-        const win = window as any
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        
         console.log('🔍 MetaMask Connection:')
         console.log('  - Is Mobile:', isMobile)
         console.log('  - Has Provider:', !!wallet.provider)
@@ -230,14 +231,15 @@ export default function ReviewContent() {
         console.log('  - window.ethereum exists:', !!win.ethereum)
         console.log('  - window.ethereum.isMetaMask:', win.ethereum?.isMetaMask)
         
-        // On mobile, if no provider detected but ethereum exists, try to use it
+        // On mobile, if no provider detected in wallet object, check window.ethereum
         if (isMobile && !wallet.provider && win.ethereum) {
-          console.log('📱 Mobile detected: Using window.ethereum as MetaMask provider')
+          console.log('📱 Mobile: Using window.ethereum as MetaMask provider')
           wallet.provider = win.ethereum
         }
         
-        // If we have a provider (desktop or mobile with ethereum)
+        // PRIORITY 1: If we have a provider (detected wallet), connect directly
         if (wallet.provider) {
+          console.log('✅ Wallet provider detected, connecting directly...')
           const originalEthereum = win.ethereum
           const originalProviders = win.ethereum?.providers
           const wasArray = Array.isArray(originalProviders)
@@ -312,22 +314,33 @@ export default function ReviewContent() {
               return
             }
             
-            // On mobile, if connection fails and no provider, try using injected connector
-            if (isMobile && !wallet.provider) {
-              console.log('📱 Mobile: Trying injected connector as fallback')
+            // On mobile, if direct connection fails, try WalletConnect as fallback
+            if (isMobile) {
+              console.log('📱 Mobile: Direct connection failed, trying WalletConnect as fallback')
               try {
-                const injectedConnector = connectors.find(c => c.id === 'injected')
-                if (injectedConnector) {
-                  await connect({ connector: injectedConnector })
+                const walletConnectConnector = connectors.find(c => c.id === 'walletConnect')
+                if (walletConnectConnector) {
+                  await connect({ connector: walletConnectConnector })
                   localStorage.setItem('lastConnectedWallet', wallet.id)
-                  localStorage.setItem('lastConnectorId', injectedConnector.id)
+                  localStorage.setItem('lastConnectorId', 'walletConnect')
+                  
+                  // Try to switch network
+                  try {
+                    if (win.ethereum) {
+                      await switchToBSCTestnet(win.ethereum)
+                    }
+                  } catch (networkErr) {
+                    console.warn('⚠️ Network switch error (non-blocking):', networkErr)
+                    setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+                  }
+                  
                   setShowWalletModal(false)
                   setConnecting(false)
                   setConnectingWalletId(null)
                   return
                 }
               } catch (fallbackErr) {
-                console.error('❌ Fallback connection also failed:', fallbackErr)
+                console.error('❌ WalletConnect fallback also failed:', fallbackErr)
               }
             }
             
@@ -341,7 +354,47 @@ export default function ReviewContent() {
             setMetaMaskProvider(null)
           }
         } else {
-          // No provider detected - try using injected connector anyway (for mobile)
+          // PRIORITY 2: No provider detected - try WalletConnect (for mobile wallets without provider)
+          if (isMobile) {
+            console.log('📱 Mobile: No provider detected, trying WalletConnect...')
+            const walletConnectConnector = connectors.find(c => c.id === 'walletConnect')
+            if (walletConnectConnector) {
+              try {
+                console.log('✅ Using WalletConnect for mobile MetaMask (QR code)')
+                await connect({ connector: walletConnectConnector })
+                localStorage.setItem('lastConnectedWallet', wallet.id)
+                localStorage.setItem('lastConnectorId', 'walletConnect')
+                
+                // Try to switch network
+                try {
+                  if (win.ethereum) {
+                    await switchToBSCTestnet(win.ethereum)
+                  }
+                } catch (networkErr) {
+                  console.warn('⚠️ Network switch error (non-blocking):', networkErr)
+                  setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+                }
+                
+                console.log('✅ MetaMask connected via WalletConnect!')
+                setShowWalletModal(false)
+                setConnecting(false)
+                setConnectingWalletId(null)
+                return
+              } catch (wcErr: any) {
+                console.error('❌ WalletConnect failed:', wcErr)
+                const wcErrorMessage = wcErr?.message || wcErr?.toString() || ''
+                if (wcErr?.code === 4001 || wcErrorMessage.includes('rejected') || wcErrorMessage.includes('denied')) {
+                  setError('Wallet connection was rejected. Please try again.')
+                  setConnecting(false)
+                  setConnectingWalletId(null)
+                  return
+                }
+                // Fall through to try injected connector
+              }
+            }
+          }
+          
+          // PRIORITY 3: Fallback - try using injected connector
           console.log('⚠️ No MetaMask provider detected, trying injected connector')
           const injectedConnector = connectors.find(c => c.id === 'injected' || c.id === 'metaMask')
           if (injectedConnector) {
@@ -349,6 +402,17 @@ export default function ReviewContent() {
               await connect({ connector: injectedConnector })
               localStorage.setItem('lastConnectedWallet', wallet.id)
               localStorage.setItem('lastConnectorId', injectedConnector.id)
+              
+              // Try to switch network
+              try {
+                if (win.ethereum) {
+                  await switchToBSCTestnet(win.ethereum)
+                }
+              } catch (networkErr) {
+                console.warn('⚠️ Network switch error (non-blocking):', networkErr)
+                setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+              }
+              
               setShowWalletModal(false)
               setConnecting(false)
               setConnectingWalletId(null)
@@ -356,7 +420,8 @@ export default function ReviewContent() {
             } catch (err: any) {
               console.error('❌ Injected connector failed:', err)
               if (isMobile) {
-                setError('Please open this page in MetaMask mobile browser or install MetaMask extension.')
+                // On mobile, suggest using WalletConnect or opening in wallet browser
+                setError('Please scan the QR code with your mobile wallet app or open this page in MetaMask mobile browser.')
               } else {
                 setError('MetaMask not found. Please install MetaMask extension.')
               }
@@ -366,13 +431,59 @@ export default function ReviewContent() {
             }
           } else {
             if (isMobile) {
-              setError('Please open this page in MetaMask mobile browser or install MetaMask.')
+              setError('Please scan the QR code with your mobile wallet app or open this page in MetaMask mobile browser.')
             } else {
               setError('MetaMask not found. Please install MetaMask extension.')
             }
             setConnecting(false)
             setConnectingWalletId(null)
             return
+          }
+        }
+      }
+      
+      // For Trust Wallet and Coinbase on mobile
+      if ((wallet.id === 'trustwallet' || wallet.id === 'coinbase') && isMobile) {
+        // If provider is detected, connect directly
+        if (wallet.provider) {
+          console.log(`✅ ${wallet.name} provider detected, connecting directly...`)
+          // Will fall through to the general connection logic below
+        } else {
+          // No provider - try WalletConnect
+          console.log(`📱 Mobile: No ${wallet.name} provider detected, trying WalletConnect...`)
+          const walletConnectConnector = connectors.find(c => c.id === 'walletConnect')
+          if (walletConnectConnector) {
+            try {
+              await connect({ connector: walletConnectConnector })
+              localStorage.setItem('lastConnectedWallet', wallet.id)
+              localStorage.setItem('lastConnectorId', 'walletConnect')
+              
+              // Try to switch network
+              try {
+                if (win.ethereum) {
+                  await switchToBSCTestnet(win.ethereum)
+                }
+              } catch (networkErr) {
+                console.warn('⚠️ Network switch error (non-blocking):', networkErr)
+                setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+              }
+              
+              console.log(`✅ ${wallet.name} connected via WalletConnect!`)
+              setShowWalletModal(false)
+              setConnecting(false)
+              setConnectingWalletId(null)
+              return
+            } catch (wcErr: any) {
+              console.warn(`⚠️ WalletConnect failed for ${wallet.name}:`, wcErr)
+              const wcErrorMessage = wcErr?.message || wcErr?.toString() || ''
+              if (wcErr?.code === 4001 || wcErrorMessage.includes('rejected') || wcErrorMessage.includes('denied')) {
+                setError(`${wallet.name} connection was rejected. Please try again.`)
+                setConnecting(false)
+                setConnectingWalletId(null)
+                return
+              }
+              // Fall through to try direct connection
+            }
           }
         }
       }
@@ -950,7 +1061,7 @@ export default function ReviewContent() {
                 ) : submittingToBackend ? (
                   <>
                     <LoadingDots size="sm" color="#ffffff" />
-                    <span>Submitting to Backend...</span>
+                    <span>Submitting...</span>
                   </>
                 ) : (
                   'Confirm blockstamp'
@@ -1056,12 +1167,12 @@ export default function ReviewContent() {
                   {processingPayment ? (
                     <>
                       <LoadingDots size="sm" color="#ffffff" />
-                      <span>Processing transaction...</span>
+                      <span>Processing transaction</span>
                     </>
                   ) : submittingToBackend ? (
                     <>
                       <LoadingDots size="sm" color="#ffffff" />
-                      <span>Submitting to Backend...</span>
+                      <span>Submitting</span>
                     </>
                   ) : (
                     'Confirm blockstamp'

@@ -137,14 +137,14 @@ export default function AdminLogin() {
         </form>
 
         {/* Footer Links */}
-        <div className="mt-6 text-center space-y-2">
+        {/* <div className="mt-6 text-center space-y-2">
           <a href="#" className="text-sm text-gray-600 hover:text-gray-900">
             Forgot your password?
           </a>
           <p className="text-sm text-gray-600">
             Don&apos;t have an account? <a href="#" className="text-blue-600 hover:text-blue-700">Contact administrator</a>
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   )

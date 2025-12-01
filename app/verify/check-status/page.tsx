@@ -49,27 +49,46 @@ export default function CheckStatus() {
       if (result.success && result.data) {
         setStatusData(result.data)
         
-        // Handle different statuses
-        if (result.data.verificationStatus === 'approved') {
+        // Handle different statuses - check both verificationStatus and kycStatus
+        const status = result.data.verificationStatus || result.data.kycStatus
+        
+        console.log('📊 Status check result:', {
+          verificationStatus: result.data.verificationStatus,
+          kycStatus: result.data.kycStatus,
+          finalStatus: status,
+          fullData: result.data
+        })
+        
+        if (status === 'approved') {
           // Redirect to complete screen
           setTimeout(() => {
             router.push('/decentralized-id/complete')
           }, 2000)
-        } else if (result.data.verificationStatus === 'pending' || result.data.verificationStatus === 'submitted') {
-          // Show under review screen
+        } else if (status === 'pending' || status === 'submitted' || status === 'under_review' || status === 'underReview') {
+          // Show under review screen - prioritize pending/under_review over rejected
           setTimeout(() => {
             router.push('/verify/under-review')
           }, 2000)
-        } else if (result.data.verificationStatus === 'cancelled' || result.data.verificationStatus === 'rejected') {
+        } else if (status === 'cancelled' || status === 'rejected') {
           // Show rejected screen with email parameter
           setTimeout(() => {
             router.push(`/verify/rejected?email=${encodeURIComponent(email)}`)
           }, 2000)
-        } else if (result.data.verificationStatus === 'not_found') {
+        } else if (status === 'not_found') {
           // Show verification start screen
           setTimeout(() => {
             router.push('/')
           }, 2000)
+        } else {
+          // Unknown status - default to under review if status exists, otherwise show error
+          if (status) {
+            console.warn('⚠️ Unknown status, defaulting to under review:', status)
+            setTimeout(() => {
+              router.push('/verify/under-review')
+            }, 2000)
+          } else {
+            setError('Status information not available. Please try again.')
+          }
         }
       } else {
         setError(result.message || 'Failed to check status')
@@ -118,15 +137,15 @@ export default function CheckStatus() {
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm font-semibold text-blue-900 mb-2">Status:</p>
                 <p className="text-sm text-blue-800 capitalize mb-1">
-                  {statusData.verificationStatus === 'not_found' 
-                    ? 'Not Found' 
-                    : statusData.verificationStatus === 'approved'
-                    ? 'Approved ✓'
-                    : statusData.verificationStatus === 'pending'
-                    ? 'Pending Review'
-                    : statusData.verificationStatus === 'cancelled'
-                    ? 'Cancelled'
-                    : statusData.verificationStatus}
+                  {(() => {
+                    const status = statusData.verificationStatus || statusData.kycStatus
+                    if (status === 'not_found') return 'Not Found'
+                    if (status === 'approved') return 'Approved ✓'
+                    if (status === 'pending' || status === 'submitted' || status === 'under_review' || status === 'underReview') return 'Under Review'
+                    if (status === 'cancelled') return 'Cancelled'
+                    if (status === 'rejected') return 'Rejected'
+                    return status || 'Unknown'
+                  })()}
                 </p>
                 {statusData.fullName && (
                   <p className="text-xs text-blue-700">Name: {statusData.fullName}</p>
@@ -138,11 +157,14 @@ export default function CheckStatus() {
                   <p className="text-xs text-blue-700 mt-2">{statusData.message}</p>
                 )}
                 <p className="text-xs text-blue-600 mt-2">
-                  {statusData.verificationStatus === 'approved' && 'Redirecting to your verified ID...'}
-                  {statusData.verificationStatus === 'pending' && 'Redirecting to under review page...'}
-                  {statusData.verificationStatus === 'submitted' && 'Redirecting to under review page...'}
-                  {statusData.verificationStatus === 'cancelled' && 'Redirecting...'}
-                  {statusData.verificationStatus === 'not_found' && 'Redirecting to start verification...'}
+                  {(() => {
+                    const status = statusData.verificationStatus || statusData.kycStatus
+                    if (status === 'approved') return 'Redirecting to your verified ID...'
+                    if (status === 'pending' || status === 'submitted' || status === 'under_review' || status === 'underReview') return 'Redirecting to under review page...'
+                    if (status === 'cancelled' || status === 'rejected') return 'Redirecting...'
+                    if (status === 'not_found') return 'Redirecting to start verification...'
+                    return 'Redirecting...'
+                  })()}
                 </p>
               </div>
             )}

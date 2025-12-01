@@ -150,7 +150,7 @@ export default function VerifyIdentity() {
                 <div className="flex flex-col items-center justify-center gap-3">
                   <LoadingDots size="lg" color="#2563eb" />
                   <div className="text-center">
-                    <p className="text-base font-bold text-blue-900 mb-1">Uploading your documents to backend...</p>
+                    <p className="text-base font-bold text-blue-900 mb-1">Uploading...</p>
                     <p className="text-sm text-blue-700">Please wait, this may take a moment</p>
                   </div>
                 </div>
@@ -224,7 +224,7 @@ export default function VerifyIdentity() {
                   <div className="flex flex-col items-center justify-center gap-4">
                     <LoadingDots size="lg" color="#2563eb" />
                     <div className="text-center">
-                      <p className="text-lg font-bold text-blue-900 mb-2">Uploading your documents to backend...</p>
+                      <p className="text-lg font-bold text-blue-900 mb-2">Uploading...</p>
                       <p className="text-sm text-blue-700">Please wait, this may take a moment</p>
                     </div>
                   </div>

@@ -467,6 +467,9 @@ export const updateKYCDocuments = async (data: {
     // Required field
     formData.append('email', data.email)
     
+    // Set status to pending when documents are updated (for resubmission after rejection)
+    formData.append('status', 'pending')
+    
     // Optional fields
     if (data.idType) {
       formData.append('idType', data.idType)
@@ -516,6 +519,16 @@ export const updateKYCDocuments = async (data: {
     
     const result = await response.json()
     console.log('✅ Update successful:', result)
+    
+    // Log status information from response
+    if (result.data) {
+      console.log('📊 Response data status:', {
+        kycStatus: result.data.kycStatus,
+        verificationStatus: result.data.verificationStatus,
+        email: result.data.email
+      })
+    }
+    
     return result
   } catch (error: any) {
     console.error('❌ Error updating documents:', error)

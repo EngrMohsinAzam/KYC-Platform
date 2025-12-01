@@ -129,9 +129,9 @@ function isMetaMaskMobileInstalled(): boolean {
     }
   }
   
-  // On mobile, if we have any ethereum provider, assume MetaMask mobile might be available
+  // On mobile, always assume MetaMask mobile app might be available
   // The deep link will handle the actual connection
-  if (isMobileDevice() && win.ethereum) {
+  if (isMobileDevice()) {
     return true
   }
   
@@ -172,7 +172,8 @@ export function detectInstalledWallets(): DetectedWallet[] {
           // On mobile, check if MetaMask mobile app might be available
           // Even if window.ethereum doesn't have isMetaMask, the mobile app can be opened via deep link
           provider = providers.find((p: any) => p.isMetaMask) || win.ethereum
-          isInstalled = isMetaMaskMobileInstalled() || !!provider
+          // On mobile, always show MetaMask as available (can use deep link or WalletConnect)
+          isInstalled = true
         } else {
           // Desktop: check for browser extension
           provider = providers.find((p: any) => p.isMetaMask)
@@ -183,13 +184,15 @@ export function detectInstalledWallets(): DetectedWallet[] {
       case 'trustwallet':
         // Check for Trust Wallet
         provider = providers.find((p: any) => p.isTrust || p.isTrustWallet)
-        isInstalled = !!provider
+        // On mobile, always show Trust Wallet as available (can use deep link or WalletConnect)
+        isInstalled = isMobile ? true : !!provider
         break
 
       case 'coinbase':
         // Check for Coinbase Wallet
         provider = providers.find((p: any) => p.isCoinbaseWallet)
-        isInstalled = !!provider
+        // On mobile, always show Coinbase Wallet as available (can use deep link or WalletConnect)
+        isInstalled = isMobile ? true : !!provider
         break
 
       case 'brave':

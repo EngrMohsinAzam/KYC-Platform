@@ -10,7 +10,7 @@ import { useAccount, useConnect } from 'wagmi'
 import { getContractBalance, getTotalCollectedFees, getTotalWithdrawals, verifyOwner, withdrawContractFunds } from '@/lib/web3'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts'
 import Link from 'next/link'
-import { LoadingPage } from '@/components/ui/LoadingDots'
+import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
 
 export default function AdminDashboard() {
   const router = useRouter()
@@ -305,9 +305,10 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount
 
-  // Helper function to normalize status to only pending, approved, or cancelled
-  const normalizeStatus = (status: string): 'pending' | 'approved' | 'cancelled' => {
+  // Helper function to normalize status to pending, approved, rejected, or cancelled
+  const normalizeStatus = (status: string): 'pending' | 'approved' | 'rejected' | 'cancelled' => {
     if (status === 'approved') return 'approved'
+    if (status === 'rejected') return 'rejected'
     if (status === 'cancelled') return 'cancelled'
     // Everything else becomes pending
     return 'pending'
@@ -418,9 +419,9 @@ export default function AdminDashboard() {
       }
 
       // Load users
-      // Normalize status filter: only allow pending, approved, cancelled
+      // Normalize status filter: allow pending, approved, rejected, cancelled
       let normalizedStatus = statusFilter
-      if (statusFilter !== 'all' && !['pending', 'approved', 'cancelled'].includes(statusFilter)) {
+      if (statusFilter !== 'all' && !['pending', 'approved', 'rejected', 'cancelled'].includes(statusFilter)) {
         normalizedStatus = 'pending' // Show as pending if unknown status
       }
 
@@ -447,7 +448,7 @@ export default function AdminDashboard() {
       }
 
       if (usersResult.success && usersResult.data) {
-        // Normalize user statuses: map any non-standard statuses to pending
+        // Normalize user statuses: map any non-standard statuses appropriately
         const normalizedUsers = usersResult.data.users.map((user: User) => {
           const normalizedStatus = normalizeStatus(user.kycStatus)
           return {
@@ -681,6 +682,7 @@ export default function AdminDashboard() {
                       <option value="all">All Status</option>
                       <option value="pending">Pending</option>
                       <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
                   </div>
@@ -1058,19 +1060,21 @@ function UserTable({ users }: { users: User[] }) {
   const router = useRouter()
 
   const getStatusBadge = (status: string) => {
-    // Normalize status: only show pending, approved, cancelled
-    const normalizedStatus = ['pending', 'approved', 'cancelled'].includes(status)
+    // Normalize status: show pending, approved, rejected, cancelled
+    const normalizedStatus = ['pending', 'approved', 'rejected', 'cancelled'].includes(status)
       ? status
       : 'pending'
 
     const statusClasses = {
       approved: 'bg-green-100 text-green-800',
       pending: 'bg-yellow-100 text-yellow-800',
+      rejected: 'bg-red-100 text-red-800',
       cancelled: 'bg-red-100 text-red-800',
     }
     const statusLabels = {
       approved: 'Approved',
       pending: 'Pending',
+      rejected: 'Rejected',
       cancelled: 'Cancelled',
     }
     return (
