@@ -174,7 +174,7 @@ export default function VerifyIdentity() {
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 text-sm mb-0.5">Identity document</h3>
                     <p className="text-xs text-gray-400">
-                      {documentComplete ? 'Document uploaded ✓' : 'Take a photo of your ID'}
+                      {documentComplete ? 'Document uploaded ' : 'Take a photo of your ID'}
                     </p>
                   </div>
                 </div>
@@ -195,7 +195,7 @@ export default function VerifyIdentity() {
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 text-sm mb-0.5">Selfie</h3>
                     <p className="text-xs text-gray-400">
-                      {state.selfieImage ? 'Selfie uploaded ✓' : 'Take a selfie'}
+                      {state.selfieImage ? 'Selfie uploaded ' : 'Take a selfie'}
                     </p>
                   </div>
                 </div>
@@ -261,7 +261,7 @@ export default function VerifyIdentity() {
                       {documentComplete 
                         ? needsBackSide 
                           ? 'Front and back sides uploaded ✓' 
-                          : 'Document uploaded ✓'
+                          : 'Document uploaded '
                         : 'Take a photo of your ID'}
                     </p>
                   </div>
@@ -298,7 +298,7 @@ export default function VerifyIdentity() {
                       )}
                     </div>
                     <p className="text-sm text-gray-500">
-                      {state.selfieImage ? 'Selfie uploaded ✓' : 'Take a selfie'}
+                      {state.selfieImage ? 'Selfie uploaded ' : 'Take a selfie'}
                     </p>
                   </div>
 

@@ -611,12 +611,13 @@ export default function AdminDashboard() {
             icon="dollar"
             color="yellow"
           />
-          <SummaryCard
-            title="Connected Wallets"
-            value={stats?.users?.total || 0}
-            subtitle="Unique addresses"
-            icon="wallet"
-            color="purple"
+          <FinancialCard
+            title="Contract Balance"
+            value={loadingContractData ? 'Loading...' : `${contractBalance ? parseFloat(contractBalance).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 }) : '0.00000000'} BNB`}
+            change="Current amount"
+            changeType="positive"
+            icon="dollar"
+            color="green"
           />
         </div>
 
@@ -813,20 +814,22 @@ function SummaryCard({ title, value, icon, color, subtitle, onClick, clickable }
       className={`bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-5 lg:p-6 ${clickable ? 'cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]' : ''}`}
       onClick={clickable ? onClick : undefined}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0 pr-2">
-          <p className="text-[10px] sm:text-xs md:text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 break-words leading-tight">{value}</p>
-          {subtitle && (
-            <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5 sm:mt-1">{subtitle}</p>
-          )}
-        </div>
-        <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center flex-shrink-0 border-2 ${colorClasses[color as keyof typeof colorClasses]}`}>
+      <div className="flex items-start justify-between mb-2 sm:mb-3 md:mb-4">
+        <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">{title}</p>
+        <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 rounded-full flex items-center justify-center flex-shrink-0 ml-2 border-2 ${colorClasses[color as keyof typeof colorClasses]}`}>
           <div className="scale-75 sm:scale-90 md:scale-100">
             {iconComponents[icon as keyof typeof iconComponents] || <span>{icon}</span>}
           </div>
         </div>
       </div>
+      <p className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-gray-900 mb-1.5 sm:mb-2 break-words leading-tight">{value}</p>
+      {subtitle && (
+        <div className="flex items-center gap-1">
+          <p className="text-[10px] sm:text-xs font-medium text-gray-600">
+            {subtitle}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -843,6 +846,7 @@ function FinancialCard({ title, value, change, changeType, icon, color }: {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600 border-blue-200',
     yellow: 'bg-yellow-50 text-yellow-600 border-yellow-200',
+    green: 'bg-green-50 text-green-600 border-green-200',
   }
 
   const iconComponent = (
@@ -881,7 +885,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   return (
     <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-200 p-3 sm:p-4 md:p-6">
       <h3 className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 md:mb-4 lg:mb-6">{title}</h3>
-      <div className="w-full overflow-x-auto">
+      <div className="w-full overflow-hidden">
         {children}
       </div>
     </div>
@@ -990,37 +994,39 @@ function StatusPieChart({ stats }: { stats: any }) {
   }
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
-      <PieChart>
-        <Pie
-          data={data}
-          cx="50%"
-          cy="50%"
-          labelLine={false}
-          label={false}
-          outerRadius={80}
-          innerRadius={0}
-          fill="#8884d8"
-          dataKey="value"
-          startAngle={90}
-          endAngle={-270}
-        >
-          {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip />
-        <Legend
-          verticalAlign="bottom"
-          height={36}
-          formatter={(value: string) => {
-            const item = data.find(d => d.name === value)
-            return `${value} ${item?.percentage || 0}%`
-          }}
-          iconType="circle"
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="w-full overflow-hidden">
+      <ResponsiveContainer width="100%" height={250}>
+        <PieChart>
+          <Pie
+            data={data}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            label={false}
+            outerRadius={80}
+            innerRadius={0}
+            fill="#8884d8"
+            dataKey="value"
+            startAngle={90}
+            endAngle={-270}
+          >
+            {data.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend
+            verticalAlign="bottom"
+            height={36}
+            formatter={(value: string) => {
+              const item = data.find(d => d.name === value)
+              return `${value} ${item?.percentage || 0}%`
+            }}
+            iconType="circle"
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
   )
 }
 
@@ -1130,7 +1136,7 @@ function UserTable({ users }: { users: User[] }) {
                 <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Document</th>
                 <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden sm:table-cell">Date</th>
                 <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                <th className="px-2 sm:px-4 pr-3 sm:pr-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -1162,12 +1168,12 @@ function UserTable({ users }: { users: User[] }) {
                 <td className="px-2 sm:px-4 py-4 whitespace-nowrap">
                   {getStatusBadge(user.kycStatus)}
                 </td>
-                <td className="px-2 sm:px-4 py-4 whitespace-nowrap">
+                <td className="px-2 sm:px-4 pr-3 sm:pr-4 py-4 whitespace-nowrap">
                   <button
                     onClick={() => router.push(`/admin/users/${user.email}`)}
-                    className="inline-flex items-center gap-1 px-2 sm:px-3 py-1.5 bg-black text-white rounded-md hover:bg-black/80 transition-colors text-xs font-medium"
+                    className="inline-flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 bg-black text-white rounded-md hover:bg-black/80 transition-colors text-xs font-medium min-w-[32px] sm:min-w-0"
                   >
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
@@ -1308,10 +1314,10 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
           const ownerStatus = await verifyOwner(address)
           setIsOwner(ownerStatus)
           
-          if (!ownerStatus) {
-            setError('Only the contract owner can withdraw funds. Please connect the owner wallet.')
-            return
-          }
+          // if (!ownerStatus) {
+          //   setError('Only the contract owner can withdraw funds. Please connect the owner wallet.')
+          //   return
+          // }
           
           // If owner, refresh contract balance to ensure it's up to date
           const balance = await getContractBalance()
@@ -1423,13 +1429,13 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
             </div>
           )}
 
-          {!isConnected && (
+          {/* {!isConnected && (
             <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-sm text-yellow-800">
                 Please connect your wallet to verify ownership and view contract balance.
               </p>
             </div>
-          )}
+          )} */}
 
           {isConnected && address && (
             <div className="space-y-3">
