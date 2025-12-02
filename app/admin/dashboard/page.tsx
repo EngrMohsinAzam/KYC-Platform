@@ -1136,7 +1136,7 @@ function UserTable({ users }: { users: User[] }) {
                 <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden lg:table-cell">Document</th>
                 <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider hidden sm:table-cell">Date</th>
                 <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Status</th>
-                <th className="px-2 sm:px-4 pr-3 sm:pr-4 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
+                <th className="pl-2 sm:pl-4 pr-6 sm:pr-8 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
         <tbody className="bg-white divide-y divide-gray-200">
