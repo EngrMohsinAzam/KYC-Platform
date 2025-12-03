@@ -272,7 +272,7 @@ export default function Home() {
 
                 {/* Description */}
                 <p className="text-sm text-gray-600 mb-8 leading-relaxed">
-                  In accordance with local laws and regulations identity verification is required to access deposit and withdrawal functions. Institutional users must complete the process via the official Bitget website.
+                  In accordance with local laws and regulations identity verification is required to access deposit and withdrawal functions. Institutional users must complete the process via the official MIRA website.
                 </p>
 
                 {/* Requirements Section */}
@@ -383,7 +383,7 @@ export default function Home() {
                       Complete identity verification in five minutes
                     </h2>
                     <p className="text-base text-gray-600 mb-6 leading-relaxed">
-                      In accordance with local laws and regulations identity verification is required to access deposit and withdrawal functions. Institutional users must complete the process via the official Bitget website.
+                      In accordance with local laws and regulations identity verification is required to access deposit and withdrawal functions. Institutional users must complete the process via the official MIRA website.
                     </p>
 
                     <div className="space-y-4 mb-6">

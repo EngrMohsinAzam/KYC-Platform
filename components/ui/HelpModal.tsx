@@ -27,14 +27,14 @@ export function HelpModal({ isOpen, onClose, videoUrl }: HelpModalProps) {
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
-      <div className="p-6">
-        <h2 className="text-xl font-bold text-text-primary mb-4">
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-sm">
+      <div className="p-4">
+        <h2 className="text-lg font-bold text-text-primary mb-3">
           Watch this video
         </h2>
 
-        <div className="mb-6">
-          <div className="relative w-full rounded-lg aspect-video bg-black overflow-hidden mb-4">
+        <div className="mb-4">
+          <div className="relative w-full rounded-lg aspect-video bg-black overflow-hidden">
             {videoId ? (
               <iframe
                 className="w-full h-full"
@@ -50,10 +50,10 @@ export function HelpModal({ isOpen, onClose, videoUrl }: HelpModalProps) {
                   href={defaultVideoUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center hover:bg-opacity-30 transition-colors"
+                  className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center hover:bg-opacity-30 transition-colors"
                   aria-label="Play video"
                 >
-                  <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </a>
@@ -62,13 +62,13 @@ export function HelpModal({ isOpen, onClose, videoUrl }: HelpModalProps) {
           </div>
         </div>
 
-        <div className="mb-6">
-          <h3 className="text-lg font-bold text-text-primary mb-3">
+        <div className="mb-4">
+          <h3 className="text-base font-bold text-text-primary mb-2">
             Video didn&apos;t help?
           </h3>
         </div>
 
-        <Button onClick={handleContactSupport}>
+        <Button onClick={handleContactSupport} className="w-full">
           Contact support
         </Button>
       </div>

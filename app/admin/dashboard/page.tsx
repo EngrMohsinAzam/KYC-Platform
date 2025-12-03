@@ -12,11 +12,108 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import Link from 'next/link'
 import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
 
+// Helper function to calculate trends data from users
+function calculateTrendsData(users: User[]): any[] {
+  console.log('📊 Calculating trends data from', users.length, 'users')
+  
+  // Get last 7 months
+  const months: string[] = []
+  const monthData: { [key: string]: { approved: number; pending: number; cancelled: number } } = {}
+  const monthDates: { [key: string]: { year: number; month: number } } = {}
+  
+  // Initialize last 7 months
+  const now = new Date()
+  for (let i = 6; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const monthKey = date.toLocaleDateString('en-US', { month: 'short' })
+    months.push(monthKey)
+    monthData[monthKey] = { approved: 0, pending: 0, cancelled: 0 }
+    monthDates[monthKey] = { year: date.getFullYear(), month: date.getMonth() }
+  }
+
+  console.log('📅 Months to track:', months)
+  console.log('📅 Month dates:', monthDates)
+
+  // Process users and group by month
+  let processedCount = 0
+  let skippedCount = 0
+  
+  users.forEach((user) => {
+    if (!user.submittedAt) {
+      skippedCount++
+      return
+    }
+
+    try {
+      const submittedDate = new Date(user.submittedAt)
+      
+      // Check if date is valid
+      if (isNaN(submittedDate.getTime())) {
+        console.warn('⚠️ Invalid date for user:', user.email, user.submittedAt)
+        skippedCount++
+        return
+      }
+
+      const submittedYear = submittedDate.getFullYear()
+      const submittedMonth = submittedDate.getMonth()
+      
+      // Find the matching month in our tracking range by comparing year and month
+      let matchedMonthKey: string | null = null
+      for (const [monthKey, monthInfo] of Object.entries(monthDates)) {
+        if (monthInfo.year === submittedYear && monthInfo.month === submittedMonth) {
+          matchedMonthKey = monthKey
+          break
+        }
+      }
+      
+      // If we found a match, count the user
+      if (matchedMonthKey && monthData[matchedMonthKey]) {
+        const status = user.kycStatus?.toLowerCase() || ''
+        
+        if (status === 'approved') {
+          monthData[matchedMonthKey].approved++
+          processedCount++
+        } else if (status === 'pending' || status === 'submitted' || status === 'under_review') {
+          monthData[matchedMonthKey].pending++
+          processedCount++
+        } else if (status === 'cancelled' || status === 'rejected') {
+          monthData[matchedMonthKey].cancelled++
+          processedCount++
+        } else {
+          // Count other statuses as pending
+          monthData[matchedMonthKey].pending++
+          processedCount++
+        }
+      } else {
+        skippedCount++
+      }
+    } catch (error) {
+      console.warn('⚠️ Error processing user date:', user.email, user.submittedAt, error)
+      skippedCount++
+    }
+  })
+
+  console.log('✅ Processed', processedCount, 'users, skipped', skippedCount)
+  console.log('📊 Month data:', monthData)
+
+  // Convert to array format
+  const result = months.map((month) => ({
+    month,
+    approved: monthData[month].approved,
+    pending: monthData[month].pending,
+    cancelled: monthData[month].cancelled,
+  }))
+
+  console.log('📈 Final trends data:', result)
+  return result
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null) // null = checking, true = authenticated, false = not authenticated
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<any>(null)
+  const [trendsData, setTrendsData] = useState<any[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
@@ -458,6 +555,31 @@ export default function AdminDashboard() {
         })
         setUsers(normalizedUsers)
       }
+
+      // Load trends data - fetch all users for trends calculation
+      console.log('📈 Loading trends data...')
+      const trendsResult = await getUsers({
+        page: 1,
+        limit: 1000, // Fetch a large number to get all users for trends
+        sortBy: 'submittedAt',
+        sortOrder: 'desc',
+      })
+
+      if (trendsResult.success && trendsResult.data) {
+        const allUsers = trendsResult.data.users || []
+        console.log('📊 Fetched', allUsers.length, 'users for trends')
+        console.log('📊 Sample user data:', allUsers.slice(0, 3).map((u: User) => ({
+          email: u.email,
+          submittedAt: u.submittedAt,
+          kycStatus: u.kycStatus
+        })))
+        const trends = calculateTrendsData(allUsers)
+        setTrendsData(trends)
+        console.log('✅ Trends data loaded and set:', trends)
+      } else {
+        console.error('❌ Failed to load trends data:', trendsResult.message)
+        setTrendsData([])
+      }
     } catch (error: any) {
       console.error('Error loading dashboard:', error)
       // If error is due to authentication, redirect to login
@@ -626,7 +748,7 @@ export default function AdminDashboard() {
           {/* KYC Verification Trends - 65% width */}
           <div className="w-full lg:w-[65%]">
             <ChartCard title="KYC Verification Trends">
-              <TrendsChart stats={stats} />
+              <TrendsChart stats={stats} trendsData={trendsData} />
             </ChartCard>
           </div>
 
@@ -893,32 +1015,37 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 }
 
 // Trends Chart Component
-function TrendsChart({ stats }: { stats: any }) {
+function TrendsChart({ stats, trendsData }: { stats: any; trendsData: any[] }) {
+  console.log('📊 TrendsChart received trendsData:', trendsData)
+  
+  // Use real trends data if available, otherwise fallback to empty data
+  const data = trendsData && trendsData.length > 0 ? trendsData : [
+    { month: 'Jan', approved: 0, pending: 0, cancelled: 0 },
+    { month: 'Feb', approved: 0, pending: 0, cancelled: 0 },
+    { month: 'Mar', approved: 0, pending: 0, cancelled: 0 },
+    { month: 'Apr', approved: 0, pending: 0, cancelled: 0 },
+    { month: 'May', approved: 0, pending: 0, cancelled: 0 },
+    { month: 'Jun', approved: 0, pending: 0, cancelled: 0 },
+    { month: 'Jul', approved: 0, pending: 0, cancelled: 0 },
+  ]
 
-  const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov']
+  console.log('📊 TrendsChart using data:', data)
 
-  // Generate sample data based on stats - matching the design
-  const data = months.map((month, index) => {
-    // Approved starts around 100 and grows to ~500
-    const approved = 100 + (index * 70)
-    // Pending stays relatively flat between 0-50
-    const pending = 20 + (index % 3) * 10
-    // Cancelled stays relatively flat between 0-50
-    const cancelled = 10 + (index % 2) * 5
-    return {
-      month,
-      approved: approved,
-      pending: pending,
-      cancelled: cancelled,
-    }
-  })
+  // Calculate max value for Y-axis domain
+  const maxValue = Math.max(
+    ...data.map(d => Math.max(d.approved, d.pending, d.cancelled)),
+    10 // Minimum domain of 10
+  )
+  const yAxisMax = Math.ceil(maxValue * 1.2) // Add 20% padding
+  
+  console.log('📊 TrendsChart Y-axis max:', yAxisMax)
 
   return (
     <ResponsiveContainer width="100%" height={250}>
       <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
         <XAxis dataKey="month" stroke="#6b7280" />
-        <YAxis domain={[0, 600]} stroke="#6b7280" />
+        <YAxis domain={[0, yAxisMax]} stroke="#6b7280" />
         <Tooltip />
         <Legend wrapperStyle={{ paddingTop: '20px' }} />
         <Line

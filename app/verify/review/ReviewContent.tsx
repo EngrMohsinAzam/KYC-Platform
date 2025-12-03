@@ -8,6 +8,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { WalletSelectionModal } from '@/components/wallet/WalletSelectionModal'
+import { HelpModal } from '@/components/ui/HelpModal'
 import { useAccount, useConnect } from 'wagmi'
 import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/lib/web3'
 import { submitKYCData } from '@/lib/api'
@@ -26,6 +27,7 @@ export default function ReviewContent() {
   const { connect, connectors } = useConnect()
   
   const [showWalletModal, setShowWalletModal] = useState(false)
+  const [showHelpModal, setShowHelpModal] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null)
   const [networkError, setNetworkError] = useState<string | null>(null)
@@ -1015,9 +1017,16 @@ export default function ReviewContent() {
 
               {/* Help Link */}
               <div className="mb-6 text-center">
-                <a href="#" className="text-sm text-blue-600 hover:underline">
+                <button 
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    setShowHelpModal(true)
+                  }}
+                  className="text-sm text-blue-600 hover:underline cursor-pointer bg-transparent border-none p-0 font-normal"
+                >
                   Need help? Click here
-                </a>
+                </button>
               </div>
 
               {/* Wallet Connection Section */}
@@ -1056,12 +1065,12 @@ export default function ReviewContent() {
                 {processingPayment ? (
                   <>
                     <LoadingDots size="sm" color="#ffffff" />
-                    <span>Processing transaction...</span>
+                    <span>Processing transaction</span>
                   </>
                 ) : submittingToBackend ? (
                   <>
                     <LoadingDots size="sm" color="#ffffff" />
-                    <span>Submitting...</span>
+                    <span>Submitting</span>
                   </>
                 ) : (
                   'Confirm blockstamp'
@@ -1108,18 +1117,18 @@ export default function ReviewContent() {
 
                 {/* ID Details Section - Always show */}
                 <div className="bg-gray-100 rounded-lg p-4 mb-6 space-y-3">
-                  <div className="flex justify-between items-center">
+                  {/* <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">ID Number</span>
                     <span className="text-sm font-semibold text-gray-900">
                       {idNumber}
                     </span>
-                  </div>
+                  </div> */}
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-700">Estimated gas fee</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {isConnected && loadingTransactionData ? 'Calculating...' : displayGasFee}
-                    </span>
-                  </div>
+  <span className="text-sm text-gray-700">Estimated gas fee</span>
+  <span className="text-sm font-semibold text-gray-900">
+    0.05 USD
+  </span>
+</div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-700">Blockchain</span>
                     <span className="text-sm font-semibold text-gray-900">
@@ -1130,9 +1139,16 @@ export default function ReviewContent() {
 
                 {/* Help Link */}
                 <div className="mb-6 text-center">
-                  <a href="#" className="text-sm text-blue-600 hover:underline">
+                  <button 
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault()
+                      setShowHelpModal(true)
+                    }}
+                    className="text-sm text-blue-600 hover:underline cursor-pointer bg-transparent border-none p-0 font-normal"
+                  >
                     Need help? Click here
-                  </a>
+                  </button>
                 </div>
 
                 {/* Wallet Connection Section */}
@@ -1156,7 +1172,7 @@ export default function ReviewContent() {
                   disabled={connecting}
                   className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg py-3 font-medium"
                 >
-                  {connecting ? 'Connecting...' : 'Connect wallet'}
+                  {connecting ? 'Connecting' : 'Connect wallet'}
                 </Button>
               ) : (
                 <Button
@@ -1194,6 +1210,12 @@ export default function ReviewContent() {
         onWalletSelect={handleWalletSelect}
         connectingWalletId={connectingWalletId}
         error={error}
+      />
+
+      {/* Help Modal */}
+      <HelpModal
+        isOpen={showHelpModal}
+        onClose={() => setShowHelpModal(false)}
       />
     </div>
   )
