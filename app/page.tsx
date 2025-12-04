@@ -1,16 +1,38 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { HelpModal } from '@/components/ui/HelpModal'
 import { useAppContext } from '@/context/useAppContext'
-import { isMetaMaskInstalled, connectWallet, getNetworkInfo, getKYCStatusFromContract } from '@/lib/web3'
-import { checkStatusByEmail } from '@/lib/api'
 import { Input } from '@/components/ui/Input'
+
+// Lazy load heavy components - only load when needed
+const HelpModal = dynamic(() => import('@/components/ui/HelpModal').then(mod => ({ default: mod.HelpModal })), {
+  ssr: false,
+  loading: () => null,
+})
+
+// Lazy load blockchain functions - defer until wallet connection is needed
+let blockchainFunctions: any = null
+const loadBlockchainFunctions = async () => {
+  if (!blockchainFunctions) {
+    blockchainFunctions = await import('@/lib/web3')
+  }
+  return blockchainFunctions
+}
+
+// Lazy load API functions
+let apiFunctions: any = null
+const loadApiFunctions = async () => {
+  if (!apiFunctions) {
+    apiFunctions = await import('@/lib/api')
+  }
+  return apiFunctions
+}
 
 declare global {
   interface Window {
@@ -37,28 +59,37 @@ export default function Home() {
   const [emailStatus, setEmailStatus] = useState<any>(null)
   const [showEmailInput, setShowEmailInput] = useState(false)
 
+  // Defer wallet check - only run if wallet is connected
   useEffect(() => {
+    if (!state.connectedWallet) {
+      setCheckingWallet(false)
+      return
+    }
+    
     setCheckingWallet(true)
     
     const checkExistingWallet = async () => {
-      if (state.connectedWallet && isMetaMaskInstalled()) {
-        try {
+      try {
+        // Lazy load blockchain functions only when needed
+        const { isMetaMaskInstalled } = await loadBlockchainFunctions()
+        
+        if (isMetaMaskInstalled() && window.ethereum && state.connectedWallet) {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' })
           if (accounts && accounts.length > 0 && accounts[0].toLowerCase() === state.connectedWallet.toLowerCase()) {
             setCheckingWallet(false)
             return
           }
-        } catch (err) {
-          console.warn('Error checking existing wallet:', err)
         }
+      } catch (err) {
+        console.warn('Error checking existing wallet:', err)
       }
       setCheckingWallet(false)
     }
     
     checkExistingWallet()
-  }, [dispatch])
+  }, [state.connectedWallet])
   
-  const handleEmailSubmit = async () => {
+  const handleEmailSubmit = useCallback(async () => {
     if (!email) {
       setEmailError('Please enter your email address')
       return
@@ -73,6 +104,8 @@ export default function Home() {
     setEmailError(null)
 
     try {
+      // Lazy load API functions only when submitting
+      const { checkStatusByEmail } = await loadApiFunctions()
       const result = await checkStatusByEmail(email)
       
       if (result.success && result.data) {
@@ -157,9 +190,13 @@ export default function Home() {
     } finally {
       setCheckingEmail(false)
     }
-  }
+  }, [email, state.personalInfo, dispatch, router])
 
-  const handleConnectWallet = async () => {
+  const handleConnectWallet = useCallback(async () => {
+    // Lazy load blockchain functions only when connecting wallet
+    const blockchain = await loadBlockchainFunctions()
+    const { isMetaMaskInstalled, connectWallet, getNetworkInfo, getKYCStatusFromContract } = blockchain
+    
     if (!isMetaMaskInstalled()) {
       alert('MetaMask is not installed. Please install MetaMask to continue.')
       return
@@ -224,7 +261,7 @@ export default function Home() {
     } finally {
       setConnecting(false)
     }
-  }
+  }, [dispatch, router])
 
   return (
     <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">

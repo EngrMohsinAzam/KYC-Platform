@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { memo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 interface HeaderProps {
@@ -12,27 +12,27 @@ interface HeaderProps {
   onClose?: () => void
 }
 
-export function Header({ showBack = false, showClose = false, showInfo = false, title, onBack, onClose }: HeaderProps) {
+export const Header = memo(function Header({ showBack = false, showClose = false, showInfo = false, title, onBack, onClose }: HeaderProps) {
   const router = useRouter()
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (onBack) {
       onBack()
     } else {
       router.back()
     }
-  }
+  }, [onBack, router])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (onClose) {
       onClose()
     } else {
       router.push('/')
     }
-  }
+  }, [onClose, router])
 
   return (
-    <header className="flex items-center justify-between p-3 md:p-4 bg-white relative border-b border-gray-200 md:border-b-0 z-[100] sticky top-0 md:static shadow-sm md:shadow-none w-full">
+    <header className="flex items-center justify-between p-3 md:p-4 bg-white border-b border-gray-200 md:border-b-0 z-[100] sticky top-0 md:static shadow-sm md:shadow-none w-full">
       <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0">
         {showBack && (
           <button
@@ -76,5 +76,5 @@ export function Header({ showBack = false, showClose = false, showInfo = false, 
       </div>
     </header>
   )
-}
+})
 

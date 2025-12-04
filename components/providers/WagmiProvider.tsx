@@ -3,9 +3,29 @@
 import { WagmiProvider as WagmiProviderBase } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { wagmiConfig } from '@/lib/wagmi-config'
-import { ReactNode, useEffect } from 'react'
+import { ReactNode, useState, useMemo } from 'react'
 
-const queryClient = new QueryClient()
+// Optimized QueryClient configuration for mobile performance
+const createQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Reduce refetch frequency on mobile to save battery and data
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: true,
+      // Cache for 5 minutes
+      staleTime: 5 * 60 * 1000,
+      // Keep cache for 10 minutes
+      gcTime: 10 * 60 * 1000,
+      // Retry only once on mobile for faster error handling
+      retry: 1,
+      retryDelay: 1000,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+})
 
 interface WagmiProviderProps {
   children: ReactNode
@@ -92,6 +112,9 @@ if (typeof window !== 'undefined') {
 }
 
 export function WagmiProvider({ children }: WagmiProviderProps) {
+  // Create queryClient only once per app instance
+  const [queryClient] = useState(() => createQueryClient())
+  
   return (
     <WagmiProviderBase config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>

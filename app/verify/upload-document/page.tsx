@@ -465,28 +465,41 @@ export default function UploadDocument() {
     }
   }, [state.documentImageFront, state.documentImageBack])
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       setIsUploading(true)
       const reader = new FileReader()
-      reader.onloadend = () => {
-        setTimeout(() => {
-          const result = reader.result as string
-          if (currentSide === 'front') {
-            // Only save front image, don't auto-switch
-            setFrontImage(result)
-            dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: result })
-            dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: result })
-            console.log('✅ Front image saved. User must click Continue to upload back side.')
-          } else if (currentSide === 'back') {
-            // Save back image separately
-            setBackImage(result)
-            dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: result })
-            console.log('✅ Back image saved.')
-          }
+      reader.onloadend = async () => {
+        try {
+          let result = reader.result as string
+          
+          // Optional: Compress image for mobile performance (reduces memory usage)
+          // Uncomment the following lines to enable compression:
+          // if (result && result.length > 500000) { // Only compress if > 500KB
+          //   const { compressBase64Image } = await import('@/lib/image-utils')
+          //   result = await compressBase64Image(result, 1920, 0.85)
+          // }
+          
+          setTimeout(() => {
+            if (currentSide === 'front') {
+              // Only save front image, don't auto-switch
+              setFrontImage(result)
+              dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: result })
+              dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: result })
+              console.log('✅ Front image saved. User must click Continue to upload back side.')
+            } else if (currentSide === 'back') {
+              // Save back image separately
+              setBackImage(result)
+              dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: result })
+              console.log('✅ Back image saved.')
+            }
+            setIsUploading(false)
+          }, 800)
+        } catch (error) {
+          console.error('Error processing image:', error)
           setIsUploading(false)
-        }, 800)
+        }
       }
       reader.readAsDataURL(file)
     }

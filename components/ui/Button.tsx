@@ -1,11 +1,11 @@
-import React from 'react'
+import React, { memo } from 'react'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary'
   children: React.ReactNode
 }
 
-export function Button({ variant = 'primary', children, className = '', ...props }: ButtonProps) {
+export const Button = memo(function Button({ variant = 'primary', children, className = '', ...props }: ButtonProps) {
   const baseStyles = 'w-full rounded-button px-6 py-3 font-semibold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2'
   
   const variants = {
@@ -21,5 +21,5 @@ export function Button({ variant = 'primary', children, className = '', ...props
       {children}
     </button>
   )
-}
+})
 

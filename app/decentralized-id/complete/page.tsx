@@ -131,10 +131,10 @@ export default function VerificationComplete() {
               <p className="text-sm text-accent-green font-semibold mb-2">Verified by Blockchain</p>
             </div>
 
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <p className="text-sm opacity-90 mb-1">Anonymous ID:</p>
               <p className="text-xl font-bold">{anonymousId}</p>
-            </div>
+            </div> */}
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>

@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation'
 import { getAdminToken, removeAdminToken, getDashboardStats, getUsers, User } from '@/lib/admin-api'
 import { useAccount, useConnect } from 'wagmi'
 import { getContractBalance, getTotalCollectedFees, getTotalWithdrawals, verifyOwner, withdrawContractFunds } from '@/lib/web3'
+// Recharts is code-split via webpack config - loaded only on admin dashboard
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts'
 import Link from 'next/link'
 import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
