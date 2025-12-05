@@ -1,17 +1,42 @@
 'use client'
 
-// Force dynamic rendering - this page uses client-side only features (wagmi)
-export const dynamic = 'force-dynamic'
+// This page uses client-side only features (wagmi)
+// Note: dynamic export is only for server components, so we don't use it here
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
+import nextDynamic from 'next/dynamic'
 import { getAdminToken, removeAdminToken, getDashboardStats, getUsers, User } from '@/lib/admin-api'
-import { useAccount, useConnect } from 'wagmi'
-import { getContractBalance, getTotalCollectedFees, getTotalWithdrawals, verifyOwner, withdrawContractFunds } from '@/lib/web3'
-// Recharts is code-split via webpack config - loaded only on admin dashboard
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts'
 import Link from 'next/link'
 import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
+
+// Wagmi hooks are available via WagmiProvider in layout
+// Import them normally - they're already code-split
+import { useAccount, useConnect } from 'wagmi'
+
+// Lazy load blockchain functions
+let blockchainFunctions: any = null
+const loadBlockchainFunctions = async () => {
+  if (!blockchainFunctions) {
+    blockchainFunctions = await import('@/lib/web3')
+  }
+  return blockchainFunctions
+}
+
+// Lazy load recharts components individually - only load when charts render
+const LazyLineChart = nextDynamic(() => import('recharts').then(mod => mod.LineChart), { ssr: false })
+const LazyLine = nextDynamic(() => import('recharts').then(mod => mod.Line), { ssr: false })
+const LazyXAxis = nextDynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false })
+const LazyYAxis = nextDynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false })
+const LazyCartesianGrid = nextDynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false })
+const LazyTooltip = nextDynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false })
+const LazyLegend = nextDynamic(() => import('recharts').then(mod => mod.Legend), { ssr: false })
+const LazyResponsiveContainer = nextDynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false })
+const LazyPieChart = nextDynamic(() => import('recharts').then(mod => mod.PieChart), { ssr: false })
+const LazyPie = nextDynamic(() => import('recharts').then(mod => mod.Pie), { ssr: false })
+const LazyCell = nextDynamic(() => import('recharts').then(mod => mod.Cell), { ssr: false })
+const LazyBarChart = nextDynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false })
+const LazyBar = nextDynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false })
 
 // Helper function to calculate trends data from users
 function calculateTrendsData(users: User[]): any[] {
@@ -235,12 +260,16 @@ export default function AdminDashboard() {
     setIsAuthenticated(true)
   }, [router])
 
-  // Load contract data (balance and withdrawals)
-  const loadContractData = async (preserveOnRateLimit: boolean = false) => {
+  // Load contract data (balance and withdrawals) - lazy load blockchain functions
+  const loadContractData = useCallback(async (preserveOnRateLimit: boolean = false): Promise<void> => {
     try {
       setLoadingContractData(true)
+      // Lazy load blockchain functions only when needed
+      const blockchain = await loadBlockchainFunctions()
+      const { getTotalCollectedFees, getTotalWithdrawals, getContractBalance } = blockchain
+      
       const [totalCollected, withdrawals] = await Promise.all([
-        getTotalCollectedFees().catch((err) => {
+        getTotalCollectedFees().catch((err: any) => {
           console.error('Error fetching total collected fees:', err)
           // Keep last known value if available
           if (preserveOnRateLimit && totalCollectedFees) {
@@ -248,7 +277,7 @@ export default function AdminDashboard() {
           }
           return totalCollectedFees || '0'
         }),
-        getTotalWithdrawals().catch((err) => {
+        getTotalWithdrawals().catch((err: any) => {
           console.error('Error fetching total withdrawals:', err)
           // If rate limited, keep the last known value instead of showing 0
           const errorMessage = err?.message || String(err)
@@ -303,7 +332,7 @@ export default function AdminDashboard() {
         if (!isNaN(balanceNum) && balanceNum >= 0) {
           setContractBalance(currentBalance)
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn('Could not fetch current contract balance for withdraw modal:', err)
       }
       
@@ -369,14 +398,19 @@ export default function AdminDashboard() {
     } finally {
       setLoadingContractData(false)
     }
-  }
+  }, [totalCollectedFees, totalWithdrawals, contractBalance])
 
-  // Load dashboard data only when authenticated
+  // Load dashboard data only when authenticated - defer contract data
   useEffect(() => {
     if (isAuthenticated === true) {
       loadDashboardData()
-      loadContractData()
+      // Defer contract data loading - load after initial render to improve FCP
+      const timer = setTimeout(() => {
+        loadContractData()
+      }, 500) // Delay to improve initial load
+      return () => clearTimeout(timer)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, currentPage, statusFilter, searchTerm])
 
   useEffect(() => {
@@ -412,7 +446,7 @@ export default function AdminDashboard() {
     return 'pending'
   }
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     // Don't load data if not authenticated
     if (isAuthenticated !== true) {
       return
@@ -592,7 +626,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [isAuthenticated, currentPage, statusFilter, searchTerm, router])
 
   const handleLogout = () => {
     removeAdminToken()
@@ -831,7 +865,7 @@ export default function AdminDashboard() {
           onClose={() => {
             setShowWithdrawModal(false)
           }}
-          onWithdrawSuccess={(withdrawnAmount: string) => {
+          onWithdrawSuccess={async (withdrawnAmount: string) => {
             // Instantly update UI with the withdrawal amount
             console.log('💰 Instantly updating UI with withdrawal:', withdrawnAmount, 'BNB')
             
@@ -861,15 +895,17 @@ export default function AdminDashboard() {
               console.log(`✅ Updated contract balance: ${currentBalance} - ${withdrawalAmountNum} = ${newBalance}`)
             } else {
               // If we don't have balance, try to fetch it first, then subtract
-              getContractBalance().then(balance => {
+              try {
+                const blockchain = await loadBlockchainFunctions()
+                const balance = await blockchain.getContractBalance()
                 const currentBalance = parseFloat(balance)
                 const newBalance = Math.max(0, currentBalance - withdrawalAmountNum)
                 setContractBalance(newBalance.toString())
                 console.log(`✅ Fetched and updated contract balance: ${currentBalance} - ${withdrawalAmountNum} = ${newBalance}`)
-              }).catch(() => {
+              } catch (err: any) {
                 // If fetch fails, just subtract from 0 or set a placeholder
-                console.warn('⚠️ Could not fetch balance, will refresh later')
-              })
+                console.warn('⚠️ Could not fetch balance, will refresh later', err)
+              }
             }
             
             // After 20 seconds, refresh from contract to get real values
@@ -1015,66 +1051,43 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
   )
 }
 
-// Trends Chart Component
+// Trends Chart Component - uses lazy-loaded recharts
 function TrendsChart({ stats, trendsData }: { stats: any; trendsData: any[] }) {
-  console.log('📊 TrendsChart received trendsData:', trendsData)
-  
-  // Use real trends data if available, otherwise fallback to empty data
-  const data = trendsData && trendsData.length > 0 ? trendsData : [
-    { month: 'Jan', approved: 0, pending: 0, cancelled: 0 },
-    { month: 'Feb', approved: 0, pending: 0, cancelled: 0 },
-    { month: 'Mar', approved: 0, pending: 0, cancelled: 0 },
-    { month: 'Apr', approved: 0, pending: 0, cancelled: 0 },
-    { month: 'May', approved: 0, pending: 0, cancelled: 0 },
-    { month: 'Jun', approved: 0, pending: 0, cancelled: 0 },
-    { month: 'Jul', approved: 0, pending: 0, cancelled: 0 },
-  ]
+  const data = useMemo(() => {
+    return trendsData && trendsData.length > 0 ? trendsData : [
+      { month: 'Jan', approved: 0, pending: 0, cancelled: 0 },
+      { month: 'Feb', approved: 0, pending: 0, cancelled: 0 },
+      { month: 'Mar', approved: 0, pending: 0, cancelled: 0 },
+      { month: 'Apr', approved: 0, pending: 0, cancelled: 0 },
+      { month: 'May', approved: 0, pending: 0, cancelled: 0 },
+      { month: 'Jun', approved: 0, pending: 0, cancelled: 0 },
+      { month: 'Jul', approved: 0, pending: 0, cancelled: 0 },
+    ]
+  }, [trendsData])
 
-  console.log('📊 TrendsChart using data:', data)
-
-  // Calculate max value for Y-axis domain
-  const maxValue = Math.max(
-    ...data.map(d => Math.max(d.approved, d.pending, d.cancelled)),
-    10 // Minimum domain of 10
-  )
-  const yAxisMax = Math.ceil(maxValue * 1.2) // Add 20% padding
-  
-  console.log('📊 TrendsChart Y-axis max:', yAxisMax)
+  const yAxisMax = useMemo(() => {
+    const maxValue = Math.max(
+      ...data.map(d => Math.max(d.approved, d.pending, d.cancelled)),
+      10
+    )
+    return Math.ceil(maxValue * 1.2)
+  }, [data])
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
-      <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-        <XAxis dataKey="month" stroke="#6b7280" />
-        <YAxis domain={[0, yAxisMax]} stroke="#6b7280" />
-        <Tooltip />
-        <Legend wrapperStyle={{ paddingTop: '20px' }} />
-        <Line
-          type="monotone"
-          dataKey="approved"
-          stroke="#10b981"
-          strokeWidth={2}
-          dot={{ fill: '#10b981', r: 4 }}
-          name="approved"
-        />
-        <Line
-          type="monotone"
-          dataKey="pending"
-          stroke="#f59e0b"
-          strokeWidth={2}
-          dot={{ fill: '#f59e0b', r: 4 }}
-          name="pending"
-        />
-        <Line
-          type="monotone"
-          dataKey="cancelled"
-          stroke="#ef4444"
-          strokeWidth={2}
-          dot={{ fill: '#ef4444', r: 4 }}
-          name="cancelled"
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <Suspense fallback={<div className="h-64 flex items-center justify-center"><LoadingDots /></div>}>
+      <LazyResponsiveContainer width="100%" height={250}>
+        <LazyLineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <LazyCartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <LazyXAxis dataKey="month" stroke="#6b7280" />
+          <LazyYAxis domain={[0, yAxisMax]} stroke="#6b7280" />
+          <LazyTooltip />
+          <LazyLegend wrapperStyle={{ paddingTop: '20px' }} />
+          <LazyLine type="monotone" dataKey="approved" stroke="#10b981" strokeWidth={2} dot={{ fill: '#10b981', r: 4 }} name="approved" />
+          <LazyLine type="monotone" dataKey="pending" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 4 }} name="pending" />
+          <LazyLine type="monotone" dataKey="cancelled" stroke="#ef4444" strokeWidth={2} dot={{ fill: '#ef4444', r: 4 }} name="cancelled" />
+        </LazyLineChart>
+      </LazyResponsiveContainer>
+    </Suspense>
   )
 }
 
@@ -1110,7 +1123,18 @@ function StatusPieChart({ stats }: { stats: any }) {
     },
   ].filter(item => item.value > 0) // Only show slices with data
 
-  const COLORS = ['#10b981', '#f59e0b', '#ef4444']
+  // Color mapping: Approved = Green, Pending = Orange, Cancelled = Red
+  const statusColors: { [key: string]: string } = {
+    'Approved': '#10b981',   // Green
+    'Pending': '#f59e0b',    // Orange
+    'Cancelled': '#ef4444',  // Red
+  }
+
+  // Add color to each data item
+  const dataWithColors = data.map(item => ({
+    ...item,
+    fill: statusColors[item.name] || '#8884d8'
+  }))
 
   if (data.length === 0) {
     // Fallback if no data
@@ -1122,39 +1146,40 @@ function StatusPieChart({ stats }: { stats: any }) {
   }
 
   return (
-    <div className="w-full overflow-hidden">
-      <ResponsiveContainer width="100%" height={250}>
-        <PieChart>
-          <Pie
-            data={data}
-            cx="50%"
-            cy="50%"
-            labelLine={false}
-            label={false}
-            outerRadius={80}
-            innerRadius={0}
-            fill="#8884d8"
-            dataKey="value"
-            startAngle={90}
-            endAngle={-270}
-          >
-            {data.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip />
-          <Legend
-            verticalAlign="bottom"
-            height={36}
-            formatter={(value: string) => {
-              const item = data.find(d => d.name === value)
-              return `${value} ${item?.percentage || 0}%`
-            }}
-            iconType="circle"
-          />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
+    <Suspense fallback={<div className="h-64 flex items-center justify-center"><LoadingDots /></div>}>
+      <div className="w-full overflow-hidden">
+        <LazyResponsiveContainer width="100%" height={250}>
+          <LazyPieChart>
+            <LazyPie
+              data={dataWithColors}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={false}
+              outerRadius={80}
+              innerRadius={0}
+              dataKey="value"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {dataWithColors.map((entry, index) => (
+                <LazyCell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </LazyPie>
+            <LazyTooltip />
+            <LazyLegend
+              verticalAlign="bottom"
+              height={36}
+              formatter={(value: string) => {
+                const item = dataWithColors.find(d => d.name === value)
+                return `${value} ${item?.percentage || 0}%`
+              }}
+              iconType="circle"
+            />
+          </LazyPieChart>
+        </LazyResponsiveContainer>
+      </div>
+    </Suspense>
   )
 }
 
@@ -1175,17 +1200,19 @@ function FinancialChart({ stats }: { stats: any }) {
   })
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
-      <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-        <XAxis dataKey="month" stroke="#6b7280" />
-        <YAxis domain={[0, 140000]} stroke="#6b7280" />
-        <Tooltip />
-        <Legend wrapperStyle={{ paddingTop: '20px' }} />
-        <Bar dataKey="revenue" fill="#3b82f6" name="revenue" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="withdrawals" fill="#f59e0b" name="withdrawals" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <Suspense fallback={<div className="h-64 flex items-center justify-center"><LoadingDots /></div>}>
+      <LazyResponsiveContainer width="100%" height={250}>
+        <LazyBarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+          <LazyCartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+          <LazyXAxis dataKey="month" stroke="#6b7280" />
+          <LazyYAxis domain={[0, 140000]} stroke="#6b7280" />
+          <LazyTooltip />
+          <LazyLegend wrapperStyle={{ paddingTop: '20px' }} />
+          <LazyBar dataKey="revenue" fill="#3b82f6" name="revenue" radius={[4, 4, 0, 0]} />
+          <LazyBar dataKey="withdrawals" fill="#f59e0b" name="withdrawals" radius={[4, 4, 0, 0]} />
+        </LazyBarChart>
+      </LazyResponsiveContainer>
+    </Suspense>
   )
 }
 
@@ -1413,8 +1440,9 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
     const fetchBalance = async () => {
       try {
         setLoadingBalance(true)
-        // Fetch contract balance - this works without wallet connection (uses public RPC)
-        const balance = await getContractBalance()
+        // Lazy load blockchain functions
+        const blockchain = await loadBlockchainFunctions()
+        const balance = await blockchain.getContractBalance()
         setContractBalance(parseFloat(balance))
         console.log('✅ Contract balance fetched:', balance, 'USD')
       } catch (error: any) {
@@ -1438,14 +1466,13 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
           setError('')
           setVerifyingOwner(true)
           
+          // Lazy load blockchain functions
+          const blockchain = await loadBlockchainFunctions()
+          const { verifyOwner, getContractBalance } = blockchain
+          
           // Verify if the connected wallet is the owner
           const ownerStatus = await verifyOwner(address)
           setIsOwner(ownerStatus)
-          
-          // if (!ownerStatus) {
-          //   setError('Only the contract owner can withdraw funds. Please connect the owner wallet.')
-          //   return
-          // }
           
           // If owner, refresh contract balance to ensure it's up to date
           const balance = await getContractBalance()
@@ -1503,8 +1530,9 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
       setWithdrawing(true)
       setError('')
       
-      // Call the withdraw function
-      const txHash = await withdrawContractFunds(amount)
+      // Lazy load blockchain functions
+      const blockchain = await loadBlockchainFunctions()
+      const txHash = await blockchain.withdrawContractFunds(amount)
       
       // Show success message
       alert(`Withdrawal successful! Transaction hash: ${txHash}`)

@@ -432,8 +432,11 @@ export default function UploadDocument() {
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+  const cameraFrontRef = useRef<HTMLInputElement>(null)
+  const cameraBackRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
   
   useEffect(() => {
     // Preload animation (optional, won't break if it fails)
@@ -445,6 +448,15 @@ export default function UploadDocument() {
       .catch(() => {
         // Silently fail - animation is optional
       })
+    
+    // Detect mobile device
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
+      setIsMobile(isMobileDevice)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   useEffect(() => {
@@ -472,7 +484,7 @@ export default function UploadDocument() {
       const reader = new FileReader()
       reader.onloadend = async () => {
         try {
-          let result = reader.result as string
+          const result = reader.result as string;
           
           // Optional: Compress image for mobile performance (reduces memory usage)
           // Uncomment the following lines to enable compression:
@@ -484,40 +496,40 @@ export default function UploadDocument() {
           setTimeout(() => {
             if (currentSide === 'front') {
               // Only save front image, don't auto-switch
-              setFrontImage(result)
-              dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: result })
-              dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: result })
-              console.log('✅ Front image saved. User must click Continue to upload back side.')
+              setFrontImage(result);
+              dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: result });
+              dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: result });
+              console.log('✅ Front image saved. User must click Continue to upload back side.');
             } else if (currentSide === 'back') {
               // Save back image separately
-              setBackImage(result)
-              dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: result })
-              console.log('✅ Back image saved.')
+              setBackImage(result);
+              dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: result });
+              console.log('✅ Back image saved.');
             }
-            setIsUploading(false)
-          }, 800)
+            setIsUploading(false);
+          }, 800);
         } catch (error) {
-          console.error('Error processing image:', error)
-          setIsUploading(false)
+          console.error('Error processing image:', error);
+          setIsUploading(false);
         }
-      }
+      };
       reader.readAsDataURL(file)
     }
     // Reset input so user can take a new photo
     if (e.target) {
       e.target.value = ''
     }
-  }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }
+  };
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-  }
+  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
@@ -547,7 +559,7 @@ export default function UploadDocument() {
       }
       reader.readAsDataURL(file)
     }
-  }
+  };
 
   const startCamera = async () => {
     try {
@@ -648,39 +660,39 @@ export default function UploadDocument() {
         const forcePlay = async (attempt = 1) => {
           try {
             if (video.paused) {
-              console.log(`  - Attempting to play (attempt ${attempt})...`)
-              await video.play()
-              console.log('✅ Video playing!')
+              console.log(`  - Attempting to play (attempt ${attempt})...`);
+              await video.play();
+              console.log('✅ Video playing!');
               
               // Double check it's actually playing
               setTimeout(() => {
                 if (video.videoWidth > 0 && video.videoHeight > 0) {
-                  console.log('✅ Video confirmed playing with dimensions')
+                  console.log('✅ Video confirmed playing with dimensions');
                 } else {
-                  console.warn('⚠️ Video playing but no dimensions - may need more time')
+                  console.warn('⚠️ Video playing but no dimensions - may need more time');
                 }
-              }, 500)
+              }, 500);
             } else {
-              console.log('✅ Video already playing')
+              console.log('✅ Video already playing');
             }
           } catch (error: any) {
-            console.warn(`⚠️ Play attempt ${attempt} failed:`, error.message)
+            console.warn(`⚠️ Play attempt ${attempt} failed:`, error.message);
             if (attempt < 5) {
-              setTimeout(() => forcePlay(attempt + 1), 500)
+              setTimeout(() => forcePlay(attempt + 1), 500);
             }
           }
-        }
+        };
         
         // Try to play immediately
-        forcePlay()
+        forcePlay();
         
         // Also set up a listener for when video becomes ready
         const onReady = () => {
           if (video.videoWidth > 0 && video.videoHeight > 0 && video.paused) {
-            console.log('  - Video ready, forcing play...')
-            forcePlay()
+            console.log('  - Video ready, forcing play...');
+            forcePlay();
           }
-        }
+        };
         
         video.addEventListener('loadedmetadata', onReady, { once: true })
         video.addEventListener('canplay', onReady, { once: true })
@@ -706,7 +718,7 @@ export default function UploadDocument() {
         alert('Could not access camera. Please check permissions or use file upload.')
       }
     }
-  }
+  };
 
   const stopCamera = () => {
     if (stream) {
@@ -718,7 +730,7 @@ export default function UploadDocument() {
     if (videoRef.current) {
       videoRef.current.srcObject = null
     }
-  }
+  };
 
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
@@ -752,17 +764,35 @@ export default function UploadDocument() {
         alert('Camera not ready. Please wait a moment and try again.')
       }
     }
-  }
+  };
 
   const handleCameraClick = async () => {
-    // Check if MediaDevices API is available (browser only)
+    // On mobile, use native camera (back camera for documents)
+    if (isMobile) {
+      cameraBackRef.current?.click()
+      return
+    }
+    
+    // On desktop/web, use web camera
     if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
       await startCamera()
     } else {
       // Fallback to file input with capture attribute
       cameraInputRef.current?.click()
     }
-  }
+  };
+
+  const handleNativeCameraFront = () => {
+    if (isMobile) {
+      cameraFrontRef.current?.click()
+    }
+  };
+
+  const handleNativeCameraBack = () => {
+    if (isMobile) {
+      cameraBackRef.current?.click()
+    }
+  };
 
   // Handle video element ready - ensure video displays properly
   useEffect(() => {
@@ -1030,7 +1060,7 @@ export default function UploadDocument() {
 
   const handleFileClick = () => {
     fileInputRef.current?.click()
-  }
+  };
 
   const handleContinue = () => {
     console.log('Continue clicked:', { currentSide, hasFrontImage: !!frontImage, hasBackImage: !!backImage, needsBackSide })
@@ -1092,7 +1122,8 @@ export default function UploadDocument() {
       }, 200)
       return
     }
-  }
+    // If none of the conditions match, do nothing
+  };
 
   const handleRetake = () => {
     if (currentSide === 'front') {
@@ -1104,22 +1135,21 @@ export default function UploadDocument() {
     }
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
-  }
+  };
 
-  const currentImage = currentSide === 'front' ? frontImage : backImage
-  const canContinue = currentImage !== null && (currentSide === 'front' || (currentSide === 'back' && frontImage))
+  const currentImage = currentSide === 'front' ? frontImage : backImage;
+  const canContinue = currentImage !== null && (currentSide === 'front' || (currentSide === 'back' && frontImage));
 
   return (
     <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">
-      {/* Mobile Header - Simple back and close */}
       <div className="md:hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <button onClick={() => router.back()} className="p-2">
+          <button onClick={() => router.back()} className="p-2" type="button" aria-label="Go back">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <button onClick={() => router.push('/')} className="p-2">
+          <button onClick={() => router.push('/')} className="p-2" type="button" aria-label="Close">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -1269,20 +1299,48 @@ export default function UploadDocument() {
                     </p>
 
                     <div className="flex flex-col gap-3 w-full">
-                      <button
-                        onClick={handleCameraClick}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
-                      >
-                        <HiOutlineCamera className="w-5 h-5" />
-                        <span>Take Photo</span>
-                      </button>
-                      <button
-                        onClick={handleFileClick}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
-                      >
-                        <HiOutlinePhotograph className="w-5 h-5" />
-                        <span>Choose File</span>
-                      </button>
+                      {isMobile ? (
+                        <>
+                          <button
+                            onClick={handleNativeCameraBack}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                          >
+                            <HiOutlineCamera className="w-5 h-5" />
+                            <span>Take Photo (Back Camera)</span>
+                          </button>
+                          <button
+                            onClick={handleNativeCameraFront}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-medium transition-all"
+                          >
+                            <HiOutlineCamera className="w-5 h-5" />
+                            <span>Take Photo (Front Camera)</span>
+                          </button>
+                          <button
+                            onClick={handleFileClick}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
+                          >
+                            <HiOutlinePhotograph className="w-5 h-5" />
+                            <span>Choose File</span>
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={handleCameraClick}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                          >
+                            <HiOutlineCamera className="w-5 h-5" />
+                            <span>Take Photo</span>
+                          </button>
+                          <button
+                            onClick={handleFileClick}
+                            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
+                          >
+                            <HiOutlinePhotograph className="w-5 h-5" />
+                            <span>Choose File</span>
+                          </button>
+                        </>
+                      )}
                     </div>
 
                     <input
@@ -1300,6 +1358,25 @@ export default function UploadDocument() {
                       onChange={handleFileChange}
                       className="hidden"
                       aria-label="Take photo with camera"
+                    />
+                    {/* Native mobile camera inputs */}
+                    <input
+                      ref={cameraFrontRef}
+                      type="file"
+                      accept="image/*"
+                      capture="user"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      aria-label="Take photo with front camera"
+                    />
+                    <input
+                      ref={cameraBackRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      aria-label="Take photo with back camera"
                     />
                   </div>
                 )}
@@ -1492,6 +1569,25 @@ export default function UploadDocument() {
                         className="hidden"
                         aria-label="Take photo with camera"
                       />
+                      {/* Native mobile camera inputs for desktop (hidden) */}
+                      <input
+                        ref={cameraFrontRef}
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        aria-label="Take photo with front camera"
+                      />
+                      <input
+                        ref={cameraBackRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        aria-label="Take photo with back camera"
+                      />
                     </div>
                   )}
                 </div>
@@ -1562,14 +1658,31 @@ export default function UploadDocument() {
                 >
                   Retake Photo
                 </button>
-              </>
+              </> 
             ) : (
-              <Button 
-                onClick={handleCameraClick}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-              >
-                Take Photo
-              </Button>
+              isMobile ? (
+                <>
+                  <Button 
+                    onClick={handleNativeCameraBack}
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                  >
+                    Take Photo (Back Camera)
+                  </Button>
+                  <Button 
+                    onClick={handleNativeCameraFront}
+                    className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-full py-3 font-medium"
+                  >
+                    Take Photo (Front Camera)
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  onClick={handleCameraClick}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                >
+                  Take Photo
+                </Button>
+              )
             )}
           </div>
           <p className="text-xs text-gray-500 text-center mt-2">Powered by Mira</p>

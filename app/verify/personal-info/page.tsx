@@ -51,10 +51,10 @@ const extractDocumentInfo = async (frontImage: string, backImage: string | null,
       // Simulated extraction - replace with real OCR API call
       if (idType === 'national-id' || idType === 'drivers-license') {
         extractedData = {
-          firstName: 'Muhammad', // Extracted from document
-          lastName: 'Ahmed', // Extracted from document
-          fatherName: 'Ali Ahmed', // Extracted from document
-          idNumber: '12345-1234567-1', // Extracted CNIC/License number
+          firstName: '', // Extracted from document
+          lastName: '', // Extracted from document
+          fatherName: '', // Extracted from document
+          idNumber: '', // Extracted CNIC/License number
         }
       } else if (idType === 'passport') {
         extractedData = {
@@ -200,6 +200,25 @@ export default function PersonalInfo() {
     }
   }
 
+  const handleIdNumberChange = (value: string) => {
+    if (state.selectedIdType === 'national-id') {
+      // CNIC: Only allow digits (0-9), limit to 13 digits
+      const digitsOnly = value.replace(/\D/g, '')
+      const limitedDigits = digitsOnly.slice(0, 13)
+      handleChange('idNumber', limitedDigits)
+    } else if (state.selectedIdType === 'passport') {
+      // Passport: Allow alphanumeric (letters and numbers only), no special characters
+      const alphanumericOnly = value.replace(/[^a-zA-Z0-9]/g, '')
+      const limited = alphanumericOnly.slice(0, 20)
+      handleChange('idNumber', limited)
+    } else {
+      // Driver's license: Only allow digits (0-9)
+      const digitsOnly = value.replace(/\D/g, '')
+      const limitedDigits = digitsOnly.slice(0, 20)
+      handleChange('idNumber', limitedDigits)
+    }
+  }
+
   const handleSubmit = () => {
     const newErrors: Record<string, string> = {}
 
@@ -218,15 +237,18 @@ export default function PersonalInfo() {
     } else {
       // Validate ID number format based on type
       if (state.selectedIdType === 'national-id') {
-        // CNIC format: XXXXX-XXXXXXX-X
-        const cnicRegex = /^\d{5}-\d{7}-\d{1}$/
+        // CNIC format: 13 digits without dashes
+        const cnicRegex = /^\d{13}$/
         if (!cnicRegex.test(formData.idNumber)) {
-          newErrors.idNumber = 'Please enter a valid CNIC number (format: XXXXX-XXXXXXX-X)'
+          newErrors.idNumber = 'Please enter a valid CNIC number (13 digits)'
         }
       } else if (state.selectedIdType === 'passport') {
-        // Passport format varies, but typically alphanumeric
+        // Passport format: alphanumeric (letters and numbers only)
+        const passportRegex = /^[a-zA-Z0-9]+$/
         if (formData.idNumber.length < 6) {
-          newErrors.idNumber = 'Please enter a valid passport number'
+          newErrors.idNumber = 'Please enter a valid passport number (at least 6 characters)'
+        } else if (!passportRegex.test(formData.idNumber)) {
+          newErrors.idNumber = 'Passport number can only contain letters and numbers'
         }
       } else if (state.selectedIdType === 'drivers-license') {
         // License format varies
@@ -259,13 +281,10 @@ export default function PersonalInfo() {
     }
 
     // Format phone number with country code for storage
+    // Phone is already stored as digits only, just add country code
     const phoneDigits = formData.phone.replace(/\D/g, '')
     const countryCode = getCountryCode()
-    const countryCodeDigits = countryCode.replace('+', '')
-    const phoneWithoutCountryCode = phoneDigits.startsWith(countryCodeDigits)
-      ? phoneDigits.slice(countryCodeDigits.length)
-      : phoneDigits
-    const fullPhoneNumber = countryCode + phoneWithoutCountryCode
+    const fullPhoneNumber = countryCode + phoneDigits
 
     // Save to context - use email from state if formData email is empty (read-only field)
     const emailToSave = formData.email.trim() || state.personalInfo?.email || ''
@@ -361,22 +380,17 @@ export default function PersonalInfo() {
   }
 
   const handlePhoneChange = (value: string) => {
-    // Only allow digits and formatting characters (spaces, dashes, parentheses)
-    const cleaned = value.replace(/[^\d\s\-()]/g, '')
+    // Only allow digits (0-9) - no formatting characters
+    const digitsOnly = value.replace(/\D/g, '')
     
     // Get max digits allowed for this country
     const maxDigits = getMaxPhoneLength(state.selectedCountry || '')
     
-    // Count actual digits (not formatting characters)
-    const digitsOnly = cleaned.replace(/\D/g, '')
-    
     // STRICT: If user tries to enter more digits than allowed, reject the extra digits
     if (digitsOnly.length > maxDigits) {
       // User tried to enter too many digits - keep only the allowed amount
-      const countryCode = getCountryCode()
       const limitedDigits = digitsOnly.slice(0, maxDigits)
-      const formatted = formatByCountry(limitedDigits, state.selectedCountry || '')
-      handleChange('phone', formatted)
+      handleChange('phone', limitedDigits)
       
       // Show error if trying to exceed limit
       setErrors((prev) => ({ 
@@ -386,12 +400,12 @@ export default function PersonalInfo() {
       return
     }
     
-    const countryCode = getCountryCode()
-    const formatted = formatPhoneNumber(cleaned, countryCode)
+    // Store only digits (no formatting)
+    handleChange('phone', digitsOnly)
     
     // Real-time validation
-    if (formatted) {
-      const phoneError = validatePhoneByCountry(formatted, state.selectedCountry || '')
+    if (digitsOnly) {
+      const phoneError = validatePhoneByCountry(digitsOnly, state.selectedCountry || '')
       if (phoneError) {
         setErrors((prev) => ({ ...prev, phone: phoneError }))
       } else {
@@ -401,8 +415,6 @@ export default function PersonalInfo() {
       // Clear error if field is empty
       setErrors((prev) => ({ ...prev, phone: '' }))
     }
-    
-    handleChange('phone', formatted)
   }
 
   const getMaxPhoneLength = (country: string) => {
@@ -575,7 +587,11 @@ export default function PersonalInfo() {
           <div className="space-y-4 mb-6">
             <div className="grid grid-cols-2 gap-3 md:gap-4">
               <Input
-                label="First Name"
+                label={
+                  <>
+                    First Name <span className="text-red-500">*</span>
+                  </>
+                }
                 value={formData.firstName}
                 onChange={(e) => handleChange('firstName', e.target.value)}
                 error={errors.firstName}
@@ -583,7 +599,11 @@ export default function PersonalInfo() {
                 required
               />
               <Input
-                label="Last Name"
+                label={
+                  <>
+                    Last Name <span className="text-red-500">*</span>
+                  </>
+                }
                 value={formData.lastName}
                 onChange={(e) => handleChange('lastName', e.target.value)}
                 error={errors.lastName}
@@ -601,24 +621,61 @@ export default function PersonalInfo() {
               required
             />
 
-            <Input
-              label={
-                state.selectedIdType === 'national-id' ? 'CNIC Number' :
+            <div className="w-full">
+              <label className="block text-sm font-medium text-text-primary mb-2">
+                {state.selectedIdType === 'national-id' ? 'CNIC Number (without dashes)' :
                 state.selectedIdType === 'passport' ? 'Passport Number' :
                 state.selectedIdType === 'drivers-license' ? "Driver's License Number" :
-                'ID Number'
-              }
-              value={formData.idNumber}
-              onChange={(e) => handleChange('idNumber', e.target.value)}
-              error={errors.idNumber}
-              placeholder={
-                state.selectedIdType === 'national-id' ? '12345-1234567-1' :
-                state.selectedIdType === 'passport' ? 'AB1234567' :
-                state.selectedIdType === 'drivers-license' ? 'DL123456789' :
-                'Enter ID number'
-              }
-              required
-            />
+                'ID Number'}{' '}
+                <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                inputMode={state.selectedIdType === 'passport' ? 'text' : 'numeric'}
+                pattern={state.selectedIdType === 'passport' ? '[a-zA-Z0-9]*' : '[0-9]*'}
+                value={formData.idNumber}
+                onChange={(e) => handleIdNumberChange(e.target.value)}
+                onKeyDown={(e) => {
+                  // Prevent invalid keys (except backspace, delete, arrow keys, tab)
+                  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End']
+                  const isAllowedKey = allowedKeys.includes(e.key)
+                  const isModifier = e.ctrlKey || e.metaKey || e.altKey
+                  
+                  if (state.selectedIdType === 'passport') {
+                    // Passport: Allow letters and numbers
+                    const isAlphanumeric = /[a-zA-Z0-9]/.test(e.key)
+                    if (!isAlphanumeric && !isAllowedKey && !isModifier) {
+                      e.preventDefault()
+                    }
+                  } else {
+                    // CNIC and Driver's License: Only allow numbers
+                    const isNumber = /[0-9]/.test(e.key)
+                    if (!isNumber && !isAllowedKey && !isModifier) {
+                      e.preventDefault()
+                    }
+                  }
+                }}
+                onPaste={(e) => {
+                  // Handle paste - filter based on ID type
+                  e.preventDefault()
+                  const pastedText = e.clipboardData.getData('text')
+                  handleIdNumberChange(pastedText)
+                }}
+                placeholder={
+                  state.selectedIdType === 'national-id' ? '1234512345671' :
+                  state.selectedIdType === 'passport' ? 'AB1234567' :
+                  state.selectedIdType === 'drivers-license' ? 'DL123456789' :
+                  'Enter ID number'
+                }
+                maxLength={state.selectedIdType === 'national-id' ? 13 : 20}
+                className={`w-full px-4 py-3 rounded-lg border ${
+                  errors.idNumber ? 'border-red-500' : 'border-gray-300'
+                } bg-white md:bg-surface-light text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300`}
+              />
+              {errors.idNumber && (
+                <p className="mt-1 text-sm text-red-500">{errors.idNumber}</p>
+              )}
+            </div>
 
             {/* Email Display (Read-only) - Pre-filled from previous step */}
             <div className="w-full">
@@ -726,29 +783,13 @@ export default function PersonalInfo() {
                       }
                     }}
                     onPaste={(e) => {
-                      // Handle paste - validate and limit digits
+                      // Handle paste - only allow digits
                       e.preventDefault()
                       const pastedText = e.clipboardData.getData('text')
-                      const digitsOnly = pastedText.replace(/\D/g, '')
-                      const maxDigits = getMaxPhoneLength(state.selectedCountry || '')
-                      const limitedDigits = digitsOnly.slice(0, maxDigits)
-                      
-                      if (limitedDigits) {
-                        const countryCode = getCountryCode()
-                        const formatted = formatByCountry(limitedDigits, state.selectedCountry || '')
-                        handlePhoneChange(formatted)
-                      }
+                      handlePhoneChange(pastedText)
                     }}
-                    placeholder={
-                      state.selectedCountry === 'us' || state.selectedCountry === 'ca' 
-                        ? '(123) 456-7890'
-                        : state.selectedCountry === 'uk'
-                        ? '1234 567 890'
-                        : state.selectedCountry === 'pk'
-                        ? '1234-5678901'
-                        : '1234567890'
-                    }
-                    maxLength={getMaxPhoneLength(state.selectedCountry || '') + 10} // Extra space for formatting chars
+                    placeholder="Enter phone number"
+                    maxLength={getMaxPhoneLength(state.selectedCountry || '')}
                     className={`w-full px-4 py-3 rounded-lg border ${
                       errors.phone ? 'border-red-500' : 'border-gray-300'
                     } bg-white text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300`}
@@ -760,7 +801,7 @@ export default function PersonalInfo() {
               )}
               {!errors.phone && formData.phone && (
                 <p className="mt-1 text-xs text-green-600">
-                  ✓ Valid phone number format
+                  ✓ Valid phone number ({formData.phone.length} digits)
                 </p>
               )}
               <p className="mt-1 text-xs text-gray-500">

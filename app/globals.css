@@ -1,6 +1,22 @@
+/* Critical CSS - inline for faster rendering */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Optimize font rendering */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Reduce layout shift */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+}
 
 @layer base {
   body {

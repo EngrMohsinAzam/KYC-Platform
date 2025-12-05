@@ -24,20 +24,34 @@ export default function ResidentSelection() {
   const isDisabled = isPreSelected
   
   const [selected, setSelected] = useState<string>(() => {
-    // If already set in state, use that
+    // If already set in state, use that (this works after refresh due to localStorage)
     if (state.isResidentUSA !== undefined) {
       return state.isResidentUSA ? 'usa' : 'other'
     }
     // Auto-select "other" if country is not USA and country is selected
-    if (isPreSelected) {
+    if (isPreSelected && state.selectedCountry) {
       // Also save to state so it persists
       dispatch({ type: 'SET_RESIDENT_USA', payload: false })
       return 'other'
     }
     // Auto-select "usa" if country is USA
-    if (isUSACountry) {
+    if (isUSACountry && state.selectedCountry) {
       dispatch({ type: 'SET_RESIDENT_USA', payload: true })
       return 'usa'
+    }
+    // If we have a country but no selection yet, determine based on country
+    if (state.selectedCountry) {
+      const isUSA = state.selectedCountry.toLowerCase() === 'us' || 
+                   state.selectedCountry === 'US' || 
+                   state.selectedCountry === 'USA' || 
+                   state.selectedCountry === 'United States'
+      if (isUSA) {
+        dispatch({ type: 'SET_RESIDENT_USA', payload: true })
+        return 'usa'
+      } else {
+        dispatch({ type: 'SET_RESIDENT_USA', payload: false })
+        return 'other'
+      }
     }
     return ''
   })
@@ -47,16 +61,33 @@ export default function ResidentSelection() {
     router.push('/verify/identity')
   }
 
-  // Update selection when country changes
+  // Update selection when country changes or when state.isResidentUSA changes (after refresh)
   useEffect(() => {
-    if (isPreSelected && selected !== 'other') {
+    // If state.isResidentUSA is set (from localStorage after refresh), sync with local state
+    if (state.isResidentUSA !== undefined) {
+      const expectedSelection = state.isResidentUSA ? 'usa' : 'other'
+      if (selected !== expectedSelection) {
+        setSelected(expectedSelection)
+      }
+    }
+    
+    // Auto-select based on country if no selection yet
+    if (!selected && state.selectedCountry) {
+      if (isPreSelected) {
+        setSelected('other')
+        dispatch({ type: 'SET_RESIDENT_USA', payload: false })
+      } else if (isUSACountry) {
+        setSelected('usa')
+        dispatch({ type: 'SET_RESIDENT_USA', payload: true })
+      }
+    } else if (isPreSelected && selected !== 'other') {
       setSelected('other')
       dispatch({ type: 'SET_RESIDENT_USA', payload: false })
     } else if (isUSACountry && selected !== 'usa' && state.selectedCountry) {
       setSelected('usa')
       dispatch({ type: 'SET_RESIDENT_USA', payload: true })
     }
-  }, [state.selectedCountry, isPreSelected, isUSACountry, selected, dispatch])
+  }, [state.selectedCountry, state.isResidentUSA, isPreSelected, isUSACountry, selected, dispatch])
 
   const handleSelect = (value: string) => {
     // Don't allow changing if pre-selected (non-USA country)

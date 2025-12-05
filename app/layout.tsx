@@ -2,9 +2,19 @@ import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AppProvider } from '@/context/AppProvider'
-import { WagmiProvider } from '@/components/providers/WagmiProvider'
+import dynamic from 'next/dynamic'
 
-// Optimize font loading for mobile - only load Latin subset, use swap
+// Lazy load WagmiProvider - only load when wallet features are needed
+// This defers loading wagmi, viem, and all blockchain libraries
+const WagmiProvider = dynamic(
+  () => import('@/components/providers/WagmiProvider').then(mod => ({ default: mod.WagmiProvider })),
+  { 
+    ssr: false,
+    loading: () => null, // Don't show loading state to avoid layout shift
+  }
+)
+
+// Optimize font loading for mobile - only load Latin subset, use swap, reduce weight
 const inter = Inter({ 
   subsets: ['latin'],
   display: 'swap',
@@ -12,6 +22,8 @@ const inter = Inter({
   variable: '--font-inter',
   adjustFontFallback: true,
   fallback: ['system-ui', 'arial'],
+  // Only load regular weight initially - other weights load on demand
+  weight: ['400', '500', '600', '700'],
 })
 
 export const metadata: Metadata = {

@@ -37,6 +37,9 @@ export default function UploadSelfie() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number>()
   const isLivenessRunningRef = useRef(false)
+  const cameraFrontRef = useRef<HTMLInputElement>(null)
+  const cameraBackRef = useRef<HTMLInputElement>(null)
+  const [isMobile, setIsMobile] = useState(false)
   
   // Get the active video ref based on screen size
   const getActiveVideoRef = () => {
@@ -47,7 +50,7 @@ export default function UploadSelfie() {
     return videoRefMobile // Default to mobile
   }
 
-  // Load animation
+  // Load animation and detect mobile
   useEffect(() => {
     fetch('/face.json')
       .then(res => res.json())
@@ -58,6 +61,15 @@ export default function UploadSelfie() {
       .catch(err => {
         console.error('❌ Error loading animation:', err)
       })
+    
+    // Detect mobile device
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
+      setIsMobile(isMobileDevice)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   const steps: LivenessStep[] = ['center', 'left', 'right', 'up', 'down', 'complete']
@@ -467,14 +479,59 @@ export default function UploadSelfie() {
     setProgress(0)
     dispatch({ type: 'SET_SELFIE_IMAGE', payload: '' })
     stopCamera()
-    setTimeout(() => {
-      startCamera()
-    }, 300)
+    
+    // On mobile, use native camera instead of web camera
+    if (isMobile) {
+      // Use front camera for selfie by default
+      setTimeout(() => {
+        cameraFrontRef.current?.click()
+      }, 100)
+    } else {
+      setTimeout(() => {
+        startCamera()
+      }, 300)
+    }
+  }
+
+  const handleNativeCameraFront = () => {
+    if (isMobile) {
+      cameraFrontRef.current?.click()
+    }
+  }
+
+  const handleNativeCameraBack = () => {
+    if (isMobile) {
+      cameraBackRef.current?.click()
+    }
+  }
+
+  const handleNativeCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        const result = reader.result as string
+        setCapturedImage(result)
+        dispatch({ type: 'SET_SELFIE_IMAGE', payload: result })
+        setCurrentStep('complete')
+        setProgress(100)
+      }
+      reader.readAsDataURL(file)
+    }
+    // Reset input
+    if (e.target) {
+      e.target.value = ''
+    }
   }
 
   // Auto-start camera when component loads - wait for video element to be rendered
   useEffect(() => {
     if (!state.selfieImage && !isCameraActive && !capturedImage) {
+      // On mobile, don't auto-start web camera - user will use native camera
+      if (isMobile) {
+        return
+      }
+      
       // Wait longer to ensure video element is rendered
       const timer = setTimeout(() => {
         // Check if any video ref is available before starting
@@ -497,7 +554,7 @@ export default function UploadSelfie() {
       return () => clearTimeout(timer)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [isMobile])
 
   const getProgressColor = () => {
     if (progress < 33) return 'bg-red-500'
@@ -647,8 +704,56 @@ export default function UploadSelfie() {
                   ? '✓ Selfie captured successfully'
                   : isCameraActive
                   ? 'Position your face within the frame'
+                  : isMobile
+                  ? 'Tap the button below to take a selfie'
                   : 'Ready to capture'}
               </p>
+
+              {/* Mobile native camera buttons */}
+              {isMobile && !capturedImage && !isCameraActive && (
+                <div className="flex flex-col gap-3 w-full">
+                  <button
+                    onClick={handleNativeCameraFront}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Take Selfie (Front Camera)</span>
+                  </button>
+                  <button
+                    onClick={handleNativeCameraBack}
+                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-medium transition-all"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Take Selfie (Back Camera)</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Hidden native camera inputs */}
+              <input
+                ref={cameraFrontRef}
+                type="file"
+                accept="image/*"
+                capture="user"
+                onChange={handleNativeCameraChange}
+                className="hidden"
+                aria-label="Take selfie with front camera"
+              />
+              <input
+                ref={cameraBackRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleNativeCameraChange}
+                className="hidden"
+                aria-label="Take selfie with back camera"
+              />
             </div>
           </div>
 
@@ -776,15 +881,34 @@ export default function UploadSelfie() {
                   </>
                 )}
                 {!capturedImage && !isCameraActive && (
-                  <Button 
-                    onClick={() => {
-                      console.log('📸 Manual camera start requested')
-                      startCamera()
-                    }} 
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                  >
-                    Start Camera
-                  </Button>
+                  <>
+                    {isMobile ? (
+                      <>
+                        <Button 
+                          onClick={handleNativeCameraFront}
+                          className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                        >
+                          Take Selfie (Front Camera)
+                        </Button>
+                        <Button 
+                          onClick={handleNativeCameraBack}
+                          className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-full py-3 font-medium"
+                        >
+                          Take Selfie (Back Camera)
+                        </Button>
+                      </>
+                    ) : (
+                      <Button 
+                        onClick={() => {
+                          console.log('📸 Manual camera start requested')
+                          startCamera()
+                        }} 
+                        className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                      >
+                        Start Camera
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -817,15 +941,34 @@ export default function UploadSelfie() {
             </>
           )}
           {!capturedImage && !isCameraActive && (
-            <Button 
-              onClick={() => {
-                console.log('📸 Manual camera start requested')
-                startCamera()
-              }} 
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-            >
-              Start Camera
-            </Button>
+            <>
+              {isMobile ? (
+                <>
+                  <Button 
+                    onClick={handleNativeCameraFront}
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                  >
+                    Take Selfie (Front Camera)
+                  </Button>
+                  <Button 
+                    onClick={handleNativeCameraBack}
+                    className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-full py-3 font-medium"
+                  >
+                    Take Selfie (Back Camera)
+                  </Button>
+                </>
+              ) : (
+                <Button 
+                  onClick={() => {
+                    console.log('📸 Manual camera start requested')
+                    startCamera()
+                  }} 
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                >
+                  Start Camera
+                </Button>
+              )}
+            </>
           )}
           {isCameraActive && !stream && (
             <div className="w-full p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-2">

@@ -96,10 +96,10 @@ export default function SelectIdType() {
               {country && (
                 <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                   <label className="block text-sm font-normal text-gray-700 mb-2">
-                    City/Region
+                    City
                   </label>
                   <Select
-                    placeholder="Select city/region"
+                    placeholder="Select city"
                     options={cityOptions}
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
@@ -155,10 +155,10 @@ export default function SelectIdType() {
                  {country && (
                   <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                     <label className="block text-sm font-medium text-gray-900 mb-2">
-                      City/Region
+                      City
                     </label>
                     <Select
-                      placeholder="Select city/region"
+                      placeholder="Select city"
                       options={cityOptions}
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
