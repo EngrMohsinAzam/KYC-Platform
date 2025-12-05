@@ -38,8 +38,9 @@ export default function UploadSelfie() {
   const animationFrameRef = useRef<number>()
   const isLivenessRunningRef = useRef(false)
   const cameraFrontRef = useRef<HTMLInputElement>(null)
-  const cameraBackRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   // Get the active video ref based on screen size
   const getActiveVideoRef = () => {
@@ -493,15 +494,66 @@ export default function UploadSelfie() {
     }
   }
 
-  const handleNativeCameraFront = () => {
-    if (isMobile) {
-      cameraFrontRef.current?.click()
-    }
+  const handleTakeSelfie = async () => {
+    // Start camera (works for both mobile and desktop)
+    await startCamera()
+    
+    // Wait for camera to be ready, then start countdown
+    const checkCameraReady = setInterval(() => {
+      if (isCameraActive && stream && isVideoReady) {
+        clearInterval(checkCameraReady)
+        
+        // Start countdown after camera is ready
+        setCountdown(3)
+        
+        let count = 3
+        const countdownInterval = setInterval(() => {
+          count--
+          setCountdown(count)
+          
+          if (count <= 0) {
+            clearInterval(countdownInterval)
+            setCountdown(null)
+            
+            // Auto-capture after countdown
+            setTimeout(() => {
+              captureSelfie()
+            }, 200) // Small delay to ensure countdown UI updates
+          }
+        }, 1000)
+        
+        countdownIntervalRef.current = countdownInterval
+      }
+    }, 200) // Check every 200ms
+    
+    // Timeout after 5 seconds if camera doesn't become ready
+    setTimeout(() => {
+      clearInterval(checkCameraReady)
+    }, 5000)
   }
 
-  const handleNativeCameraBack = () => {
-    if (isMobile) {
-      cameraBackRef.current?.click()
+  const captureSelfie = () => {
+    const video = videoRefMobile.current || videoRefDesktop.current || videoRef.current
+    const canvas = canvasRef.current
+    
+    if (video && canvas && video.videoWidth > 0 && video.videoHeight > 0) {
+      canvas.width = video.videoWidth
+      canvas.height = video.videoHeight
+      const ctx = canvas.getContext('2d')
+      
+      if (ctx) {
+        // Flip horizontally for selfie (mirror effect)
+        ctx.translate(canvas.width, 0)
+        ctx.scale(-1, 1)
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        
+        const imageData = canvas.toDataURL('image/jpeg', 0.9)
+        setCapturedImage(imageData)
+        dispatch({ type: 'SET_SELFIE_IMAGE', payload: imageData })
+        setCurrentStep('complete')
+        setProgress(100)
+        stopCamera()
+      }
     }
   }
 
@@ -518,11 +570,21 @@ export default function UploadSelfie() {
       }
       reader.readAsDataURL(file)
     }
+    
     // Reset input
     if (e.target) {
       e.target.value = ''
     }
   }
+
+  // Cleanup countdown on unmount
+  useEffect(() => {
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current)
+      }
+    }
+  }, [])
 
   // Auto-start camera when component loads - wait for video element to be rendered
   useEffect(() => {
@@ -686,6 +748,18 @@ export default function UploadSelfie() {
                             {stepInstructions[currentStep]}
                           </p>
                         </div>
+
+                        {/* Countdown overlay - shows on top of video */}
+                        {countdown !== null && countdown > 0 && (
+                          <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 pointer-events-none">
+                            <div className="text-center">
+                              <div className="text-9xl font-bold text-white mb-4 animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 30px rgba(255,255,255,0.8)' }}>
+                                {countdown}
+                              </div>
+                              <p className="text-white text-xl font-semibold">Get ready!</p>
+                            </div>
+                          </div>
+                        )}
                       </>
                 ) : capturedImage ? (
                   <img src={capturedImage} alt="Selfie" className="w-full h-full object-contain" />
@@ -709,33 +783,24 @@ export default function UploadSelfie() {
                   : 'Ready to capture'}
               </p>
 
-              {/* Mobile native camera buttons */}
+              {/* Mobile native camera button */}
               {isMobile && !capturedImage && !isCameraActive && (
                 <div className="flex flex-col gap-3 w-full">
                   <button
-                    onClick={handleNativeCameraFront}
+                    onClick={handleTakeSelfie}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span>Take Selfie (Front Camera)</span>
-                  </button>
-                  <button
-                    onClick={handleNativeCameraBack}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-medium transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Take Selfie (Back Camera)</span>
+                    <span>Take Selfie</span>
                   </button>
                 </div>
               )}
 
-              {/* Hidden native camera inputs */}
+
+              {/* Hidden native camera input - front camera for selfie */}
               <input
                 ref={cameraFrontRef}
                 type="file"
@@ -744,15 +809,6 @@ export default function UploadSelfie() {
                 onChange={handleNativeCameraChange}
                 className="hidden"
                 aria-label="Take selfie with front camera"
-              />
-              <input
-                ref={cameraBackRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleNativeCameraChange}
-                className="hidden"
-                aria-label="Take selfie with back camera"
               />
             </div>
           </div>
@@ -883,20 +939,12 @@ export default function UploadSelfie() {
                 {!capturedImage && !isCameraActive && (
                   <>
                     {isMobile ? (
-                      <>
-                        <Button 
-                          onClick={handleNativeCameraFront}
-                          className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                        >
-                          Take Selfie (Front Camera)
-                        </Button>
-                        <Button 
-                          onClick={handleNativeCameraBack}
-                          className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-full py-3 font-medium"
-                        >
-                          Take Selfie (Back Camera)
-                        </Button>
-                      </>
+                      <Button 
+                        onClick={handleTakeSelfie}
+                        className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                      >
+                        Take Selfie
+                      </Button>
                     ) : (
                       <Button 
                         onClick={() => {
@@ -943,20 +991,12 @@ export default function UploadSelfie() {
           {!capturedImage && !isCameraActive && (
             <>
               {isMobile ? (
-                <>
-                  <Button 
-                    onClick={handleNativeCameraFront}
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                  >
-                    Take Selfie (Front Camera)
-                  </Button>
-                  <Button 
-                    onClick={handleNativeCameraBack}
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-full py-3 font-medium"
-                  >
-                    Take Selfie (Back Camera)
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleTakeSelfie}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                >
+                  Take Selfie
+                </Button>
               ) : (
                 <Button 
                   onClick={() => {

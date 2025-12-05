@@ -767,9 +767,9 @@ export default function UploadDocument() {
   };
 
   const handleCameraClick = async () => {
-    // On mobile, use native camera (back camera for documents)
+    // On mobile, use native camera (user can choose camera)
     if (isMobile) {
-      cameraBackRef.current?.click()
+      cameraInputRef.current?.click()
       return
     }
     
@@ -782,15 +782,10 @@ export default function UploadDocument() {
     }
   };
 
-  const handleNativeCameraFront = () => {
+  const handleNativeCamera = () => {
     if (isMobile) {
-      cameraFrontRef.current?.click()
-    }
-  };
-
-  const handleNativeCameraBack = () => {
-    if (isMobile) {
-      cameraBackRef.current?.click()
+      // Use a single input that lets user choose camera
+      cameraInputRef.current?.click()
     }
   };
 
@@ -1302,25 +1297,18 @@ export default function UploadDocument() {
                       {isMobile ? (
                         <>
                           <button
-                            onClick={handleNativeCameraBack}
+                            onClick={handleNativeCamera}
                             className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
                           >
                             <HiOutlineCamera className="w-5 h-5" />
-                            <span>Take Photo (Back Camera)</span>
-                          </button>
-                          <button
-                            onClick={handleNativeCameraFront}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-medium transition-all"
-                          >
-                            <HiOutlineCamera className="w-5 h-5" />
-                            <span>Take Photo (Front Camera)</span>
+                            <span>Take Photo</span>
                           </button>
                           <button
                             onClick={handleFileClick}
                             className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
                           >
                             <HiOutlinePhotograph className="w-5 h-5" />
-                            <span>Choose File</span>
+                            <span>Upload from Device</span>
                           </button>
                         </>
                       ) : (
@@ -1350,33 +1338,15 @@ export default function UploadDocument() {
                       onChange={handleFileChange}
                       className="hidden"
                     />
+                    {/* Native mobile camera input - no capture attribute, lets user choose camera */}
                     <input
                       ref={cameraInputRef}
                       type="file"
                       accept="image/*"
-                      capture="environment"
+                      capture
                       onChange={handleFileChange}
                       className="hidden"
                       aria-label="Take photo with camera"
-                    />
-                    {/* Native mobile camera inputs */}
-                    <input
-                      ref={cameraFrontRef}
-                      type="file"
-                      accept="image/*"
-                      capture="user"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      aria-label="Take photo with front camera"
-                    />
-                    <input
-                      ref={cameraBackRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      aria-label="Take photo with back camera"
                     />
                   </div>
                 )}
@@ -1569,25 +1539,6 @@ export default function UploadDocument() {
                         className="hidden"
                         aria-label="Take photo with camera"
                       />
-                      {/* Native mobile camera inputs for desktop (hidden) */}
-                      <input
-                        ref={cameraFrontRef}
-                        type="file"
-                        accept="image/*"
-                        capture="user"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        aria-label="Take photo with front camera"
-                      />
-                      <input
-                        ref={cameraBackRef}
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        aria-label="Take photo with back camera"
-                      />
                     </div>
                   )}
                 </div>
@@ -1661,20 +1612,12 @@ export default function UploadDocument() {
               </> 
             ) : (
               isMobile ? (
-                <>
-                  <Button 
-                    onClick={handleNativeCameraBack}
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                  >
-                    Take Photo (Back Camera)
-                  </Button>
-                  <Button 
-                    onClick={handleNativeCameraFront}
-                    className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-full py-3 font-medium"
-                  >
-                    Take Photo (Front Camera)
-                  </Button>
-                </>
+                <Button 
+                  onClick={handleNativeCamera}
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                >
+                  Take Photo
+                </Button>
               ) : (
                 <Button 
                   onClick={handleCameraClick}
