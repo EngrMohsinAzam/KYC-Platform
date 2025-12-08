@@ -92,6 +92,13 @@ export default function ReviewContent() {
     }
   }, [])
 
+  // Update wallet address in context when connected
+  useEffect(() => {
+    if (isConnected && address) {
+      dispatch({ type: 'SET_WALLET', payload: address })
+    }
+  }, [isConnected, address, dispatch])
+
   // Check network and balance when wallet is connected
   useEffect(() => {
     console.log('🔍 Wallet connection status changed:', { isConnected, address })
@@ -223,26 +230,73 @@ export default function ReviewContent() {
         
         if (connectorToUse) {
           setConnecting(true)
+          setError(null)
+          
+          // Connect using wagmi
           await connect({ connector: connectorToUse })
           
-          // Wait a bit for connection
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          // Wait for connection to establish - poll for address
+          let attempts = 0
+          const maxAttempts = 20 // 10 seconds total
+          let connectedAddress: string | null = null
           
-          // If ethereum is now available, switch network
-          if (win.ethereum) {
-            try {
-              await switchToBSCTestnet(win.ethereum)
-              await new Promise(resolve => setTimeout(resolve, 1000))
-            } catch (networkErr: any) {
-              console.warn('⚠️ Network switch error (non-blocking):', networkErr)
-              if (networkErr?.code !== 4001) {
-                setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+          while (attempts < maxAttempts) {
+            // Check if address is available from wagmi
+            if (address) {
+              connectedAddress = address
+              break
+            }
+            
+            // Also check window.ethereum directly
+            if (win.ethereum) {
+              try {
+                const accounts = await win.ethereum.request({ method: 'eth_accounts' })
+                if (accounts && accounts.length > 0 && accounts[0]) {
+                  const accountAddress = accounts[0] as string
+                  connectedAddress = accountAddress
+                  // Update context immediately
+                  dispatch({ type: 'SET_WALLET', payload: accountAddress })
+                  break
+                }
+              } catch (err) {
+                console.log('Error checking accounts:', err)
               }
             }
+            
+            await new Promise(resolve => setTimeout(resolve, 500))
+            attempts++
           }
           
-          localStorage.setItem('lastConnectedWallet', 'metamask')
-          localStorage.setItem('lastConnectorId', connectorToUse.id)
+          // If we got an address, connection is successful
+          if (connectedAddress && typeof connectedAddress === 'string') {
+            // Update context with wallet address
+            dispatch({ type: 'SET_WALLET', payload: connectedAddress })
+            
+            // If ethereum is available, switch network
+            if (win.ethereum) {
+              try {
+                await switchToBSCTestnet(win.ethereum)
+                await new Promise(resolve => setTimeout(resolve, 1000))
+              } catch (networkErr: any) {
+                console.warn('⚠️ Network switch error (non-blocking):', networkErr)
+                if (networkErr?.code !== 4001) {
+                  setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+                }
+              }
+            }
+            
+            localStorage.setItem('lastConnectedWallet', 'metamask')
+            localStorage.setItem('lastConnectorId', connectorToUse.id)
+            setConnecting(false)
+            return
+          } else {
+            // Connection timeout
+            setError('Connection timeout. Please make sure MetaMask app is open and try again.')
+            setConnecting(false)
+            return
+          }
+        } else {
+          setError('No wallet connector available. Please try again.')
           setConnecting(false)
           return
         }
