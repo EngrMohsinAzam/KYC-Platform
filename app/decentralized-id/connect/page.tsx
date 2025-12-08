@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { HelpModal } from '@/components/ui/HelpModal'
+import { WalletSelectionModal } from '@/components/wallet/WalletSelectionModal'
 import { useAppContext } from '@/context/useAppContext'
 import { getNetworkInfo, isMetaMaskInstalled, checkKYCStatus } from '@/lib/web3'
 import { checkStatusByWallet } from '@/lib/api'
-import { isMobileDevice, openMetaMaskMobile } from '@/lib/mobile-wallet'
+import { isMobileDevice, openMetaMaskMobile, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
+import { DetectedWallet } from '@/lib/wallet-detection'
 
 declare global {
   interface Window {
@@ -59,60 +61,77 @@ export default function ConnectWallet() {
 
   const [connecting, setConnecting] = useState(false)
   const [showMobileInstructions, setShowMobileInstructions] = useState(false)
+  const [showWalletModal, setShowWalletModal] = useState(false)
+  const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null)
+  const [walletError, setWalletError] = useState<string | null>(null)
 
   const handleConnectWallet = async () => {
     const isMobile = isMobileDevice()
     
-    // On mobile, try to open MetaMask app via deep link
-    if (isMobile && !isMetaMaskInstalled()) {
-      setShowMobileInstructions(true)
-      try {
-        // Open MetaMask mobile app via deep link
-        openMetaMaskMobile()
-        
-        // Wait a bit and then check if connection was successful
-        setTimeout(async () => {
-          try {
-            // Check if ethereum provider is now available
-            if (window.ethereum) {
-              const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-              if (accounts && accounts.length > 0) {
-                // Connection successful
-                setShowMobileInstructions(false)
-                setConnecting(true)
-                await proceedWithConnection(accounts[0])
-                return
-              }
-            }
-            
-            // If no connection after 3 seconds, show instructions
-            setTimeout(() => {
-              if (!window.ethereum) {
-                setShowMobileInstructions(true)
-              }
-            }, 3000)
-          } catch (err) {
-            console.error('Error checking connection:', err)
-          }
-        }, 1000)
-        return
-      } catch (err) {
-        console.error('Error opening MetaMask:', err)
-        alert('Please install MetaMask app and try again.')
-        return
-      }
+    // On mobile, show wallet selection modal
+    if (isMobile) {
+      setShowWalletModal(true)
+      return
     }
     
-    // Desktop or mobile with MetaMask already detected
+    // Desktop: Check if MetaMask is installed
     if (!isMetaMaskInstalled()) {
-      alert('MetaMask is not installed. Please install MetaMask to continue.')
+      alert('MetaMask is not installed. Please install MetaMask extension to continue.')
       return
     }
 
     setConnecting(true)
     setNetworkError(null)
-
     await proceedWithConnection()
+  }
+
+  const handleWalletSelect = async (wallet: DetectedWallet) => {
+    const isMobile = isMobileDevice()
+    setConnectingWalletId(wallet.id)
+    setWalletError(null)
+    setShowMobileInstructions(false)
+    
+    try {
+      // On mobile, if no provider detected, open MetaMask app via deep link
+      if (isMobile && wallet.id === 'metamask' && !wallet.provider) {
+        const deepLink = getMobileWalletDeepLink('metamask')
+        if (deepLink) {
+          console.log('📱 Opening MetaMask mobile app via deep link')
+          setShowMobileInstructions(true)
+          setShowWalletModal(false)
+          
+          // Open MetaMask app
+          window.location.href = deepLink
+          
+          // Listen for connection when user comes back
+          return
+        }
+      }
+      
+      // If MetaMask is already available, connect directly
+      if (window.ethereum) {
+        setShowWalletModal(false)
+        setConnecting(true)
+        setNetworkError(null)
+        await proceedWithConnection()
+        return
+      }
+      
+      // Try to connect via provider
+      if (wallet.provider) {
+        setShowWalletModal(false)
+        setConnecting(true)
+        setNetworkError(null)
+        await proceedWithConnection()
+        return
+      }
+      
+      setWalletError('Unable to connect to wallet. Please try again.')
+    } catch (err: any) {
+      console.error('Error connecting wallet:', err)
+      setWalletError(err.message || 'Failed to connect wallet. Please try again.')
+      setConnectingWalletId(null)
+    }
   }
 
   const proceedWithConnection = async (walletAddress?: string) => {
@@ -256,24 +275,53 @@ export default function ConnectWallet() {
     }
   }
 
-  // Listen for wallet connection on mobile
+  // Listen for wallet connection on mobile after opening MetaMask
   useEffect(() => {
-    if (showMobileInstructions && window.ethereum) {
+    if (showMobileInstructions) {
       const checkConnection = async () => {
         try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' })
-          if (accounts && accounts.length > 0) {
-            setShowMobileInstructions(false)
-            setConnecting(true)
-            await proceedWithConnection(accounts[0])
+          // Check if ethereum provider is now available
+          if (window.ethereum) {
+            try {
+              const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+              if (accounts && accounts.length > 0) {
+                // Connection successful
+                setShowMobileInstructions(false)
+                setConnecting(true)
+                setConnectingWalletId(null)
+                await proceedWithConnection(accounts[0])
+                return true
+              }
+            } catch (err) {
+              // Try requesting accounts if not available
+              try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+                if (accounts && accounts.length > 0) {
+                  setShowMobileInstructions(false)
+                  setConnecting(true)
+                  setConnectingWalletId(null)
+                  await proceedWithConnection(accounts[0])
+                  return true
+                }
+              } catch (requestErr) {
+                console.error('Error requesting accounts:', requestErr)
+              }
+            }
           }
+          return false
         } catch (err) {
           console.error('Error checking connection:', err)
+          return false
         }
       }
       
-      // Check periodically for connection
-      const interval = setInterval(checkConnection, 1000)
+      // Check periodically for connection (every 1 second)
+      const interval = setInterval(async () => {
+        const connected = await checkConnection()
+        if (connected) {
+          clearInterval(interval)
+        }
+      }, 1000)
       
       // Also listen for account changes
       const handleAccountsChanged = async (accounts: string[]) => {
@@ -281,19 +329,38 @@ export default function ConnectWallet() {
           clearInterval(interval)
           setShowMobileInstructions(false)
           setConnecting(true)
+          setConnectingWalletId(null)
           await proceedWithConnection(accounts[0])
         }
       }
       
-      window.ethereum.on('accountsChanged', handleAccountsChanged)
+      // Listen for connect event
+      const handleConnect = async (connectInfo: any) => {
+        console.log('Wallet connected:', connectInfo)
+        const connected = await checkConnection()
+        if (connected) {
+          if (window.ethereum && window.ethereum.removeListener) {
+            window.ethereum.removeListener('connect', handleConnect)
+          }
+        }
+      }
+      
+      if (window.ethereum) {
+        window.ethereum.on('accountsChanged', handleAccountsChanged)
+        window.ethereum.on('connect', handleConnect)
+      }
       
       return () => {
         clearInterval(interval)
-        if (window.ethereum && window.ethereum.removeListener) {
-          window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
+        if (window.ethereum) {
+          if (window.ethereum.removeListener) {
+            window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
+            window.ethereum.removeListener('connect', handleConnect)
+          }
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showMobileInstructions])
 
   return (
@@ -353,7 +420,7 @@ export default function ConnectWallet() {
                 Please open the MetaMask app on your device and approve the connection request.
               </p>
               <p className="text-xs text-blue-600">
-                If MetaMask doesn't open automatically, please tap on it in your app list.
+                If MetaMask doesn&apos;t open automatically, please tap on it in your app list.
               </p>
             </div>
           )}
@@ -399,6 +466,19 @@ export default function ConnectWallet() {
       <HelpModal 
         isOpen={showHelpModal} 
         onClose={() => setShowHelpModal(false)}
+      />
+      
+      {/* Wallet Selection Modal - Mobile */}
+      <WalletSelectionModal
+        isOpen={showWalletModal}
+        onClose={() => {
+          setShowWalletModal(false)
+          setConnectingWalletId(null)
+          setWalletError(null)
+        }}
+        onWalletSelect={handleWalletSelect}
+        connectingWalletId={connectingWalletId}
+        error={walletError}
       />
     </div>
   )

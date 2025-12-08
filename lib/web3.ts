@@ -6,7 +6,24 @@ import { createPublicClient, http as viemHttp } from 'viem'
 import { bscTestnet } from 'viem/chains'
 
 export function isMetaMaskInstalled(): boolean {
-  return typeof window !== 'undefined' && typeof (window as any).ethereum !== 'undefined'
+  if (typeof window === 'undefined') return false
+  
+  const win = window as any
+  
+  // Check if ethereum provider exists
+  if (!win.ethereum) return false
+  
+  // Check if it's MetaMask (desktop extension)
+  if (win.ethereum.isMetaMask) return true
+  
+  // Check providers array (multiple wallets installed)
+  if (Array.isArray(win.ethereum.providers)) {
+    return win.ethereum.providers.some((p: any) => p.isMetaMask)
+  }
+  
+  // If ethereum exists but no isMetaMask flag, assume it might be MetaMask
+  // This handles cases where the flag might not be set
+  return true
 }
 
 let connectionInProgress = false
