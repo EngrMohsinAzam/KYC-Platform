@@ -208,17 +208,68 @@ export default function ReviewContent() {
   const handleOpenWalletModal = async () => {
     setError(null)
     setNetworkError(null)
-    setConnecting(true)
+    setConnecting(false) // Don't set connecting yet - let wallet selection modal handle it
     
-    try {
-      const win = window as any
-      
-      // Check if MetaMask is installed
-      if (!win.ethereum || !win.ethereum.isMetaMask) {
-        setError('MetaMask is not installed. Please install MetaMask extension to continue.')
+    const isMobile = isMobileDevice()
+    const win = window as any
+    
+    // On mobile, use wagmi connectors directly (they handle mobile automatically)
+    if (isMobile) {
+      try {
+        // Find MetaMask connector
+        const metaMaskConnector = connectors.find(c => c.id === 'metaMask' || c.id === 'io.metamask')
+        const injectedConnector = connectors.find(c => c.id === 'injected')
+        const connectorToUse = metaMaskConnector || injectedConnector
+        
+        if (connectorToUse) {
+          setConnecting(true)
+          await connect({ connector: connectorToUse })
+          
+          // Wait a bit for connection
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // If ethereum is now available, switch network
+          if (win.ethereum) {
+            try {
+              await switchToBSCTestnet(win.ethereum)
+              await new Promise(resolve => setTimeout(resolve, 1000))
+            } catch (networkErr: any) {
+              console.warn('⚠️ Network switch error (non-blocking):', networkErr)
+              if (networkErr?.code !== 4001) {
+                setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+              }
+            }
+          }
+          
+          localStorage.setItem('lastConnectedWallet', 'metamask')
+          localStorage.setItem('lastConnectorId', connectorToUse.id)
+          setConnecting(false)
+          return
+        }
+      } catch (err: any) {
+        console.error('❌ Error connecting wallet on mobile:', err)
+        const errorMessage = err?.message || err?.toString() || ''
+        
+        if (err?.code === 4001 || errorMessage.includes('rejected') || errorMessage.includes('denied')) {
+          setError('Wallet connection was rejected. Please approve the connection in MetaMask app.')
+        } else {
+          setError('Failed to connect wallet. Please make sure MetaMask app is installed and try again.')
+        }
         setConnecting(false)
         return
       }
+    }
+    
+    // Desktop: Check if MetaMask is installed
+    if (!win.ethereum || !win.ethereum.isMetaMask) {
+      setError('MetaMask is not installed. Please install MetaMask extension to continue.')
+      setConnecting(false)
+      return
+    }
+    
+    // Desktop: Connect using wagmi
+    try {
+      setConnecting(true)
       
       // Set MetaMask provider
       setMetaMaskProvider(win.ethereum)
