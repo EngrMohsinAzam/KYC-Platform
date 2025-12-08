@@ -11,9 +11,6 @@ import { getNetworkInfo, isMetaMaskInstalled, checkKYCStatus } from '@/lib/web3'
 import { checkStatusByWallet } from '@/lib/api'
 import { isMobileDevice, openMetaMaskMobile, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
 import { DetectedWallet } from '@/lib/wallet-detection'
-import { useConnect, useAccount } from 'wagmi'
-import { wagmiConfig } from '@/lib/wagmi-config'
-import { WagmiProvider } from '@/components/providers/WagmiProvider'
 
 declare global {
   interface Window {
@@ -71,7 +68,7 @@ export default function ConnectWallet() {
   const handleConnectWallet = async () => {
     const isMobile = isMobileDevice()
     
-    // On mobile, show wallet selection modal
+    // On mobile, ALWAYS show wallet selection modal (no error check)
     if (isMobile) {
       setShowWalletModal(true)
       return
@@ -182,7 +179,23 @@ export default function ConnectWallet() {
             // Don't show error - user might still be in MetaMask app
             // The useEffect will handle connection when user returns
             console.log('📱 Waiting for MetaMask connection...')
-            return
+            // Don't return - let it try to connect when ethereum becomes available
+            // Just wait a bit and check again
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            if (window.ethereum) {
+              try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+                if (accounts && accounts.length > 0) {
+                  walletAddress = accounts[0]
+                }
+              } catch (err) {
+                console.error('Error connecting after wait:', err)
+              }
+            }
+            // If still no wallet address after waiting, return and let useEffect handle it
+            if (!walletAddress) {
+              return
+            }
           }
           
           // Desktop: Check if MetaMask is installed
@@ -193,24 +206,30 @@ export default function ConnectWallet() {
             return
           }
           
-          const { connectWallet } = await import('@/lib/web3')
-          
-          try {
-            // This will ALWAYS prompt MetaMask for permission
-            walletAddress = await connectWallet()
-          } catch (connectError: any) {
-            setConnecting(false)
-            setShowMobileInstructions(false)
-            if (connectError.code === 4001) {
-              alert('Wallet connection was rejected. Please connect your wallet to continue.')
-            } else {
-              // On mobile, show app-specific message
-              if (isMobile) {
-                alert('Failed to connect wallet. Please make sure MetaMask app is installed and try again.')
+          // Only proceed with connectWallet if we're on desktop or if ethereum is available on mobile
+          if (!isMobile || window.ethereum) {
+            const { connectWallet } = await import('@/lib/web3')
+            
+            try {
+              // This will ALWAYS prompt MetaMask for permission
+              walletAddress = await connectWallet()
+            } catch (connectError: any) {
+              setConnecting(false)
+              setShowMobileInstructions(false)
+              if (connectError.code === 4001) {
+                alert('Wallet connection was rejected. Please connect your wallet to continue.')
               } else {
-                alert(connectError.message || 'Failed to connect wallet. Please try again.')
+                // On mobile, show app-specific message
+                if (isMobile) {
+                  alert('Failed to connect wallet. Please make sure MetaMask app is installed and try again.')
+                } else {
+                  alert(connectError.message || 'Failed to connect wallet. Please try again.')
+                }
               }
+              return
             }
+          } else {
+            // On mobile, if ethereum still not available, just return and wait
             return
           }
         }
@@ -331,7 +350,12 @@ export default function ConnectWallet() {
       setConnecting(false)
       setShowMobileInstructions(false)
       console.error('Connect wallet error:', error)
-      alert(error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and unlocked.')
+      const isMobile = isMobileDevice()
+      if (isMobile) {
+        alert(error.message || 'Failed to connect wallet. Please make sure MetaMask app is installed and try again.')
+      } else {
+        alert(error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and unlocked.')
+      }
     }
   }
 

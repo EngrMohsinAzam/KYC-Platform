@@ -38,8 +38,14 @@ export function isMetaMaskInstalled(): boolean {
 let connectionInProgress = false
 
 export async function connectWallet(): Promise<string> {
+  const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  
   if (!isMetaMaskInstalled()) {
-    throw new Error('MetaMask is not installed. Please install MetaMask to continue.')
+    if (isMobile) {
+      throw new Error('MetaMask app is not available. Please install MetaMask app to continue.')
+    } else {
+      throw new Error('MetaMask is not installed. Please install MetaMask extension to continue.')
+    }
   }
 
   if (connectionInProgress) {
