@@ -11,6 +11,7 @@ import { getNetworkInfo, isMetaMaskInstalled, checkKYCStatus } from '@/lib/web3'
 import { checkStatusByWallet } from '@/lib/api'
 import { isMobileDevice, openMetaMaskMobile, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
 import { DetectedWallet } from '@/lib/wallet-detection'
+import { useConnect } from 'wagmi'
 
 declare global {
   interface Window {
@@ -21,6 +22,7 @@ declare global {
 export default function ConnectWallet() {
   const router = useRouter()
   const { state, dispatch } = useAppContext()
+  const { connect, connectors } = useConnect()
   const idNumber = state.personalInfo?.idNumber || state.idNumber || '6278081828373231'
   const [gasFee] = useState('0.0012 BNB')
   const [blockchain] = useState('Binance Smart Chain Testnet')
@@ -113,7 +115,50 @@ export default function ConnectWallet() {
         }
       }
       
-      // Desktop: If MetaMask is already available, connect directly
+      // Use wagmi connectors for connection (works on both mobile and desktop)
+      const metaMaskConnector = connectors.find((c) => c.id === 'metaMask' || c.id === 'io.metamask')
+      const injectedConnector = connectors.find((c) => c.id === 'injected')
+      
+      // Try MetaMask connector first, then injected
+      const connectorToUse = metaMaskConnector || injectedConnector
+      
+      if (connectorToUse) {
+        setShowWalletModal(false)
+        setConnecting(true)
+        setNetworkError(null)
+        
+        try {
+          // Use wagmi connect which handles mobile automatically
+          await connect({ connector: connectorToUse })
+          
+          // Wait a bit for connection to establish
+          await new Promise(resolve => setTimeout(resolve, 1000))
+          
+          // Get the connected address from window.ethereum
+          if (window.ethereum) {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+            if (accounts && accounts.length > 0) {
+              await proceedWithConnection(accounts[0])
+              return
+            }
+          }
+          
+          // If no accounts yet, proceed anyway - wagmi will handle it
+          await proceedWithConnection()
+        } catch (connectErr: any) {
+          setConnecting(false)
+          const errorMsg = connectErr?.message || connectErr?.toString() || 'Unknown error'
+          if (errorMsg.includes('User rejected') || errorMsg.includes('User denied')) {
+            setWalletError('Wallet connection was rejected.')
+          } else {
+            setWalletError('Failed to connect wallet. Please try again.')
+          }
+          setConnectingWalletId(null)
+        }
+        return
+      }
+      
+      // Fallback: Desktop direct connection
       if (!isMobile && window.ethereum) {
         setShowWalletModal(false)
         setConnecting(true)
@@ -122,23 +167,12 @@ export default function ConnectWallet() {
         return
       }
       
-      // Desktop: Try to connect via provider
-      if (!isMobile && wallet.provider) {
-        setShowWalletModal(false)
-        setConnecting(true)
-        setNetworkError(null)
-        await proceedWithConnection()
-        return
-      }
-      
-      // Desktop: If no provider, show error
+      // If no connector and no ethereum, show error
       if (!isMobile) {
         setWalletError('MetaMask is not installed. Please install MetaMask extension to continue.')
-        setConnectingWalletId(null)
-        return
+      } else {
+        setWalletError('Unable to connect wallet. Please try again.')
       }
-      
-      setWalletError('Unable to connect to wallet. Please try again.')
       setConnectingWalletId(null)
     } catch (err: any) {
       console.error('Error connecting wallet:', err)
@@ -370,9 +404,29 @@ export default function ConnectWallet() {
               // First try to get existing accounts
               let accounts = await window.ethereum.request({ method: 'eth_accounts' })
               
-              // If no accounts, request connection
+              // If no accounts, try using wagmi connector
               if (!accounts || accounts.length === 0) {
-                accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+                // Try wagmi MetaMask connector first
+                const metaMaskConnector = connectors.find((c) => c.id === 'metaMask' || c.id === 'io.metamask')
+                const injectedConnector = connectors.find((c) => c.id === 'injected')
+                const connectorToUse = metaMaskConnector || injectedConnector
+                
+                if (connectorToUse) {
+                  try {
+                    await connect({ connector: connectorToUse })
+                    // Wait a bit for connection
+                    await new Promise(resolve => setTimeout(resolve, 1000))
+                    accounts = await window.ethereum.request({ method: 'eth_accounts' })
+                  } catch (wagmiErr: any) {
+                    // If wagmi fails, try direct request
+                    if (!wagmiErr.message?.includes('User rejected')) {
+                      accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+                    }
+                  }
+                } else {
+                  // Fallback to direct request
+                  accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+                }
               }
               
               if (accounts && accounts.length > 0) {
@@ -386,7 +440,7 @@ export default function ConnectWallet() {
               }
             } catch (err: any) {
               // If user rejected, don't keep checking
-              if (err.code === 4001) {
+              if (err.code === 4001 || err.message?.includes('User rejected')) {
                 setShowMobileInstructions(false)
                 setConnectingWalletId(null)
                 alert('Wallet connection was rejected. Please try again.')
@@ -464,7 +518,7 @@ export default function ConnectWallet() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showMobileInstructions])
+  }, [showMobileInstructions, connect, connectors])
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
