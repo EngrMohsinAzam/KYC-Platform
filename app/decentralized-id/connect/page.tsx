@@ -8,6 +8,7 @@ import { HelpModal } from '@/components/ui/HelpModal'
 import { useAppContext } from '@/context/useAppContext'
 import { getNetworkInfo, isMetaMaskInstalled, checkKYCStatus } from '@/lib/web3'
 import { checkStatusByWallet } from '@/lib/api'
+import { isMobileDevice, openMetaMaskMobile } from '@/lib/mobile-wallet'
 
 declare global {
   interface Window {
@@ -57,8 +58,52 @@ export default function ConnectWallet() {
   }, [dispatch])
 
   const [connecting, setConnecting] = useState(false)
+  const [showMobileInstructions, setShowMobileInstructions] = useState(false)
 
   const handleConnectWallet = async () => {
+    const isMobile = isMobileDevice()
+    
+    // On mobile, try to open MetaMask app via deep link
+    if (isMobile && !isMetaMaskInstalled()) {
+      setShowMobileInstructions(true)
+      try {
+        // Open MetaMask mobile app via deep link
+        openMetaMaskMobile()
+        
+        // Wait a bit and then check if connection was successful
+        setTimeout(async () => {
+          try {
+            // Check if ethereum provider is now available
+            if (window.ethereum) {
+              const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+              if (accounts && accounts.length > 0) {
+                // Connection successful
+                setShowMobileInstructions(false)
+                setConnecting(true)
+                await proceedWithConnection(accounts[0])
+                return
+              }
+            }
+            
+            // If no connection after 3 seconds, show instructions
+            setTimeout(() => {
+              if (!window.ethereum) {
+                setShowMobileInstructions(true)
+              }
+            }, 3000)
+          } catch (err) {
+            console.error('Error checking connection:', err)
+          }
+        }, 1000)
+        return
+      } catch (err) {
+        console.error('Error opening MetaMask:', err)
+        alert('Please install MetaMask app and try again.')
+        return
+      }
+    }
+    
+    // Desktop or mobile with MetaMask already detected
     if (!isMetaMaskInstalled()) {
       alert('MetaMask is not installed. Please install MetaMask to continue.')
       return
@@ -67,28 +112,35 @@ export default function ConnectWallet() {
     setConnecting(true)
     setNetworkError(null)
 
+    await proceedWithConnection()
+  }
+
+  const proceedWithConnection = async (walletAddress?: string) => {
     try {
       // Connect wallet FIRST - this will ALWAYS prompt MetaMask
       // We do this first to ensure user explicitly approves connection
-      const { connectWallet } = await import('@/lib/web3')
-      let walletAddress: string
-      
-      try {
-        // This will ALWAYS prompt MetaMask for permission
-        walletAddress = await connectWallet()
-      } catch (connectError: any) {
-        setConnecting(false)
-        if (connectError.code === 4001) {
-          alert('Wallet connection was rejected. Please connect your wallet to continue.')
-        } else {
-          alert(connectError.message || 'Failed to connect wallet. Please try again.')
+      if (!walletAddress) {
+        const { connectWallet } = await import('@/lib/web3')
+        
+        try {
+          // This will ALWAYS prompt MetaMask for permission
+          walletAddress = await connectWallet()
+        } catch (connectError: any) {
+          setConnecting(false)
+          setShowMobileInstructions(false)
+          if (connectError.code === 4001) {
+            alert('Wallet connection was rejected. Please connect your wallet to continue.')
+          } else {
+            alert(connectError.message || 'Failed to connect wallet. Please try again.')
+          }
+          return
         }
-        return
       }
 
       // Verify wallet is actually connected
       if (!walletAddress) {
         setConnecting(false)
+        setShowMobileInstructions(false)
         alert('Wallet connection failed. Please try again.')
         return
       }
@@ -178,6 +230,7 @@ export default function ConnectWallet() {
       // If already submitted, show message and redirect to status check
       if (alreadySubmitted) {
         setConnecting(false)
+        setShowMobileInstructions(false)
         
         if (isApproved) {
           // If approved, show message about checking status by email/CNIC
@@ -193,13 +246,55 @@ export default function ConnectWallet() {
       
       // Wallet is connected and no previous submission, proceed to confirm page
       setConnecting(false)
+      setShowMobileInstructions(false)
       router.push('/decentralized-id/confirm')
     } catch (error: any) {
       setConnecting(false)
+      setShowMobileInstructions(false)
       console.error('Connect wallet error:', error)
       alert(error.message || 'Failed to connect wallet. Please make sure MetaMask is installed and unlocked.')
     }
   }
+
+  // Listen for wallet connection on mobile
+  useEffect(() => {
+    if (showMobileInstructions && window.ethereum) {
+      const checkConnection = async () => {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' })
+          if (accounts && accounts.length > 0) {
+            setShowMobileInstructions(false)
+            setConnecting(true)
+            await proceedWithConnection(accounts[0])
+          }
+        } catch (err) {
+          console.error('Error checking connection:', err)
+        }
+      }
+      
+      // Check periodically for connection
+      const interval = setInterval(checkConnection, 1000)
+      
+      // Also listen for account changes
+      const handleAccountsChanged = async (accounts: string[]) => {
+        if (accounts && accounts.length > 0) {
+          clearInterval(interval)
+          setShowMobileInstructions(false)
+          setConnecting(true)
+          await proceedWithConnection(accounts[0])
+        }
+      }
+      
+      window.ethereum.on('accountsChanged', handleAccountsChanged)
+      
+      return () => {
+        clearInterval(interval)
+        if (window.ethereum && window.ethereum.removeListener) {
+          window.ethereum.removeListener('accountsChanged', handleAccountsChanged)
+        }
+      }
+    }
+  }, [showMobileInstructions])
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
@@ -247,6 +342,21 @@ export default function ConnectWallet() {
               Need help? Click here
             </a>
           </div>
+
+          {/* Mobile Instructions */}
+          {showMobileInstructions && (
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800 font-semibold mb-2">
+                Opening MetaMask...
+              </p>
+              <p className="text-sm text-blue-700 mb-2">
+                Please open the MetaMask app on your device and approve the connection request.
+              </p>
+              <p className="text-xs text-blue-600">
+                If MetaMask doesn't open automatically, please tap on it in your app list.
+              </p>
+            </div>
+          )}
 
           {/* Network Error */}
           {networkError && (
