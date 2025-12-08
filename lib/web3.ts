@@ -11,7 +11,16 @@ export function isMetaMaskInstalled(): boolean {
   const win = window as any
   
   // Check if ethereum provider exists
-  if (!win.ethereum) return false
+  if (!win.ethereum) {
+    // On mobile, ethereum might not be available until MetaMask app is opened
+    // Check if we're on mobile - if so, assume MetaMask mobile app might be available
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    if (isMobile) {
+      // On mobile, return true to allow deep link flow
+      return true
+    }
+    return false
+  }
   
   // Check if it's MetaMask (desktop extension)
   if (win.ethereum.isMetaMask) return true
@@ -22,7 +31,7 @@ export function isMetaMaskInstalled(): boolean {
   }
   
   // If ethereum exists but no isMetaMask flag, assume it might be MetaMask
-  // This handles cases where the flag might not be set
+  // This handles cases where the flag might not be set (especially on mobile)
   return true
 }
 
