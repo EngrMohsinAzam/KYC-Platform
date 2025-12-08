@@ -17,6 +17,7 @@ import { switchToBSCTestnet } from '@/lib/network-switch'
 import { setMetaMaskProvider } from '@/lib/wagmi-config'
 import { DetectedWallet } from '@/lib/wallet-detection'
 import { isMobileDevice } from '@/lib/mobile-wallet'
+import { WalletSelectionModal } from '@/components/wallet/WalletSelectionModal'
 import '@/lib/wagmi-config'
 
 export default function ReviewContent() {
@@ -26,9 +27,11 @@ export default function ReviewContent() {
   const { connect, connectors } = useConnect()
   
   const [showHelpModal, setShowHelpModal] = useState(false)
+  const [showWalletModal, setShowWalletModal] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null)
   const [networkError, setNetworkError] = useState<string | null>(null)
+  const [walletError, setWalletError] = useState<string | null>(null)
   const [kycSubmitted, setKycSubmitted] = useState(false)
   const [processingPayment, setProcessingPayment] = useState(false)
   const [submittingToBackend, setSubmittingToBackend] = useState(false)
@@ -213,170 +216,11 @@ export default function ReviewContent() {
   }
 
   const handleOpenWalletModal = async () => {
+    // Show wallet selection modal (like admin dashboard)
+    setShowWalletModal(true)
     setError(null)
     setNetworkError(null)
-    setConnecting(false) // Don't set connecting yet - let wallet selection modal handle it
-    
-    const isMobile = isMobileDevice()
-    const win = window as any
-    
-    // On mobile, use wagmi connectors directly (they handle mobile automatically)
-    if (isMobile) {
-      try {
-        // Find MetaMask connector
-        const metaMaskConnector = connectors.find(c => c.id === 'metaMask' || c.id === 'io.metamask')
-        const injectedConnector = connectors.find(c => c.id === 'injected')
-        const connectorToUse = metaMaskConnector || injectedConnector
-        
-        if (connectorToUse) {
-          setConnecting(true)
-          setError(null)
-          
-          // Connect using wagmi
-          await connect({ connector: connectorToUse })
-          
-          // Wait for connection to establish - poll for address
-          let attempts = 0
-          const maxAttempts = 20 // 10 seconds total
-          let connectedAddress: string | null = null
-          
-          while (attempts < maxAttempts) {
-            // Check if address is available from wagmi
-            if (address) {
-              connectedAddress = address
-              break
-            }
-            
-            // Also check window.ethereum directly
-            if (win.ethereum) {
-              try {
-                const accounts = await win.ethereum.request({ method: 'eth_accounts' })
-                if (accounts && accounts.length > 0 && accounts[0]) {
-                  const accountAddress = accounts[0] as string
-                  connectedAddress = accountAddress
-                  // Update context immediately
-                  dispatch({ type: 'SET_WALLET', payload: accountAddress })
-                  break
-                }
-              } catch (err) {
-                console.log('Error checking accounts:', err)
-              }
-            }
-            
-            await new Promise(resolve => setTimeout(resolve, 500))
-            attempts++
-          }
-          
-          // If we got an address, connection is successful
-          if (connectedAddress && typeof connectedAddress === 'string') {
-            // Update context with wallet address
-            dispatch({ type: 'SET_WALLET', payload: connectedAddress })
-            
-            // If ethereum is available, switch network
-            if (win.ethereum) {
-              try {
-                await switchToBSCTestnet(win.ethereum)
-                await new Promise(resolve => setTimeout(resolve, 1000))
-              } catch (networkErr: any) {
-                console.warn('⚠️ Network switch error (non-blocking):', networkErr)
-                if (networkErr?.code !== 4001) {
-                  setNetworkError('Please switch to BSC Testnet manually in your wallet.')
-                }
-              }
-            }
-            
-            localStorage.setItem('lastConnectedWallet', 'metamask')
-            localStorage.setItem('lastConnectorId', connectorToUse.id)
-            setConnecting(false)
-            return
-          } else {
-            // Connection timeout
-            setError('Connection timeout. Please make sure MetaMask app is open and try again.')
-            setConnecting(false)
-            return
-          }
-        } else {
-          setError('No wallet connector available. Please try again.')
-          setConnecting(false)
-          return
-        }
-      } catch (err: any) {
-        console.error('❌ Error connecting wallet on mobile:', err)
-        const errorMessage = err?.message || err?.toString() || ''
-        
-        if (err?.code === 4001 || errorMessage.includes('rejected') || errorMessage.includes('denied')) {
-          setError('Wallet connection was rejected. Please approve the connection in MetaMask app.')
-        } else {
-          setError('Failed to connect wallet. Please make sure MetaMask app is installed and try again.')
-        }
-        setConnecting(false)
-        return
-      }
-    }
-    
-    // Desktop: Check if MetaMask is installed
-    if (!win.ethereum || !win.ethereum.isMetaMask) {
-      setError('MetaMask is not installed. Please install MetaMask extension to continue.')
-      setConnecting(false)
-      return
-    }
-    
-    // Desktop: Connect using wagmi
-    try {
-      setConnecting(true)
-      
-      // Set MetaMask provider
-      setMetaMaskProvider(win.ethereum)
-      win.ethereum = win.ethereum
-      
-      // Remove providers array if it exists
-      if (win.ethereum.providers) {
-        delete win.ethereum.providers
-      }
-      
-      // Wait a moment for changes to apply
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // Find MetaMask connector
-      let metaMaskConnector = connectors.find(c => c.id === 'metaMask' || c.id === 'io.metamask')
-      if (!metaMaskConnector) {
-        metaMaskConnector = connectors.find(c => c.id === 'injected')
-      }
-      
-      if (!metaMaskConnector) {
-        throw new Error('No suitable connector found for MetaMask')
-      }
-      
-      // Connect to MetaMask
-      await connect({ connector: metaMaskConnector })
-      
-      localStorage.setItem('lastConnectedWallet', 'metamask')
-      localStorage.setItem('lastConnectorId', metaMaskConnector.id)
-      
-      // Switch to BSC Testnet
-      try {
-        await switchToBSCTestnet(win.ethereum)
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      } catch (networkErr: any) {
-        console.warn('⚠️ Network switch error (non-blocking):', networkErr)
-        if (networkErr?.code !== 4001) {
-          setNetworkError('Please switch to BSC Testnet manually in your wallet.')
-        }
-      }
-      
-      setConnecting(false)
-    } catch (err: any) {
-      console.error('❌ Error connecting MetaMask:', err)
-      const errorMessage = err?.message || err?.toString() || ''
-      
-      if (err?.code === 4001 || errorMessage.includes('rejected') || errorMessage.includes('denied')) {
-        setError('MetaMask connection was rejected. Please approve the connection in MetaMask.')
-      } else {
-        setError(err.message || 'Failed to connect MetaMask. Please try again.')
-      }
-      
-      setConnecting(false)
-    }
+    setWalletError(null)
   }
 
   const handleWalletSelect = async (wallet: DetectedWallet) => {
@@ -386,6 +230,8 @@ export default function ReviewContent() {
       setConnectingWalletId(wallet.id)
       setError(null)
       setNetworkError(null)
+      setWalletError(null)
+      setShowWalletModal(false) // Close modal when wallet is selected
       
       const isMobile = isMobileDevice()
       const win = window as any
@@ -475,6 +321,7 @@ export default function ReviewContent() {
             const errorMessage = connectErr?.message || connectErr?.toString() || ''
             
             if (connectErr?.code === 4001 || errorMessage.includes('rejected') || errorMessage.includes('denied')) {
+              setWalletError('MetaMask connection was rejected. Please approve the connection in MetaMask.')
               setError('MetaMask connection was rejected. Please approve the connection in MetaMask.')
               setConnecting(false)
               setConnectingWalletId(null)
@@ -1442,6 +1289,19 @@ export default function ReviewContent() {
       <HelpModal
         isOpen={showHelpModal}
         onClose={() => setShowHelpModal(false)}
+      />
+      
+      {/* Wallet Selection Modal */}
+      <WalletSelectionModal
+        isOpen={showWalletModal}
+        onClose={() => {
+          setShowWalletModal(false)
+          setConnectingWalletId(null)
+          setWalletError(null)
+        }}
+        onWalletSelect={handleWalletSelect}
+        connectingWalletId={connectingWalletId}
+        error={walletError}
       />
     </div>
   )
