@@ -39,8 +39,6 @@ export default function UploadSelfie() {
   const isLivenessRunningRef = useRef(false)
   const cameraFrontRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
-  const [countdown, setCountdown] = useState<number | null>(null)
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   // Get the active video ref based on screen size
   const getActiveVideoRef = () => {
@@ -316,13 +314,8 @@ export default function UploadSelfie() {
       // Small delay to ensure state is set and video elements are rendered
       await new Promise(resolve => setTimeout(resolve, 100))
 
-      // Start liveness check after video is playing
-      setTimeout(() => {
-        if (mediaStream && mediaStream.active && !isLivenessRunningRef.current) {
-          console.log('🎬 Starting liveness check...')
-          startLivenessCheck()
-        }
-      }, 500)
+      // Camera is ready - no automatic liveness check
+      console.log('✅ Camera is ready for manual capture')
       
     } catch (error: any) {
       console.error('❌ Error accessing camera:', error)
@@ -481,55 +474,15 @@ export default function UploadSelfie() {
     dispatch({ type: 'SET_SELFIE_IMAGE', payload: '' })
     stopCamera()
     
-    // On mobile, use native camera instead of web camera
-    if (isMobile) {
-      // Use front camera for selfie by default
-      setTimeout(() => {
-        cameraFrontRef.current?.click()
-      }, 100)
-    } else {
-      setTimeout(() => {
-        startCamera()
-      }, 300)
-    }
+    // Use web camera for both mobile and desktop for consistent behavior
+    setTimeout(() => {
+      startCamera()
+    }, 300)
   }
 
   const handleTakeSelfie = async () => {
     // Start camera (works for both mobile and desktop)
     await startCamera()
-    
-    // Wait for camera to be ready, then start countdown
-    const checkCameraReady = setInterval(() => {
-      if (isCameraActive && stream && isVideoReady) {
-        clearInterval(checkCameraReady)
-        
-        // Start countdown after camera is ready
-        setCountdown(3)
-        
-        let count = 3
-        const countdownInterval = setInterval(() => {
-          count--
-          setCountdown(count)
-          
-          if (count <= 0) {
-            clearInterval(countdownInterval)
-            setCountdown(null)
-            
-            // Auto-capture after countdown
-            setTimeout(() => {
-              captureSelfie()
-            }, 200) // Small delay to ensure countdown UI updates
-          }
-        }, 1000)
-        
-        countdownIntervalRef.current = countdownInterval
-      }
-    }, 200) // Check every 200ms
-    
-    // Timeout after 5 seconds if camera doesn't become ready
-    setTimeout(() => {
-      clearInterval(checkCameraReady)
-    }, 5000)
   }
 
   const captureSelfie = () => {
@@ -554,6 +507,8 @@ export default function UploadSelfie() {
         setProgress(100)
         stopCamera()
       }
+    } else {
+      console.error('❌ Video or canvas not ready for capture')
     }
   }
 
@@ -577,14 +532,6 @@ export default function UploadSelfie() {
     }
   }
 
-  // Cleanup countdown on unmount
-  useEffect(() => {
-    return () => {
-      if (countdownIntervalRef.current) {
-        clearInterval(countdownIntervalRef.current)
-      }
-    }
-  }, [])
 
   // Auto-start camera when component loads - wait for video element to be rendered
   useEffect(() => {
@@ -719,47 +666,16 @@ export default function UploadSelfie() {
                           </div>
                         </div>
 
-                        {/* Direction arrows - larger and more visible */}
-                        {currentStep !== 'complete' && currentStep !== 'center' && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            {currentStep === 'left' && (
-                              <div className="absolute left-2 sm:left-4 text-white text-5xl sm:text-6xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 20px rgba(0,0,0,0.8)' }}>←</div>
-                            )}
-                            {currentStep === 'right' && (
-                              <div className="absolute right-2 sm:right-4 text-white text-5xl sm:text-6xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 20px rgba(0,0,0,0.8)' }}>→</div>
-                            )}
-                            {currentStep === 'up' && (
-                              <div className="absolute top-2 sm:top-4 text-white text-5xl sm:text-6xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 20px rgba(0,0,0,0.8)' }}>↑</div>
-                            )}
-                            {currentStep === 'down' && (
-                              <div className="absolute bottom-2 sm:bottom-4 text-white text-5xl sm:text-6xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 20px rgba(0,0,0,0.8)' }}>↓</div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
 
-                    {/* Progress bar and instruction text */}
+                    {/* Instruction text */}
                         <div className="absolute bottom-4 left-4 right-4">
-                      <div className="w-full h-2 bg-white bg-opacity-20 rounded-full overflow-hidden mb-2">
-                        <div className={`h-full ${getProgressColor()} transition-all duration-300`} style={{ width: `${progress}%` }} />
-                      </div>
                       <p className="text-white text-sm text-center font-semibold">
-                            {stepInstructions[currentStep]}
+                            Position your face in the center and tap the button to capture
                           </p>
                         </div>
 
-                        {/* Countdown overlay - shows on top of video */}
-                        {countdown !== null && countdown > 0 && (
-                          <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 pointer-events-none">
-                            <div className="text-center">
-                              <div className="text-9xl font-bold text-white mb-4 animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 30px rgba(255,255,255,0.8)' }}>
-                                {countdown}
-                              </div>
-                              <p className="text-white text-xl font-semibold">Get ready!</p>
-                            </div>
-                          </div>
-                        )}
                       </>
                 ) : capturedImage ? (
                   <img src={capturedImage} alt="Selfie" className="w-full h-full object-contain" />
@@ -777,27 +693,11 @@ export default function UploadSelfie() {
                 {capturedImage 
                   ? '✓ Selfie captured successfully'
                   : isCameraActive
-                  ? 'Position your face within the frame'
+                  ? 'Position your face within the frame and tap the button below to capture'
                   : isMobile
                   ? 'Tap the button below to take a selfie'
                   : 'Ready to capture'}
               </p>
-
-              {/* Mobile native camera button */}
-              {isMobile && !capturedImage && !isCameraActive && (
-                <div className="flex flex-col gap-3 w-full">
-                  <button
-                    onClick={handleTakeSelfie}
-                    className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Take Selfie</span>
-                  </button>
-                </div>
-              )}
 
 
               {/* Hidden native camera input - front camera for selfie */}
@@ -876,31 +776,11 @@ export default function UploadSelfie() {
                             </div>
                           </div>
 
-                          {/* Direction arrows - larger and more visible */}
-                          {currentStep !== 'complete' && currentStep !== 'center' && (
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                              {currentStep === 'left' && (
-                                <div className="absolute left-8 text-white text-7xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 30px rgba(0,0,0,0.9)' }}>←</div>
-                              )}
-                              {currentStep === 'right' && (
-                                <div className="absolute right-8 text-white text-7xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 30px rgba(0,0,0,0.9)' }}>→</div>
-                              )}
-                              {currentStep === 'up' && (
-                                <div className="absolute top-8 text-white text-7xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 30px rgba(0,0,0,0.9)' }}>↑</div>
-                              )}
-                              {currentStep === 'down' && (
-                                <div className="absolute bottom-8 text-white text-7xl font-black animate-pulse drop-shadow-2xl" style={{ textShadow: '0 0 30px rgba(0,0,0,0.9)' }}>↓</div>
-                              )}
-                            </div>
-                          )}
                             </div>
                           </div>
 
                           <div className="absolute bottom-4 left-4 right-4">
-                            <div className="w-full h-2 bg-white bg-opacity-20 rounded-full overflow-hidden mb-2">
-                              <div className={`h-full ${getProgressColor()} transition-all duration-300`} style={{ width: `${progress}%` }} />
-                            </div>
-                            <p className="text-white text-sm text-center font-medium">{stepInstructions[currentStep]}</p>
+                            <p className="text-white text-sm text-center font-medium">Position your face in the center and click the button to capture</p>
                           </div>
                         </>
                   ) : capturedImage ? (
@@ -918,18 +798,26 @@ export default function UploadSelfie() {
 
               <div className="space-y-3">
                 {isCameraActive && !capturedImage && (
-                  <button onClick={stopCamera} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
-                    Cancel Camera
-                  </button>
+                  <>
+                    <Button 
+                      onClick={captureSelfie}
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                      disabled={!isVideoReady}
+                    >
+                      Capture Selfie
+                    </Button>
+                    <button onClick={stopCamera} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
+                      Cancel Camera
+                    </button>
+                  </>
                 )}
                 {capturedImage && (
                   <>
                     <Button 
                       onClick={handleContinue} 
-                      className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                      disabled={currentStep !== 'complete'}
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
                     >
-                      {currentStep === 'complete' ? '✓ Selfie is Clear - Continue' : 'Please complete face verification'}
+                      Continue
                     </Button>
                     <button onClick={handleRetake} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
                       Retake photo
@@ -970,18 +858,26 @@ export default function UploadSelfie() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
         <div className="space-y-2">
           {isCameraActive && !capturedImage && (
-            <button onClick={stopCamera} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
-              Cancel Camera
-            </button>
+            <>
+              <Button 
+                onClick={captureSelfie}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
+                disabled={!isVideoReady}
+              >
+                Capture Selfie
+              </Button>
+              <button onClick={stopCamera} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
+                Cancel Camera
+              </button>
+            </>
           )}
           {capturedImage && (
             <>
               <Button 
                 onClick={handleContinue} 
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                disabled={currentStep !== 'complete'}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
               >
-                {currentStep === 'complete' ? 'Continue' : 'Please complete face verification'}
+                Continue
               </Button>
               <button onClick={handleRetake} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
                 Retake Photo

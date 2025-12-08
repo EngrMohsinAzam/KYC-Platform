@@ -7,17 +7,16 @@ import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
-import { WalletSelectionModal } from '@/components/wallet/WalletSelectionModal'
 import { HelpModal } from '@/components/ui/HelpModal'
 import { useAccount, useConnect } from 'wagmi'
 import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/lib/web3'
 import { submitKYCData } from '@/lib/api'
 import { formatWalletAddress } from '@/lib/utils'
 import { ethers } from 'ethers'
-import { DetectedWallet } from '@/lib/wallet-detection'
 import { switchToBSCTestnet } from '@/lib/network-switch'
 import { setMetaMaskProvider } from '@/lib/wagmi-config'
-import { isMobileDevice, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
+import { DetectedWallet } from '@/lib/wallet-detection'
+import { isMobileDevice } from '@/lib/mobile-wallet'
 import '@/lib/wagmi-config'
 
 export default function ReviewContent() {
@@ -26,7 +25,6 @@ export default function ReviewContent() {
   const { address, isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   
-  const [showWalletModal, setShowWalletModal] = useState(false)
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null)
@@ -207,10 +205,73 @@ export default function ReviewContent() {
     }
   }
 
-  const handleOpenWalletModal = () => {
+  const handleOpenWalletModal = async () => {
     setError(null)
     setNetworkError(null)
-    setShowWalletModal(true)
+    setConnecting(true)
+    
+    try {
+      const win = window as any
+      
+      // Check if MetaMask is installed
+      if (!win.ethereum || !win.ethereum.isMetaMask) {
+        setError('MetaMask is not installed. Please install MetaMask extension to continue.')
+        setConnecting(false)
+        return
+      }
+      
+      // Set MetaMask provider
+      setMetaMaskProvider(win.ethereum)
+      win.ethereum = win.ethereum
+      
+      // Remove providers array if it exists
+      if (win.ethereum.providers) {
+        delete win.ethereum.providers
+      }
+      
+      // Wait a moment for changes to apply
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+      // Find MetaMask connector
+      let metaMaskConnector = connectors.find(c => c.id === 'metaMask' || c.id === 'io.metamask')
+      if (!metaMaskConnector) {
+        metaMaskConnector = connectors.find(c => c.id === 'injected')
+      }
+      
+      if (!metaMaskConnector) {
+        throw new Error('No suitable connector found for MetaMask')
+      }
+      
+      // Connect to MetaMask
+      await connect({ connector: metaMaskConnector })
+      
+      localStorage.setItem('lastConnectedWallet', 'metamask')
+      localStorage.setItem('lastConnectorId', metaMaskConnector.id)
+      
+      // Switch to BSC Testnet
+      try {
+        await switchToBSCTestnet(win.ethereum)
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      } catch (networkErr: any) {
+        console.warn('⚠️ Network switch error (non-blocking):', networkErr)
+        if (networkErr?.code !== 4001) {
+          setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+        }
+      }
+      
+      setConnecting(false)
+    } catch (err: any) {
+      console.error('❌ Error connecting MetaMask:', err)
+      const errorMessage = err?.message || err?.toString() || ''
+      
+      if (err?.code === 4001 || errorMessage.includes('rejected') || errorMessage.includes('denied')) {
+        setError('MetaMask connection was rejected. Please approve the connection in MetaMask.')
+      } else {
+        setError(err.message || 'Failed to connect MetaMask. Please try again.')
+      }
+      
+      setConnecting(false)
+    }
   }
 
   const handleWalletSelect = async (wallet: DetectedWallet) => {
@@ -301,7 +362,6 @@ export default function ReviewContent() {
             }
             
             console.log('✅ MetaMask connected successfully!')
-            setShowWalletModal(false)
             setConnecting(false)
             setConnectingWalletId(null)
             return
@@ -336,7 +396,6 @@ export default function ReviewContent() {
                     setNetworkError('Please switch to BSC Testnet manually in your wallet.')
                   }
                   
-                  setShowWalletModal(false)
                   setConnecting(false)
                   setConnectingWalletId(null)
                   return
@@ -378,7 +437,6 @@ export default function ReviewContent() {
                 }
                 
                 console.log('✅ MetaMask connected via WalletConnect!')
-                setShowWalletModal(false)
                 setConnecting(false)
                 setConnectingWalletId(null)
                 return
@@ -415,7 +473,6 @@ export default function ReviewContent() {
                 setNetworkError('Please switch to BSC Testnet manually in your wallet.')
               }
               
-              setShowWalletModal(false)
               setConnecting(false)
               setConnectingWalletId(null)
               return
@@ -471,7 +528,6 @@ export default function ReviewContent() {
               }
               
               console.log(`✅ ${wallet.name} connected via WalletConnect!`)
-              setShowWalletModal(false)
               setConnecting(false)
               setConnectingWalletId(null)
               return
@@ -507,7 +563,6 @@ export default function ReviewContent() {
           }
           
           console.log('✅ Coinbase Wallet connected')
-          setShowWalletModal(false)
           setConnecting(false)
           setConnectingWalletId(null)
           return
@@ -554,7 +609,6 @@ export default function ReviewContent() {
             }
             
             console.log('✅ Wallet connected:', wallet.name)
-            setShowWalletModal(false)
             setConnecting(false)
             setConnectingWalletId(null)
             return
@@ -592,7 +646,6 @@ export default function ReviewContent() {
       }
       
       console.log('✅ Wallet connected:', wallet.name)
-      setShowWalletModal(false)
       setConnecting(false)
       setConnectingWalletId(null)
     } catch (err: any) {
@@ -607,6 +660,73 @@ export default function ReviewContent() {
       
       setConnecting(false)
       setConnectingWalletId(null)
+    }
+  }
+
+  // Validate all required information before blockchain submission
+  const validateKYCData = (): { isValid: boolean; missingFields: string[] } => {
+    const missingFields: string[] = []
+
+    // Check documents
+    if (!state.documentImageFront) {
+      missingFields.push('Front document image')
+    }
+    
+    // Check if back document is needed (not needed for passport)
+    const needsBackSide = state.selectedIdType !== 'passport'
+    if (needsBackSide && !state.documentImageBack) {
+      missingFields.push('Back document image')
+    }
+    
+    if (!state.selfieImage) {
+      missingFields.push('Selfie image')
+    }
+
+    // Check personal information
+    if (!state.personalInfo) {
+      missingFields.push('Personal information')
+    } else {
+      if (!state.personalInfo.firstName?.trim()) {
+        missingFields.push('First name')
+      }
+      if (!state.personalInfo.lastName?.trim()) {
+        missingFields.push('Last name')
+      }
+      if (!state.personalInfo.fatherName?.trim()) {
+        missingFields.push("Father's name")
+      }
+      if (!state.personalInfo.idNumber?.trim()) {
+        missingFields.push('ID number')
+      }
+      if (!state.personalInfo.email?.trim()) {
+        missingFields.push('Email address')
+      }
+      if (!state.personalInfo.phone?.trim()) {
+        missingFields.push('Phone number')
+      }
+    }
+
+    // Check location information
+    if (!state.selectedCountry) {
+      missingFields.push('Country')
+    }
+    if (!state.selectedCity) {
+      missingFields.push('City')
+    }
+
+    // Check ID type
+    if (!state.selectedIdType) {
+      missingFields.push('ID type')
+    }
+
+    // Check USA residence status
+    if (state.isResidentUSA === undefined) {
+      missingFields.push('USA residence status')
+    }
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields
     }
   }
 
@@ -627,6 +747,19 @@ export default function ReviewContent() {
       setError('Please connect your wallet first')
       return
     }
+
+    // Validate all required information before proceeding
+    console.log('✅ Validating KYC data before blockchain submission...')
+    const validation = validateKYCData()
+    
+    if (!validation.isValid) {
+      console.error('❌ Validation failed. Missing fields:', validation.missingFields)
+      const missingList = validation.missingFields.map((field, index) => `${index + 1}. ${field}`).join('\n')
+      setError(`⚠️ Missing Information\n\nPlease complete the following before submitting to blockchain:\n\n${missingList}\n\nPlease go back and complete these fields.`)
+      return
+    }
+    
+    console.log('✅ All required information is complete. Proceeding to blockchain submission...')
 
     try {
       console.log('✅ Starting KYC submission process...')
@@ -978,7 +1111,7 @@ export default function ReviewContent() {
             {/* Error Messages */}
             {error && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-sm text-red-600">{error}</p>
+                <div className="text-sm text-red-600 whitespace-pre-line">{error}</div>
               </div>
             )}
 
@@ -1095,7 +1228,7 @@ export default function ReviewContent() {
               {/* Error Messages */}
               {error && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-sm text-red-600">{error}</p>
+                  <div className="text-sm text-red-600 whitespace-pre-line">{error}</div>
                 </div>
               )}
 
@@ -1199,18 +1332,6 @@ export default function ReviewContent() {
           </div>
         </div>
       </main>
-
-      {/* Wallet Selection Modal */}
-      <WalletSelectionModal
-        isOpen={showWalletModal}
-        onClose={() => {
-          setShowWalletModal(false)
-          setError(null)
-        }}
-        onWalletSelect={handleWalletSelect}
-        connectingWalletId={connectingWalletId}
-        error={error}
-      />
 
       {/* Help Modal */}
       <HelpModal

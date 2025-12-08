@@ -162,7 +162,7 @@ export default function VerifyIdentity() {
               {/* Identity Document Card */}
               <div 
                 onClick={isUpdating ? undefined : handleDocumentClick}
-                className={`bg-gray-100 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-800'}`}
+                className={`bg-gray-100 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-200'} ${documentComplete ? 'ring-2 ring-green-500' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
@@ -172,7 +172,16 @@ export default function VerifyIdentity() {
                   
                   {/* Content */}
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 text-sm mb-0.5">Identity document</h3>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-medium text-gray-900 text-sm">Identity document</h3>
+                      {documentComplete && (
+                        <div className="w-4 h-4 bg-green-500 rounded flex items-center justify-center flex-shrink-0">
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400">
                       {documentComplete ? 'Document uploaded ' : 'Take a photo of your ID'}
                     </p>
@@ -183,7 +192,7 @@ export default function VerifyIdentity() {
               {/* Selfie Card */}
               <div 
                 onClick={isUpdating ? undefined : handleSelfieClick}
-                className={`bg-gray-100 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-800'}`}
+                className={`bg-gray-100 rounded-xl p-4 transition-all ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-200'} ${state.selfieImage ? 'ring-2 ring-green-500' : ''}`}
               >
                 <div className="flex items-center gap-3">
                   {/* Icon */}
@@ -193,7 +202,16 @@ export default function VerifyIdentity() {
                   
                   {/* Content */}
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 text-sm mb-0.5">Selfie</h3>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <h3 className="font-medium text-gray-900 text-sm">Selfie</h3>
+                      {state.selfieImage && (
+                        <div className="w-4 h-4 bg-green-500 rounded flex items-center justify-center flex-shrink-0">
+                          <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400">
                       {state.selfieImage ? 'Selfie uploaded ' : 'Take a selfie'}
                     </p>

@@ -11,75 +11,9 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { getCountryByValue, getCountryOptions } from '@/lib/countries'
 
-// Simulated OCR/NLP extraction - in production, this would call an OCR API
-const extractDocumentInfo = async (frontImage: string, backImage: string | null, idType: string) => {
-  // Simulate OCR extraction delay with NLP processing
-  return new Promise<{ 
-    firstName: string
-    lastName: string
-    fatherName: string
-    idNumber: string
-  }>((resolve) => {
-    setTimeout(() => {
-      // In production, this would:
-      // 1. Send images to OCR API (Google Vision, AWS Textract, Azure Form Recognizer, etc.)
-      // 2. Extract all text from the document
-      // 3. Use NLP/ML to identify and parse structured fields
-      // 4. Return extracted data
-      
-      // For now, we'll extract from the image data URL to simulate
-      // In real implementation, you would do:
-      // const response = await fetch('/api/ocr', {
-      //   method: 'POST',
-      //   body: JSON.stringify({ frontImage, backImage, idType })
-      // })
-      // const data = await response.json()
-      
-      // Simulated extraction based on document type
-      let extractedData = {
-        firstName: '',
-        lastName: '',
-        fatherName: '',
-        idNumber: '',
-      }
-
-      // Try to extract from image (simulated - in production use real OCR)
-      // For CNIC/National ID, typically has: Name, Father's Name, CNIC Number
-      // For Passport: Name, Passport Number
-      // For License: Name, License Number
-      
-      // Simulated extraction - replace with real OCR API call
-      if (idType === 'national-id' || idType === 'drivers-license') {
-        extractedData = {
-          firstName: '', // Extracted from document
-          lastName: '', // Extracted from document
-          fatherName: '', // Extracted from document
-          idNumber: '', // Extracted CNIC/License number
-        }
-      } else if (idType === 'passport') {
-        extractedData = {
-          firstName: 'John',
-          lastName: 'Smith',
-          fatherName: 'Robert Smith',
-          idNumber: 'AB1234567', // Passport number
-        }
-      }
-
-      resolve(extractedData)
-    }, 2000) // Simulate processing time
-  })
-}
-
 export default function PersonalInfo() {
   const router = useRouter()
   const { state, dispatch } = useAppContext()
-  const [loading, setLoading] = useState(true)
-  const [extractedData, setExtractedData] = useState<{
-    firstName: string
-    lastName: string
-    fatherName: string
-    idNumber: string
-  } | null>(null)
   
   const [formData, setFormData] = useState({
     firstName: '',
@@ -148,28 +82,6 @@ export default function PersonalInfo() {
     }
   }, [state.personalInfo?.email])
 
-  useEffect(() => {
-    // Simulate OCR/NLP extraction when component mounts
-    // Use front image (required) and back image (if available)
-    const frontImage = state.documentImageFront || state.documentImage
-    const backImage = state.documentImageBack
-    
-    if (frontImage && state.selectedIdType) {
-      extractDocumentInfo(frontImage, backImage || null, state.selectedIdType).then((data) => {
-        setExtractedData(data)
-        setFormData((prev) => ({
-          ...prev,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          fatherName: data.fatherName,
-          idNumber: data.idNumber,
-        }))
-        setLoading(false)
-      })
-    } else {
-      setLoading(false)
-    }
-  }, [state.documentImage, state.documentImageFront, state.documentImageBack, state.selectedIdType])
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -200,22 +112,109 @@ export default function PersonalInfo() {
     }
   }
 
+  // Get ID number format based on country and document type
+  const getIdNumberFormat = (country: string, idType: string) => {
+    const formats: Record<string, Record<string, { maxLength: number; pattern: RegExp; format?: (value: string) => string }>> = {
+      'pk': {
+        'national-id': {
+          maxLength: 13,
+          pattern: /^\d{13}$/,
+          format: (value: string) => {
+            const digits = value.replace(/\D/g, '').slice(0, 13)
+            if (digits.length === 13) {
+              return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`
+            }
+            return digits
+          }
+        },
+        'passport': {
+          maxLength: 9,
+          pattern: /^[A-Z]{2}\d{7}$/,
+        },
+        'drivers-license': {
+          maxLength: 15,
+          pattern: /^[A-Z]{2}\d{13}$/,
+        }
+      },
+      'in': {
+        'national-id': {
+          maxLength: 12,
+          pattern: /^\d{12}$/,
+        },
+        'passport': {
+          maxLength: 8,
+          pattern: /^[A-Z]\d{7}$/,
+        },
+        'drivers-license': {
+          maxLength: 15,
+          pattern: /^[A-Z]{2}\d{13}$/,
+        }
+      },
+      'us': {
+        'national-id': {
+          maxLength: 9,
+          pattern: /^\d{9}$/,
+        },
+        'passport': {
+          maxLength: 9,
+          pattern: /^\d{9}$/,
+        },
+        'drivers-license': {
+          maxLength: 20,
+          pattern: /^[A-Z0-9]+$/,
+        }
+      },
+      'uk': {
+        'national-id': {
+          maxLength: 9,
+          pattern: /^[A-Z]{2}\d{6}[A-Z]$/,
+        },
+        'passport': {
+          maxLength: 9,
+          pattern: /^[A-Z]\d{8}$/,
+        },
+        'drivers-license': {
+          maxLength: 16,
+          pattern: /^[A-Z0-9]+$/,
+        }
+      }
+    }
+    
+    return formats[country]?.[idType] || {
+      'national-id': { maxLength: 13, pattern: /^\d+$/ },
+      'passport': { maxLength: 20, pattern: /^[A-Z0-9]+$/ },
+      'drivers-license': { maxLength: 20, pattern: /^\d+$/ }
+    }[idType] || { maxLength: 20, pattern: /^.+$/ }
+  }
+
   const handleIdNumberChange = (value: string) => {
-    if (state.selectedIdType === 'national-id') {
-      // CNIC: Only allow digits (0-9), limit to 13 digits
+    const country = state.selectedCountry || ''
+    const idType = state.selectedIdType || ''
+    const format = getIdNumberFormat(country, idType)
+    
+    if (idType === 'national-id') {
+      // National ID: Only allow digits (0-9)
       const digitsOnly = value.replace(/\D/g, '')
-      const limitedDigits = digitsOnly.slice(0, 13)
+      const limitedDigits = digitsOnly.slice(0, format.maxLength)
       handleChange('idNumber', limitedDigits)
-    } else if (state.selectedIdType === 'passport') {
-      // Passport: Allow alphanumeric (letters and numbers only), no special characters
-      const alphanumericOnly = value.replace(/[^a-zA-Z0-9]/g, '')
-      const limited = alphanumericOnly.slice(0, 20)
+    } else if (idType === 'passport') {
+      // Passport: Allow alphanumeric (letters and numbers only), uppercase
+      const alphanumericOnly = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+      const limited = alphanumericOnly.slice(0, format.maxLength)
       handleChange('idNumber', limited)
     } else {
-      // Driver's license: Only allow digits (0-9)
-      const digitsOnly = value.replace(/\D/g, '')
-      const limitedDigits = digitsOnly.slice(0, 20)
-      handleChange('idNumber', limitedDigits)
+      // Driver's license: Allow alphanumeric based on country
+      if (country === 'pk' || country === 'in' || country === 'uk') {
+        // Some countries use alphanumeric for driver's license
+        const alphanumericOnly = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
+        const limited = alphanumericOnly.slice(0, format.maxLength)
+        handleChange('idNumber', limited)
+      } else {
+        // Most countries: Only digits
+        const digitsOnly = value.replace(/\D/g, '')
+        const limitedDigits = digitsOnly.slice(0, format.maxLength)
+        handleChange('idNumber', limitedDigits)
+      }
     }
   }
 
@@ -235,25 +234,60 @@ export default function PersonalInfo() {
     if (!formData.idNumber.trim()) {
       newErrors.idNumber = 'ID number is required'
     } else {
-      // Validate ID number format based on type
-      if (state.selectedIdType === 'national-id') {
-        // CNIC format: 13 digits without dashes
-        const cnicRegex = /^\d{13}$/
-        if (!cnicRegex.test(formData.idNumber)) {
-          newErrors.idNumber = 'Please enter a valid CNIC number (13 digits)'
+      // Validate ID number format based on country and type
+      const country = state.selectedCountry || ''
+      const idType = state.selectedIdType || ''
+      const format = getIdNumberFormat(country, idType)
+      
+      if (idType === 'national-id') {
+        if (country === 'pk') {
+          // Pakistan CNIC: 13 digits
+          const cnicRegex = /^\d{13}$/
+          if (!cnicRegex.test(formData.idNumber)) {
+            newErrors.idNumber = 'Please enter a valid CNIC number (13 digits)'
+          }
+        } else if (country === 'in') {
+          // India Aadhaar: 12 digits
+          const aadhaarRegex = /^\d{12}$/
+          if (!aadhaarRegex.test(formData.idNumber)) {
+            newErrors.idNumber = 'Please enter a valid Aadhaar number (12 digits)'
+          }
+        } else {
+          // Other countries: Validate based on format
+          // Allow all-digit format if length matches expected length
+          const isAllDigits = /^\d+$/.test(formData.idNumber)
+          if (isAllDigits && formData.idNumber.length === format.maxLength) {
+            // Accept all-digit format if it matches the expected length
+          } else if (!format.pattern.test(formData.idNumber)) {
+            newErrors.idNumber = `Please enter a valid ID number (${format.maxLength} digits)`
+          }
         }
-      } else if (state.selectedIdType === 'passport') {
+      } else if (idType === 'passport') {
         // Passport format: alphanumeric (letters and numbers only)
-        const passportRegex = /^[a-zA-Z0-9]+$/
+        const passportRegex = /^[A-Z0-9]+$/
         if (formData.idNumber.length < 6) {
           newErrors.idNumber = 'Please enter a valid passport number (at least 6 characters)'
         } else if (!passportRegex.test(formData.idNumber)) {
           newErrors.idNumber = 'Passport number can only contain letters and numbers'
+        } else if (format.pattern && !format.pattern.test(formData.idNumber)) {
+          // Allow alternative formats: if pattern requires letters but user entered all digits of correct length, accept it
+          const isAllDigits = /^\d+$/.test(formData.idNumber)
+          const expectedLength = format.maxLength
+          
+          if (isAllDigits && formData.idNumber.length === expectedLength) {
+            // Accept all-digit format if it matches the expected length
+            // This handles cases like Pakistan passport (2 letters + 7 digits) where user enters 9 digits
+          } else {
+            // Show country-specific error for strict format requirements
+            newErrors.idNumber = `Please enter a valid passport number format for ${country.toUpperCase()}`
+          }
         }
-      } else if (state.selectedIdType === 'drivers-license') {
-        // License format varies
+      } else if (idType === 'drivers-license') {
+        // License format varies by country
         if (formData.idNumber.length < 5) {
           newErrors.idNumber = 'Please enter a valid license number'
+        } else if (format.pattern && !format.pattern.test(formData.idNumber)) {
+          newErrors.idNumber = `Please enter a valid license number format for ${country.toUpperCase()}`
         }
       }
     }
@@ -537,27 +571,6 @@ export default function PersonalInfo() {
     return lengths[country] || 7
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white md:bg-surface-gray flex flex-col">
-        <Header showBack showClose />
-        <ProgressBar currentStep={4} totalSteps={5} />
-        <main className="flex-1 px-4 md:px-0 pt-6 pb-24 md:flex md:items-center md:justify-center">
-          <div className="w-full max-w-md lg:max-w-3xl md:bg-white md:rounded-lg md:shadow-md md:p-6 md:my-8 py-24">
-            <div className="text-center py-8">
-              <div className="w-16 h-16 mx-auto mb-4 bg-accent-blue rounded-full flex items-center justify-center animate-pulse">
-                <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <p className="text-text-secondary">Extracting information from document...</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
-
   return (
     <div className="min-h-screen bg-white md:bg-surface-gray flex flex-col">
       <Header showBack showClose />
@@ -631,8 +644,20 @@ export default function PersonalInfo() {
               </label>
               <input
                 type="text"
-                inputMode={state.selectedIdType === 'passport' ? 'text' : 'numeric'}
-                pattern={state.selectedIdType === 'passport' ? '[a-zA-Z0-9]*' : '[0-9]*'}
+                inputMode={(() => {
+                  const country = state.selectedCountry || ''
+                  const idType = state.selectedIdType || ''
+                  if (idType === 'passport') return 'text'
+                  if (idType === 'drivers-license' && (country === 'pk' || country === 'in' || country === 'uk')) return 'text'
+                  return 'numeric'
+                })()}
+                pattern={(() => {
+                  const country = state.selectedCountry || ''
+                  const idType = state.selectedIdType || ''
+                  if (idType === 'passport') return '[a-zA-Z0-9]*'
+                  if (idType === 'drivers-license' && (country === 'pk' || country === 'in' || country === 'uk')) return '[a-zA-Z0-9]*'
+                  return '[0-9]*'
+                })()}
                 value={formData.idNumber}
                 onChange={(e) => handleIdNumberChange(e.target.value)}
                 onKeyDown={(e) => {
@@ -640,15 +665,23 @@ export default function PersonalInfo() {
                   const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End']
                   const isAllowedKey = allowedKeys.includes(e.key)
                   const isModifier = e.ctrlKey || e.metaKey || e.altKey
+                  const country = state.selectedCountry || ''
+                  const idType = state.selectedIdType || ''
                   
-                  if (state.selectedIdType === 'passport') {
+                  if (idType === 'passport') {
                     // Passport: Allow letters and numbers
                     const isAlphanumeric = /[a-zA-Z0-9]/.test(e.key)
                     if (!isAlphanumeric && !isAllowedKey && !isModifier) {
                       e.preventDefault()
                     }
+                  } else if (idType === 'drivers-license' && (country === 'pk' || country === 'in' || country === 'uk')) {
+                    // Driver's License for some countries: Allow alphanumeric
+                    const isAlphanumeric = /[a-zA-Z0-9]/.test(e.key)
+                    if (!isAlphanumeric && !isAllowedKey && !isModifier) {
+                      e.preventDefault()
+                    }
                   } else {
-                    // CNIC and Driver's License: Only allow numbers
+                    // National ID and most Driver's License: Only allow numbers
                     const isNumber = /[0-9]/.test(e.key)
                     if (!isNumber && !isAllowedKey && !isModifier) {
                       e.preventDefault()
@@ -662,12 +695,24 @@ export default function PersonalInfo() {
                   handleIdNumberChange(pastedText)
                 }}
                 placeholder={
-                  state.selectedIdType === 'national-id' ? '1234512345671' :
-                  state.selectedIdType === 'passport' ? 'AB1234567' :
-                  state.selectedIdType === 'drivers-license' ? 'DL123456789' :
-                  'Enter ID number'
+                  (() => {
+                    const country = state.selectedCountry || ''
+                    const idType = state.selectedIdType || ''
+                    if (country === 'pk' && idType === 'national-id') {
+                      return '1234512345671 (13 digits)'
+                    } else if (country === 'in' && idType === 'national-id') {
+                      return '123456789012 (12 digits)'
+                    } else if (idType === 'national-id') {
+                      return 'Enter ID number'
+                    } else if (idType === 'passport') {
+                      return 'AB1234567'
+                    } else if (idType === 'drivers-license') {
+                      return 'DL123456789'
+                    }
+                    return 'Enter ID number'
+                  })()
                 }
-                maxLength={state.selectedIdType === 'national-id' ? 13 : 20}
+                maxLength={getIdNumberFormat(state.selectedCountry || '', state.selectedIdType || '').maxLength}
                 className={`w-full px-4 py-3 rounded-lg border ${
                   errors.idNumber ? 'border-red-500' : 'border-gray-300'
                 } bg-white md:bg-surface-light text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300`}
@@ -799,14 +844,17 @@ export default function PersonalInfo() {
               {errors.phone && (
                 <p className="mt-1 text-sm text-red-500">{errors.phone}</p>
               )}
-              {!errors.phone && formData.phone && (
-                <p className="mt-1 text-xs text-green-600">
-                  ✓ Valid phone number ({formData.phone.length} digits)
-                </p>
-              )}
-              <p className="mt-1 text-xs text-gray-500">
-                Country: {state.selectedCountry?.toUpperCase() || 'N/A'} • Format: {getCountryCode()} + {getMaxPhoneLength(state.selectedCountry || '')} digits • Numbers only
-              </p>
+              {!errors.phone && formData.phone && (() => {
+                const digits = formData.phone.replace(/\D/g, '')
+                const minLength = getMinPhoneLength(state.selectedCountry || '')
+                const maxLength = getMaxPhoneLength(state.selectedCountry || '')
+                const isValid = digits.length >= minLength && digits.length <= maxLength
+                return isValid ? (
+                  <p className="mt-1 text-xs text-green-600">
+                    ✓ Valid phone number ({digits.length} digits)
+                  </p>
+                ) : null
+              })()}
             </div>
           </div>
 

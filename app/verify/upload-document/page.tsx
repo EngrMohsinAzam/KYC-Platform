@@ -1277,7 +1277,7 @@ export default function UploadDocument() {
                     </div>
                   </div>
                 ) : currentImage ? (
-                  <div className="relative w-full h-full group">
+                  <div className="relative w-full h-full">
                     <img
                       src={currentImage}
                       alt={`ID Document ${currentSide}`}

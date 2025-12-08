@@ -20,20 +20,56 @@ const idTypes = [
 export default function SelectIdType() {
   const router = useRouter()
   const { state, dispatch } = useAppContext()
-  const [country, setCountry] = useState(state.selectedCountry || '')
-  const [city, setCity] = useState(state.selectedCity || '')
-  const [idType, setIdType] = useState(state.selectedIdType || '')
+  const [country, setCountry] = useState('')
+  const [city, setCity] = useState('')
+  const [idType, setIdType] = useState('')
+  const [countrySearch, setCountrySearch] = useState('')
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   const countryOptions = getCountryOptions()
   const cityOptions = country ? getCitiesForCountry(country) : []
+  
+  // Filter countries based on search (for mobile)
+  const filteredCountries = countrySearch
+    ? countryOptions.filter(option =>
+        option.label.toLowerCase().includes(countrySearch.toLowerCase())
+      )
+    : countryOptions
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth < 768
+      setIsMobile(isMobileDevice)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Close dropdown when clicking outside (mobile)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showCountryDropdown && !(event.target as HTMLElement).closest('.country-selector')) {
+        setShowCountryDropdown(false)
+      }
+    }
+    if (showCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showCountryDropdown])
 
   // Reset city when country changes
   useEffect(() => {
-    if (country && country !== state.selectedCountry) {
+    if (country) {
       setCity('')
       dispatch({ type: 'SET_COUNTRY', payload: country })
+      setCountrySearch('') // Clear search when country is selected
+      setShowCountryDropdown(false) // Close dropdown on mobile
     }
-  }, [country, state.selectedCountry, dispatch])
+  }, [country, dispatch])
 
   // Update city in context when it changes
   useEffect(() => {
@@ -78,18 +114,92 @@ export default function SelectIdType() {
 
             {/* Form Fields */}
             <div className="flex-1 space-y-6">
-              {/* Country/region of residence */}
-              <div>
+              {/* Country/region of residence - Mobile with search */}
+              <div className="country-selector">
                 <label className="block text-sm font-normal text-gray-700 mb-2">
                   Country/region of residence
                 </label>
-                <Select
-                  placeholder="Select country/region"
-                  options={countryOptions}
-                  value={country}
-                  onChange={(e) => setCountry(e.target.value)}
-                  className="w-full"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={(() => {
+                      if (countrySearch) return countrySearch
+                      if (country) {
+                        const selectedCountry = countryOptions.find(c => c.value === country)
+                        return selectedCountry?.label || ''
+                      }
+                      return ''
+                    })()}
+                    onChange={(e) => {
+                      setCountrySearch(e.target.value)
+                      setShowCountryDropdown(true)
+                      if (!e.target.value) {
+                        setCountry('')
+                      }
+                    }}
+                    onFocus={() => {
+                      setShowCountryDropdown(true)
+                      if (!country) {
+                        setCountrySearch('')
+                      }
+                    }}
+                    placeholder="Type to search country..."
+                    className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  />
+                  {country && (
+                    <button
+                      onClick={() => {
+                        setCountry('')
+                        setCountrySearch('')
+                        setCity('')
+                      }}
+                      className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                  <svg
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                  
+                  {/* Dropdown list */}
+                  {showCountryDropdown && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setShowCountryDropdown(false)}
+                      />
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredCountries.length > 0 ? (
+                          filteredCountries.map((option) => (
+                            <button
+                              key={option.value}
+                              onClick={() => {
+                                setCountry(option.value)
+                                setCountrySearch(option.label)
+                                setShowCountryDropdown(false)
+                              }}
+                              className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
+                            >
+                              {option.label}
+                            </button>
+                          ))
+                        ) : (
+                          <div className="px-4 py-3 text-gray-500 text-center">
+                            No countries found
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
 
                {/* City/Region - Shows when country is selected */}
