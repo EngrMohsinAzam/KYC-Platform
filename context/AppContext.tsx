@@ -33,6 +33,7 @@ export interface AppState {
     idNumber: string
     email: string
     phone: string
+    address: string
   }
 }
 
@@ -52,7 +53,7 @@ export type Action =
   | { type: 'SET_DOCUMENT_IMAGE_FRONT'; payload: string }
   | { type: 'SET_DOCUMENT_IMAGE_BACK'; payload: string }
   | { type: 'SET_SELFIE_IMAGE'; payload: string }
-  | { type: 'SET_PERSONAL_INFO'; payload: { firstName: string; lastName: string; fatherName: string; idNumber: string; email: string; phone: string } }
+  | { type: 'SET_PERSONAL_INFO'; payload: { firstName: string; lastName: string; fatherName: string; idNumber: string; email: string; phone: string; address: string } }
 
 export const initialState: AppState = {
   user: null,

@@ -42,7 +42,8 @@ export interface AdminLoginResponse {
 
 export const adminLogin = async (credentials: AdminLoginRequest): Promise<AdminLoginResponse> => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/admin/login`, {
+    // Use Next.js API route proxy to avoid CORS issues
+    const response = await fetch('/api/admin/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -94,9 +95,10 @@ export const getDashboardStats = async (): Promise<{ success: boolean; data?: Da
       return { success: false, message: 'Not authenticated' }
     }
 
-    console.log('📡 Fetching dashboard stats from:', `${API_BASE_URL}/api/admin/dashboard/stats`)
+    // Use Next.js API route proxy to avoid CORS issues
+    console.log('📡 Fetching dashboard stats via proxy...')
     
-    const response = await fetch(`${API_BASE_URL}/api/admin/dashboard/stats`, {
+    const response = await fetch('/api/admin/dashboard/stats', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -260,9 +262,11 @@ export const getUsers = async (params: GetUsersParams = {}): Promise<GetUsersRes
     if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder)
     if (params.search) queryParams.append('search', params.search)
 
-    const response = await fetch(`${API_BASE_URL}/api/admin/users?${queryParams.toString()}`, {
+    // Use Next.js API route proxy to avoid CORS issues
+    const response = await fetch(`/api/admin/users?${queryParams.toString()}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     })
 
@@ -288,7 +292,8 @@ export const getUserDetails = async (email: string): Promise<{ success: boolean;
     // Email should already be decoded, just encode it for the URL
     const encodedEmail = encodeURIComponent(email)
     
-    const response = await fetch(`${API_BASE_URL}/api/admin/users/${encodedEmail}`, {
+    // Use Next.js API route proxy to avoid CORS issues
+    const response = await fetch(`/api/admin/users/${encodedEmail}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -363,7 +368,8 @@ export const updateUserStatus = async (
       requestBody
     })
 
-    const response = await fetch(`${API_BASE_URL}/api/admin/users/status-by-email`, {
+    // Use Next.js API route proxy to avoid CORS issues
+    const response = await fetch('/api/admin/users/status-by-email', {
       method: 'PATCH',
       headers: {
         'Authorization': `Bearer ${token}`,

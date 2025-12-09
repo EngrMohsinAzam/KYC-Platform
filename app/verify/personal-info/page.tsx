@@ -22,6 +22,7 @@ export default function PersonalInfo() {
     idNumber: '',
     email: '',
     phone: '',
+    address: '',
   })
   
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -298,6 +299,9 @@ export default function PersonalInfo() {
     } else if (!validateEmail(emailToValidate)) {
       newErrors.email = 'Please enter a valid email address'
     }
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required'
+    }
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required'
     } else {
@@ -331,6 +335,7 @@ export default function PersonalInfo() {
         idNumber: formData.idNumber.trim(),
         email: emailToSave,
         phone: fullPhoneNumber, // Store with country code
+        address: formData.address.trim(),
       },
     })
     
@@ -780,6 +785,19 @@ export default function PersonalInfo() {
                 </div>
               )}
             </div>
+
+            <Input
+              label={
+                <>
+                  Address <span className="text-red-500">*</span>
+                </>
+              }
+              value={formData.address}
+              onChange={(e) => handleChange('address', e.target.value)}
+              error={errors.address}
+              placeholder="Enter your address"
+              required
+            />
 
             <div className="w-full">
               <label className="block text-sm font-medium text-text-primary mb-2">

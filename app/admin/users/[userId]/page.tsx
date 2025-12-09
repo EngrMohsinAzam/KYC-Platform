@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { getAdminToken, getUserDetails, updateUserStatus, User } from '@/lib/admin-api'
 import { XCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
@@ -35,25 +35,53 @@ export default function UserDetailsPage() {
   const [error, setError] = useState('')
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
+  
+  // Use refs to prevent duplicate API calls - track current loading userId
+  const loadingUserIdRef = useRef<string | null>(null)
+  const mountedRef = useRef(true)
 
   useEffect(() => {
+    mountedRef.current = true
+    
     const token = getAdminToken()
     if (!token) {
       router.push('/admin')
       return
     }
 
-    if (userId) {
-      loadUserDetails()
+    // Only proceed if userId exists and we haven't already loaded/loading it
+    if (!userId || loadingUserIdRef.current === userId) {
+      return
     }
-  }, [userId, router])
+
+    // Set the ref IMMEDIATELY and synchronously before any async operation
+    // This prevents race conditions in React Strict Mode (double invocation)
+    loadingUserIdRef.current = userId
+    
+    // Now call the load function
+    loadUserDetails()
+
+    // Cleanup function
+    return () => {
+      mountedRef.current = false
+    }
+  }, [userId]) // Removed router from dependencies as it's stable
 
   const loadUserDetails = async () => {
     if (!userId) {
       setError('User ID is missing')
       setLoading(false)
+      loadingUserIdRef.current = null
       return
     }
+
+    // Double-check: prevent duplicate calls - this should not happen if ref is set correctly
+    if (loadingUserIdRef.current !== userId) {
+      console.log('⏸️ API call skipped - userId mismatch (should not happen)')
+      return
+    }
+
+    const currentLoadingUserId = userId
 
     try {
       setLoading(true)
@@ -63,6 +91,12 @@ export default function UserDetailsPage() {
       const decodedEmail = decodeURIComponent(userId)
 
       const result = await getUserDetails(decodedEmail)
+
+      // Only process result if this is still the current request and component is mounted
+      if (!mountedRef.current || loadingUserIdRef.current !== currentLoadingUserId) {
+        console.log('🚫 Request result ignored - component unmounted or userId changed')
+        return
+      }
 
       if (result.success && result.data) {
         // Ensure kycStatus is set (map from verificationStatus if needed)
@@ -82,9 +116,19 @@ export default function UserDetailsPage() {
         setError(result.message || 'Failed to load user details')
       }
     } catch (err: any) {
-      setError(err.message || 'An error occurred while loading user details')
+      // Only set error if component is still mounted and this is still the current request
+      if (mountedRef.current && loadingUserIdRef.current === currentLoadingUserId) {
+        setError(err.message || 'An error occurred while loading user details')
+      }
     } finally {
-      setLoading(false)
+      // Only clear loading state if this is still the current request
+      if (loadingUserIdRef.current === currentLoadingUserId && mountedRef.current) {
+        setLoading(false)
+        // Clear the loading ref only after successful completion
+        if (loadingUserIdRef.current === currentLoadingUserId) {
+          // Keep the ref set to prevent duplicate calls, only clear on userId change
+        }
+      }
     }
   }
 
@@ -482,13 +526,28 @@ export default function UserDetailsPage() {
                 <div className="flex items-start gap-2 sm:gap-3">
                   <IdentificationIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D3F2] mt-0.5 sm:mt-1 flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">Anonymous ID</p>
-                    <a
-                      href={`#${user.userId}`}
-                      className="text-xs sm:text-sm md:text-base text-blue-600 hover:text-blue-800 font-medium underline break-all"
-                    >
-                      {getAnonymousId()}
-                    </a>
+                    <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">Transaction Hash</p>
+                    {user.transactionHash ? (
+                      <a
+                        href={`https://testnet.bscscan.com/tx/${user.transactionHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs sm:text-sm md:text-base text-blue-600 hover:text-blue-800 font-medium underline break-all font-mono"
+                      >
+                        {user.transactionHash}
+                      </a>
+                    ) : (
+                      <p className="text-xs sm:text-sm md:text-base text-gray-500">N/A</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <MapPinIcon className="w-4 h-4 sm:w-5 sm:h-5 text-[#00D3F2] mt-0.5 sm:mt-1 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">Address</p>
+                    <p className="text-xs sm:text-sm md:text-base text-gray-900 break-words">
+                      {user.address || 'N/A'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2 sm:gap-3">

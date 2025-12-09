@@ -39,6 +39,7 @@ export const submitKYCData = async (data: {
   fatherName?: string
   email: string
   phone: string
+  address?: string
   countryName: string
   cityName: string
   idType: string
@@ -71,6 +72,8 @@ export const submitKYCData = async (data: {
   try {
     console.log('📦 Creating FormData...')
     const formData = new FormData()
+    console.log('  ✅ FormData created:', formData)
+    console.log('full name ',formData.get('fullName'))
     
     // Add text fields
     formData.append('userId', data.userId)
@@ -95,6 +98,10 @@ export const submitKYCData = async (data: {
     }
     formData.append('email', data.email)
     formData.append('phone', data.phone)
+    if (data.address) {
+      formData.append('address', data.address)
+      console.log('  ✅ Added address:', data.address)
+    }
     formData.append('countryName', data.countryName)
     formData.append('cityName', data.cityName)
     formData.append('idType', data.idType)
@@ -335,8 +342,8 @@ export const checkStatusByEmail = async (email: string): Promise<{ success: bool
   console.log('  - Email:', email)
   
   try {
-    // Use Next.js API route as proxy to avoid CORS issues
-    const url = '/api/kyc/check-status-by-email'
+    // Call backend API directly
+    const url = `${API_BASE_URL}/api/kyc/check-status-by-email`
     const requestBody = { email }
     
     console.log('  - API URL:', url)

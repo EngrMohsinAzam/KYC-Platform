@@ -8,7 +8,7 @@
 // import { useAppContext } from '@/context/useAppContext'
 
 // // API base URL - update this to your backend URL
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xzfjrnv9-3099.asse.devtunnels.ms'
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://hmt4c7sf-3902.asse.devtunnels.ms'
 
 // // Send OTP to email
 // const sendOTP = async (email: string): Promise<{ success: boolean; message?: string }> => {

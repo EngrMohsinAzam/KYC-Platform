@@ -8,16 +8,15 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { HelpModal } from '@/components/ui/HelpModal'
-import { useAccount, useConnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/lib/web3'
 import { submitKYCData } from '@/lib/api'
 import { formatWalletAddress } from '@/lib/utils'
 import { ethers } from 'ethers'
 import { switchToBSCTestnet } from '@/lib/network-switch'
 import { setMetaMaskProvider } from '@/lib/wagmi-config'
-import { DetectedWallet } from '@/lib/wallet-detection'
+import { DetectedWallet, detectInstalledWallets } from '@/lib/wallet-detection'
 import { isMobileDevice } from '@/lib/mobile-wallet'
-import { WalletSelectionModal } from '@/components/wallet/WalletSelectionModal'
 import '@/lib/wagmi-config'
 
 export default function ReviewContent() {
@@ -25,9 +24,9 @@ export default function ReviewContent() {
   const { state, dispatch } = useAppContext()
   const { address, isConnected } = useAccount()
   const { connect, connectors } = useConnect()
+  const { disconnect } = useDisconnect()
   
   const [showHelpModal, setShowHelpModal] = useState(false)
-  const [showWalletModal, setShowWalletModal] = useState(false)
   const [connecting, setConnecting] = useState(false)
   const [connectingWalletId, setConnectingWalletId] = useState<string | null>(null)
   const [networkError, setNetworkError] = useState<string | null>(null)
@@ -216,11 +215,33 @@ export default function ReviewContent() {
   }
 
   const handleOpenWalletModal = async () => {
-    // Show wallet selection modal (like admin dashboard)
-    setShowWalletModal(true)
+    // Directly connect to wallet without showing modal
     setError(null)
     setNetworkError(null)
     setWalletError(null)
+    setConnecting(true)
+    
+    try {
+      const isMobile = isMobileDevice()
+      const wallets = detectInstalledWallets()
+      
+      // Prioritize MetaMask, then first installed wallet
+      const metaMaskWallet = wallets.find(w => w.id === 'metamask' && w.isInstalled)
+      const walletToConnect = metaMaskWallet || wallets.find(w => w.isInstalled) || wallets[0]
+      
+      if (walletToConnect) {
+        // Directly call handleWalletSelect to connect without showing modal
+        await handleWalletSelect(walletToConnect)
+      } else {
+        // If no wallet found, show error
+        setError('No wallet found. Please install a wallet extension to continue.')
+        setConnecting(false)
+      }
+    } catch (err: any) {
+      console.error('Error connecting wallet:', err)
+      setError(err.message || 'Failed to connect wallet. Please try again.')
+      setConnecting(false)
+    }
   }
 
   const handleWalletSelect = async (wallet: DetectedWallet) => {
@@ -231,7 +252,6 @@ export default function ReviewContent() {
       setError(null)
       setNetworkError(null)
       setWalletError(null)
-      setShowWalletModal(false) // Close modal when wallet is selected
       
       const isMobile = isMobileDevice()
       const win = window as any
@@ -860,6 +880,7 @@ export default function ReviewContent() {
         fatherName: personalInfo.fatherName,
         email: personalInfo.email,
         phone: personalInfo.phone || '',
+        address: personalInfo.address || '',
         countryName: state.selectedCountry || '',
         cityName: state.selectedCity || '',
         idType: mapIdTypeToBackend(state.selectedIdType || ''),
@@ -1116,12 +1137,25 @@ export default function ReviewContent() {
 
               {/* Wallet Connection Section */}
               <div className="bg-gray-100 rounded-lg p-4 mb-6">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-2">
                   <span className="text-sm text-gray-700">Connected wallet</span>
-                  <span className={`text-sm font-mono ${isConnected ? 'text-gray-900 break-all' : 'text-gray-500'}`}>
-                    {isConnected ? displayWalletAddress : 'None'}
-                  </span>
+                  {isConnected && (
+                    <button
+                      onClick={() => {
+                        disconnect()
+                        dispatch({ type: 'SET_WALLET', payload: '' })
+                        localStorage.removeItem('lastConnectedWallet')
+                        localStorage.removeItem('lastConnectorId')
+                      }}
+                      className="text-xs text-red-600 hover:text-red-700 font-medium underline"
+                    >
+                      Disconnect
+                    </button>
+                  )}
                 </div>
+                <span className={`text-sm font-mono ${isConnected ? 'text-gray-900 break-all' : 'text-gray-500'}`}>
+                  {isConnected ? displayWalletAddress : 'None'}
+                </span>
                 {isConnected && bnbBalance && (
                   <p className="text-xs text-gray-600 mt-2">Balance: {bnbBalance} BNB</p>
                 )}
@@ -1238,12 +1272,25 @@ export default function ReviewContent() {
 
                 {/* Wallet Connection Section */}
                 <div className="bg-gray-100 rounded-lg p-4 mb-6">
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center mb-2">
                     <span className="text-sm text-gray-700">Connected wallet</span>
-                    <span className={`text-sm font-mono ${isConnected ? 'text-gray-900 break-all' : 'text-gray-500'}`}>
-                      {isConnected ? displayWalletAddress : 'None'}
-                    </span>
+                    {isConnected && (
+                      <button
+                        onClick={() => {
+                          disconnect()
+                          dispatch({ type: 'SET_WALLET', payload: '' })
+                          localStorage.removeItem('lastConnectedWallet')
+                          localStorage.removeItem('lastConnectorId')
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium underline"
+                      >
+                        Disconnect
+                      </button>
+                    )}
                   </div>
+                  <span className={`text-sm font-mono ${isConnected ? 'text-gray-900 break-all' : 'text-gray-500'}`}>
+                    {isConnected ? displayWalletAddress : 'None'}
+                  </span>
                   {isConnected && bnbBalance && (
                     <p className="text-xs text-gray-600 mt-2">Balance: {bnbBalance} BNB</p>
                   )}
@@ -1291,18 +1338,6 @@ export default function ReviewContent() {
         onClose={() => setShowHelpModal(false)}
       />
       
-      {/* Wallet Selection Modal */}
-      <WalletSelectionModal
-        isOpen={showWalletModal}
-        onClose={() => {
-          setShowWalletModal(false)
-          setConnectingWalletId(null)
-          setWalletError(null)
-        }}
-        onWalletSelect={handleWalletSelect}
-        connectingWalletId={connectingWalletId}
-        error={walletError}
-      />
     </div>
   )
 }

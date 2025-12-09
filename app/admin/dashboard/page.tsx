@@ -12,7 +12,7 @@ import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
 
 // Wagmi hooks are available via WagmiProvider in layout
 // Import them normally - they're already code-split
-import { useAccount, useConnect } from 'wagmi'
+import { useAccount, useConnect, useDisconnect } from 'wagmi'
 
 // Lazy load blockchain functions
 let blockchainFunctions: any = null
@@ -595,7 +595,7 @@ export default function AdminDashboard() {
       console.log('📈 Loading trends data...')
       const trendsResult = await getUsers({
         page: 1,
-        limit: 1000, // Fetch a large number to get all users for trends
+        limit: 50, // Fetch a large number to get all users for trends
         sortBy: 'submittedAt',
         sortOrder: 'desc',
       })
@@ -1359,6 +1359,7 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
 
   const { address, isConnected } = useAccount()
   const { connect, connectors } = useConnect()
+  const { disconnect } = useDisconnect()
   
   // Check if MetaMask is available
   const isMetaMaskAvailable = typeof window !== 'undefined' && typeof (window as any).ethereum !== 'undefined'
@@ -1596,9 +1597,21 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
           {isConnected && address && (
             <div className="space-y-3">
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  Connected: {address.slice(0, 6)}...{address.slice(-4)}
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-blue-800">
+                    Connected: {address.slice(0, 6)}...{address.slice(-4)}
+                  </p>
+                  <button
+                    onClick={() => {
+                      disconnect()
+                      setIsOwner(null)
+                      setError('')
+                    }}
+                    className="text-xs text-red-600 hover:text-red-700 font-medium underline"
+                  >
+                    Disconnect
+                  </button>
+                </div>
               </div>
 
               {verifyingOwner && (

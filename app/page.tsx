@@ -133,7 +133,8 @@ export default function Home() {
               fatherName: '',
               idNumber: '',
               email: email,
-              phone: ''
+              phone: '',
+              address: ''
             } 
           })
         }

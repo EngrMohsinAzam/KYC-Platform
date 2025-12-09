@@ -288,6 +288,7 @@ export default function ConfirmBlockstamp() {
         fullName: `${personalInfo.firstName} ${personalInfo.lastName}`,
         email: personalInfo.email,
         phone: personalInfo.phone,
+        address: personalInfo.address || '',
         countryName: state.selectedCountry || '',
         cityName: state.selectedCity || '',
         idType: idType,
