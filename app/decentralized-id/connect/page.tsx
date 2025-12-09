@@ -10,7 +10,7 @@ import { useAppContext } from '@/context/useAppContext'
 import { getNetworkInfo, isMetaMaskInstalled, checkKYCStatus } from '@/lib/web3'
 import { checkStatusByWallet } from '@/lib/api'
 import { isMobileDevice, openMetaMaskMobile, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
-import { DetectedWallet } from '@/lib/wallet-detection'
+import { DetectedWallet, detectInstalledWallets } from '@/lib/wallet-detection'
 import { useConnect } from 'wagmi'
 
 declare global {
@@ -70,10 +70,22 @@ export default function ConnectWallet() {
   const handleConnectWallet = async () => {
     const isMobile = isMobileDevice()
     
-    // On mobile, ALWAYS show wallet selection modal (no error check)
+    // On mobile, directly connect to MetaMask (or first available wallet) without showing modal
     if (isMobile) {
-      setShowWalletModal(true)
-      return
+      const wallets = detectInstalledWallets()
+      // Prioritize MetaMask, then first installed wallet
+      const metaMaskWallet = wallets.find(w => w.id === 'metamask')
+      const walletToConnect = metaMaskWallet || wallets.find(w => w.isInstalled) || wallets[0]
+      
+      if (walletToConnect) {
+        // Directly call handleWalletSelect to connect without showing modal
+        await handleWalletSelect(walletToConnect)
+        return
+      } else {
+        // If no wallet found, show error
+        alert('No wallet found. Please install a wallet app to continue.')
+        return
+      }
     }
     
     // Desktop: Check if MetaMask is installed

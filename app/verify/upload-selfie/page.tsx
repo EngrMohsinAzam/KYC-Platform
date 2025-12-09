@@ -536,11 +536,7 @@ export default function UploadSelfie() {
   // Auto-start camera when component loads - wait for video element to be rendered
   useEffect(() => {
     if (!state.selfieImage && !isCameraActive && !capturedImage) {
-      // On mobile, don't auto-start web camera - user will use native camera
-      if (isMobile) {
-        return
-      }
-      
+      // Auto-start camera on both mobile and desktop
       // Wait longer to ensure video element is rendered
       const timer = setTimeout(() => {
         // Check if any video ref is available before starting
