@@ -3,7 +3,7 @@ import { CONTRACT_ADDRESSES, KYC_ABI, CHARGE_AMOUNT_USD } from './contracts'
 import { getWalletClient, getPublicClient } from '@wagmi/core'
 import { wagmiConfig } from './wagmi-config'
 import { createPublicClient, http as viemHttp } from 'viem'
-import { bscTestnet } from 'viem/chains'
+import { bsc } from 'viem/chains'
 
 export function isMetaMaskInstalled(): boolean {
   if (typeof window === 'undefined') return false
@@ -165,12 +165,12 @@ export async function getProviderAndSigner() {
 
     // Get public client for read operations
     const publicClient = getPublicClient(wagmiConfig) || createPublicClient({
-      chain: bscTestnet,
-      transport: viemHttp('https://data-seed-prebsc-1-s1.binance.org:8545/')
+      chain: bsc,
+      transport: viemHttp('https://bsc-dataseed.binance.org/')
     })
 
     // Create ethers provider from public client's RPC URL
-    const rpcUrl = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+    const rpcUrl = 'https://bsc-dataseed.binance.org/'
     const provider = new ethers.JsonRpcProvider(rpcUrl)
     
     // Create a custom signer that uses the wallet client for transactions
@@ -230,7 +230,7 @@ export async function getProviderAndSigner() {
           gasPrice: tx.gasPrice || null,
           data: tx.data || '0x',
           value: tx.value || 0n,
-          chainId: tx.chainId || 97n,
+          chainId: tx.chainId || 56n,
           wait: async (confirmations?: number) => {
             const receipt = await this.publicClient.waitForTransactionReceipt({ hash, confirmations })
             return {
@@ -356,12 +356,23 @@ export async function checkBNBBalance(address: string): Promise<string> {
 // Calculate required BNB amount from contract (for $2 USD fee)
 export async function calculateRequiredBNB(): Promise<bigint> {
   try {
-    const { provider } = await getProviderAndSigner()
+    // Try to get provider - this might fail on mobile if wallet not connected
+    let provider: ethers.Provider
+    try {
+      const providerAndSigner = await getProviderAndSigner()
+      provider = providerAndSigner.provider
+    } catch (providerError: any) {
+      // If provider fails (wallet not connected), try to create a public provider
+      console.warn('⚠️ Could not get wallet provider, using public RPC:', providerError.message)
+      provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org/')
+    }
+    
     const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
     const requiredBNB = await kycContract.calculateBNBAmount()
     return requiredBNB
   } catch (error: any) {
     console.error('Error calculating required BNB:', error)
+    // Don't throw - let the caller handle with fallback
     throw error
   }
 }
@@ -475,12 +486,55 @@ export async function getKYCStatusFromContract(userAddress: string): Promise<{
   }
 }
 
+// Verify network and switch if needed
+async function verifyAndSwitchNetwork(): Promise<void> {
+  if (typeof window === 'undefined') return
+  
+  const ethereum = (window as any).ethereum
+  if (!ethereum) return
+
+  try {
+    const chainId = await ethereum.request({ method: 'eth_chainId' })
+    const chainIdDecimal = parseInt(chainId, 16).toString()
+    
+    if (chainIdDecimal !== '56') {
+      console.log('⚠️ Wrong network detected. Current:', chainIdDecimal, 'Required: 56')
+      console.log('🔄 Attempting to switch to BSC Mainnet...')
+      
+      const { switchToBSCMainnet } = await import('@/lib/network-switch')
+      await switchToBSCMainnet(ethereum)
+      
+      // Wait for network switch to complete
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      // Verify switch was successful
+      const newChainId = await ethereum.request({ method: 'eth_chainId' })
+      const newChainIdDecimal = parseInt(newChainId, 16).toString()
+      
+      if (newChainIdDecimal !== '56') {
+        throw new Error('Failed to switch to BSC Mainnet. Please switch manually in your wallet.')
+      }
+      
+      console.log('✅ Successfully switched to BSC Mainnet')
+    } else {
+      console.log('✅ Already on BSC Mainnet (Chain ID: 56)')
+    }
+  } catch (error: any) {
+    console.error('❌ Network verification failed:', error)
+    throw new Error(`Network error: ${error.message || 'Please ensure you are on BSC Mainnet (Chain ID: 56)'}`)
+  }
+}
+
 // ✅ Submit KYC with BNB payment (contract fetches price from Chainlink)
 export async function submitKYCVerification(anonymousId: string, metadataUrl: string = ''): Promise<string> {
   try {
     console.log('========================================')
     console.log('🔗 SUBMITTING TO SMART CONTRACT')
     console.log('========================================')
+    
+    // CRITICAL: Verify network BEFORE anything else
+    console.log('\n🌐 Step 0: Verifying network connection...')
+    await verifyAndSwitchNetwork()
     
     const kycContract = await getKYCContract()
     const { signer, provider } = await getProviderAndSigner()
@@ -535,12 +589,9 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
       }
     }
 
-    console.log('\n🔍 Checking if already submitted...')
-    const hasSubmitted = await kycContract.hasSubmitted(userAddress)
-    console.log('  - Has Already Submitted:', hasSubmitted)
-    if (hasSubmitted) {
-      throw new Error('You have already submitted KYC. Use updateDocuments to update your information.')
-    }
+    // Note: Contract now allows multiple submissions (resubmissions)
+    // Removed the check that prevented resubmission - users can submit KYC multiple times
+    console.log('\n✅ Multiple submissions allowed - proceeding with submission...')
 
     // Store balance for after-check
     const balanceBefore = bnbBalance
@@ -551,7 +602,9 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     // Gas estimation with retry logic and mobile-specific handling
     const isMobileSubmit = isMobileDevice()
     let gasLimit: bigint = BigInt(isMobileSubmit ? 400000 : 350000)
-    let gasPrice: bigint = BigInt(5000000000)
+    let gasPrice: bigint | null = null
+    let maxFeePerGas: bigint | null = null
+    let maxPriorityFeePerGas: bigint | null = null
     let estimationSuccess = false
     let attempts = 0
     const maxAttempts = isMobileSubmit ? 2 : 3 // Fewer attempts on mobile (faster)
@@ -561,8 +614,27 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     while (attempts < maxAttempts && !estimationSuccess) {
       try {
         const feeData = await provider.getFeeData()
-        gasPrice = feeData.gasPrice || BigInt(5000000000)
-        console.log(`  - Attempt ${attempts + 1}/${maxAttempts}: Gas Price: ${ethers.formatUnits(gasPrice, 'gwei')} gwei`)
+        
+        // BSC uses legacy gasPrice, but check if EIP-1559 fields are available
+        if (feeData.gasPrice) {
+          // Use legacy gasPrice (BSC mainnet uses this)
+          gasPrice = feeData.gasPrice
+          // Add 20% buffer to gas price to ensure transaction goes through
+          gasPrice = (gasPrice * BigInt(120)) / BigInt(100)
+          console.log(`  - Attempt ${attempts + 1}/${maxAttempts}: Gas Price: ${ethers.formatUnits(gasPrice, 'gwei')} gwei (with 20% buffer)`)
+        } else if (feeData.maxFeePerGas && feeData.maxPriorityFeePerGas) {
+          // EIP-1559 transaction
+          maxFeePerGas = feeData.maxFeePerGas
+          maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
+          // Add 20% buffer
+          maxFeePerGas = (maxFeePerGas * BigInt(120)) / BigInt(100)
+          maxPriorityFeePerGas = (maxPriorityFeePerGas * BigInt(120)) / BigInt(100)
+          console.log(`  - Attempt ${attempts + 1}/${maxAttempts}: Max Fee Per Gas: ${ethers.formatUnits(maxFeePerGas, 'gwei')} gwei`)
+        } else {
+          // Fallback to default BSC gas price (3 gwei minimum, use 5 gwei for safety)
+          gasPrice = BigInt(5000000000) // 5 gwei
+          console.log(`  - Attempt ${attempts + 1}/${maxAttempts}: Using fallback Gas Price: ${ethers.formatUnits(gasPrice, 'gwei')} gwei`)
+        }
         
         // Estimate gas for payable function (with value)
         // Add timeout for mobile (gas estimation can be slow)
@@ -604,29 +676,123 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     if (!estimationSuccess) {
       console.warn('⚠️ Gas estimation failed after all attempts, using safe fallback values')
       gasLimit = BigInt(isMobileSubmit ? 400000 : 350000)
-      gasPrice = BigInt(5000000000)
+      // Use higher gas price for BSC mainnet (3-5 gwei is typical, use 5 gwei for safety)
+      gasPrice = BigInt(5000000000) // 5 gwei
       console.log(`  - Fallback Gas Limit: ${gasLimit.toString()} (${isMobileSubmit ? 'mobile' : 'desktop'} default)`)
       console.log(`  - Fallback Gas Price: ${ethers.formatUnits(gasPrice, 'gwei')} gwei`)
       console.log('  ℹ️ Transaction will proceed with fallback values')
     }
     
-    console.log('📋 Transaction Parameters:')
-    console.log('  - Value (BNB fee):', requiredBNBFormatted, 'BNB')
-    console.log('  - Gas Limit:', gasLimit.toString())
-    console.log('  - Gas Price:', ethers.formatUnits(gasPrice, 'gwei'), 'gwei')
+    // Build transaction options
+    const txOptions: any = {
+      value: requiredBNB,
+      gasLimit
+    }
+    
+    // Use EIP-1559 if available, otherwise use legacy gasPrice
+    if (maxFeePerGas && maxPriorityFeePerGas) {
+      txOptions.maxFeePerGas = maxFeePerGas
+      txOptions.maxPriorityFeePerGas = maxPriorityFeePerGas
+      console.log('📋 Transaction Parameters (EIP-1559):')
+      console.log('  - Value (BNB fee):', requiredBNBFormatted, 'BNB')
+      console.log('  - Gas Limit:', gasLimit.toString())
+      console.log('  - Max Fee Per Gas:', ethers.formatUnits(maxFeePerGas, 'gwei'), 'gwei')
+      console.log('  - Max Priority Fee Per Gas:', ethers.formatUnits(maxPriorityFeePerGas, 'gwei'), 'gwei')
+    } else {
+      txOptions.gasPrice = gasPrice || BigInt(5000000000)
+      console.log('📋 Transaction Parameters (Legacy):')
+      console.log('  - Value (BNB fee):', requiredBNBFormatted, 'BNB')
+      console.log('  - Gas Limit:', gasLimit.toString())
+      console.log('  - Gas Price:', ethers.formatUnits(txOptions.gasPrice, 'gwei'), 'gwei')
+    }
     
     // Submit with BNB payment (payable function)
-    const tx = await kycContract.submitKYC(combinedDataHash, metadataUrlToUse, {
-      value: requiredBNB,
-      gasLimit,
-      gasPrice
-    })
+    // Use try-catch around the transaction call to catch user cancellation
+    let tx: ethers.ContractTransactionResponse
+    try {
+      console.log('\n📤 Sending transaction to blockchain...')
+      console.log('⚠️ IMPORTANT: Please confirm the transaction in your wallet!')
+      console.log('⚠️ Do NOT cancel the transaction - it will process once confirmed!')
+      
+      tx = await kycContract.submitKYC(combinedDataHash, metadataUrlToUse, txOptions)
+      
+      console.log('✅ Transaction sent!')
+      console.log('  - Transaction Hash:', tx.hash)
+      console.log('  - Waiting for confirmation...')
+    } catch (txError: any) {
+      console.error('❌ Transaction submission error:', txError)
+      console.error('Error details:', {
+        code: txError.code,
+        message: txError.message,
+        reason: txError.reason,
+        data: txError.data,
+        transaction: txError.transaction
+      })
+      
+      // Handle user cancellation specifically
+      if (txError.code === 4001 || 
+          txError.message?.includes('user rejected') || 
+          txError.message?.includes('User denied') ||
+          txError.message?.includes('User rejected') ||
+          txError.message?.includes('canceled') ||
+          txError.message?.includes('rejected')) {
+        throw new Error('Transaction was canceled. You rejected the transaction in your wallet. Please try again and confirm the transaction when MetaMask prompts you.')
+      }
+      
+      // Handle transaction replacement/rejection
+      if (txError.code === -32003 || txError.message?.includes('replacement') || txError.message?.includes('nonce')) {
+        throw new Error('Transaction conflict. Please wait a moment and try again, or check if a previous transaction is pending.')
+      }
+      
+      // Handle network errors
+      if (txError.message?.includes('network') || 
+          txError.message?.includes('chain') ||
+          txError.message?.includes('wrong network') ||
+          txError.code === -32002) {
+        throw new Error('Network error. Please ensure you are connected to BSC Mainnet (Chain ID: 56) in your wallet.')
+      }
+      
+      // Handle insufficient funds
+      if (txError.message?.includes('insufficient funds') || 
+          txError.message?.includes('insufficient balance') ||
+          txError.message?.includes('insufficient') && txError.message?.includes('balance')) {
+        throw new Error('Insufficient BNB balance. Please ensure you have enough BNB for the fee (~$2 USD) plus gas fees (~0.001-0.002 BNB).')
+      }
+      
+      // Handle gas estimation errors
+      if (txError.message?.includes('gas') || 
+          txError.message?.includes('execution reverted') ||
+          txError.code === -32000) {
+        const revertReason = txError.reason || txError.data?.message || ''
+        throw new Error(`Transaction failed: ${revertReason || txError.message}. Please check your balance and try again.`)
+      }
+      
+      // Generic error with more details
+      const errorMsg = txError.reason || txError.message || 'Unknown error'
+      throw new Error(`Transaction failed: ${errorMsg}. Please check your wallet, network connection, and try again.`)
+    }
     
-    console.log('✅ Transaction sent!')
-    console.log('  - Transaction Hash:', tx.hash)
-    console.log('  - Waiting for confirmation...')
-    
-    const receipt = await tx.wait()
+    // Wait for transaction confirmation
+    let receipt: ethers.ContractTransactionReceipt | null
+    try {
+      receipt = await tx.wait()
+      if (!receipt) {
+        // If wait() returns null, use the transaction hash
+        if (tx.hash) {
+          console.warn('⚠️ Transaction confirmation returned null. Using transaction hash:', tx.hash)
+          return tx.hash
+        }
+        throw new Error('Transaction confirmation failed: receipt is null and no transaction hash available')
+      }
+    } catch (waitError: any) {
+      // If transaction was sent but confirmation failed, still return the hash
+      if (tx.hash) {
+        console.warn('⚠️ Transaction sent but confirmation check failed. Transaction hash:', tx.hash)
+        console.warn('  You can check the transaction status on BSCScan:', `https://bscscan.com/tx/${tx.hash}`)
+        return tx.hash
+      }
+      throw waitError
+    }
     
     console.log('\n💰 Checking BNB Balance AFTER Submission...')
     const balanceAfter = await provider.getBalance(userAddress)
@@ -646,30 +812,58 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     
     return receipt.hash
   } catch (error: any) {
-    console.error('Error submitting KYC:', error)
+    console.error('❌ Error submitting KYC:', error)
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      reason: error.reason,
+      data: error.data
+    })
     
-    if (error.message.includes('Insufficient BNB')) {
-      throw error
+    // User cancellation (most common)
+    if (error.code === 4001 || 
+        error.message?.includes('user rejected') || 
+        error.message?.includes('User denied') ||
+        error.message?.includes('canceled') ||
+        error.message?.includes('rejected')) {
+      throw new Error('Transaction was canceled. You rejected the transaction in your wallet. Please try again and confirm when prompted.')
     }
     
-    if (error.reason) {
-      throw new Error(`Transaction failed: ${error.reason}`)
+    // Network errors
+    if (error.message?.includes('network') || 
+        error.message?.includes('chain') ||
+        error.message?.includes('wrong network') ||
+        error.message?.includes('Chain ID')) {
+      throw new Error('Network error: Please ensure you are connected to BSC Mainnet (Chain ID: 56) in your wallet. The app will try to switch automatically.')
     }
     
-    if (error.message.includes('not found') || error.message.includes('BAD_DATA')) {
-      throw new Error('Contract not found. Please ensure you are connected to BSC Testnet.')
+    // Insufficient funds
+    if (error.message?.includes('Insufficient BNB') || 
+        error.message?.includes('insufficient funds') ||
+        error.message?.includes('insufficient balance')) {
+      throw error // Use the detailed error message from balance check
     }
-    if (error.message.includes('user rejected') || error.code === 4001) {
-      throw new Error('Transaction was rejected. Please try again.')
+    
+    // Contract not found
+    if (error.message?.includes('not found') || 
+        error.message?.includes('BAD_DATA') ||
+        error.message?.includes('contract') && error.message?.includes('not deployed')) {
+      throw new Error('Contract not found. Please ensure you are connected to BSC Mainnet (Chain ID: 56) and the contract is deployed.')
     }
-    if (error.message.includes('insufficient funds')) {
-      throw new Error('Insufficient funds. Please ensure you have enough BNB for the fee and gas.')
+    
+    // Execution reverted (contract-level error)
+    if (error.message?.includes('execution reverted') || error.reason) {
+      const revertReason = error.reason || error.data?.message || error.message
+      throw new Error(`Transaction failed: ${revertReason}. Please check your balance, network connection, and try again.`)
     }
-    if (error.message.includes('execution reverted')) {
-      const revertReason = error.data?.message || error.message
-      throw new Error(`Transaction reverted: ${revertReason}. Please check your balance and try again.`)
+    
+    // Gas estimation errors
+    if (error.message?.includes('gas') || error.message?.includes('estimation')) {
+      throw new Error('Gas estimation failed. Please try again. If the problem persists, ensure you are on BSC Mainnet and have sufficient BNB.')
     }
-    throw error
+    
+    // Generic error
+    throw new Error(error.message || 'Transaction failed. Please check your wallet, network connection, and try again.')
   }
 }
 
@@ -720,13 +914,13 @@ export async function getNetworkInfo(): Promise<{
   requiredNetworkName: string
 } | null> {
   try {
-    const REQUIRED_CHAIN_ID = '97'
-    const REQUIRED_NETWORK_NAME = 'Binance Smart Chain Testnet (BSC Testnet)'
+    const REQUIRED_CHAIN_ID = '56'
+    const REQUIRED_NETWORK_NAME = 'Binance Smart Chain (BSC Mainnet)'
     
     const publicClient = getPublicClient(wagmiConfig)
     if (publicClient) {
-      const chainId = publicClient.chain?.id.toString() || '97'
-      const name = publicClient.chain?.name || 'Binance Smart Chain Testnet'
+      const chainId = publicClient.chain?.id.toString() || '56'
+      const name = publicClient.chain?.name || 'Binance Smart Chain'
       const isCorrectNetwork = chainId === REQUIRED_CHAIN_ID
       return { 
         chainId, 
@@ -794,7 +988,7 @@ export async function getContractBalance(): Promise<string> {
       const providerAndSigner = await getProviderAndSigner()
       provider = providerAndSigner.provider
     } catch (error) {
-      const rpcUrl = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+      const rpcUrl = 'https://bsc-dataseed.binance.org/'
       provider = new ethers.JsonRpcProvider(rpcUrl)
     }
     
@@ -809,7 +1003,7 @@ export async function getContractBalance(): Promise<string> {
   }
 }
 
-// Get total collected fees (from ABI: getTotalCollectedFees)
+// Get total collected fees (from ABI: getStats or totalCollection)
 export async function getTotalCollectedFees(): Promise<string> {
   try {
     let provider: ethers.Provider
@@ -818,15 +1012,32 @@ export async function getTotalCollectedFees(): Promise<string> {
       const providerAndSigner = await getProviderAndSigner()
       provider = providerAndSigner.provider
     } catch (error) {
-      const rpcUrl = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+      const rpcUrl = 'https://bsc-dataseed.binance.org/'
       provider = new ethers.JsonRpcProvider(rpcUrl)
     }
     
     const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
-    const totalCollected = await kycContract.getTotalCollectedFees()
     
-    // Return BNB balance (formatted to 8 decimal places for display)
-    return ethers.formatEther(totalCollected)
+    // Try getStats first (more efficient - gets all stats at once)
+    try {
+      const stats = await kycContract.getStats()
+      // stats returns: [submissions, totalCollectionBNB, totalWithdrawnBNB, balance]
+      // ethers.js v6 returns tuples as arrays, so we access by index
+      const totalCollectionBNB = stats[1] // totalCollectionBNB is at index 1
+      console.log('✅ getStats result - totalCollectionBNB:', totalCollectionBNB.toString())
+      return ethers.formatEther(totalCollectionBNB)
+    } catch (statsError: any) {
+      // Fallback to totalCollection state variable if getStats fails
+      console.log('⚠️ getStats failed, trying totalCollection directly:', statsError?.message || statsError)
+      try {
+        const totalCollected = await kycContract.totalCollection()
+        console.log('✅ totalCollection result:', totalCollected.toString())
+        return ethers.formatEther(totalCollected)
+      } catch (fallbackError: any) {
+        console.error('❌ Both getStats and totalCollection failed:', fallbackError)
+        throw new Error(`Failed to get total collected fees: ${fallbackError?.message || 'Unknown error'}`)
+      }
+    }
   } catch (error: any) {
     console.error('Error getting total collected fees:', error)
     throw new Error(`Failed to get total collected fees: ${error.message || 'Unknown error'}`)
@@ -851,15 +1062,32 @@ export async function getTotalWithdrawals(): Promise<string> {
       const providerAndSigner = await getProviderAndSigner()
       provider = providerAndSigner.provider
     } catch (error) {
-      const rpcUrl = 'https://data-seed-prebsc-1-s1.binance.org:8545/'
+      const rpcUrl = 'https://bsc-dataseed.binance.org/'
       provider = new ethers.JsonRpcProvider(rpcUrl)
     }
     
     const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
-    const totalWithdrawn = await kycContract.getTotalWithdrawn()
     
-    // Return BNB balance (formatted to 8 decimal places for display)
-    return ethers.formatEther(totalWithdrawn)
+    // Try getStats first (more efficient - gets all stats at once)
+    try {
+      const stats = await kycContract.getStats()
+      // stats returns: [submissions, totalCollectionBNB, totalWithdrawnBNB, balance]
+      // ethers.js v6 returns tuples as arrays, so we access by index
+      const totalWithdrawnBNB = stats[2] // totalWithdrawnBNB is at index 2
+      console.log('✅ getStats result - totalWithdrawnBNB:', totalWithdrawnBNB.toString())
+      return ethers.formatEther(totalWithdrawnBNB)
+    } catch (statsError: any) {
+      // Fallback to totalWithdrawn state variable if getStats fails
+      console.log('⚠️ getStats failed, trying totalWithdrawn directly:', statsError?.message || statsError)
+      try {
+        const totalWithdrawn = await kycContract.totalWithdrawn()
+        console.log('✅ totalWithdrawn result:', totalWithdrawn.toString())
+        return ethers.formatEther(totalWithdrawn)
+      } catch (fallbackError: any) {
+        console.error('❌ Both getStats and totalWithdrawn failed:', fallbackError)
+        throw new Error(`Failed to get total withdrawals: ${fallbackError?.message || 'Unknown error'}`)
+      }
+    }
   } catch (error: any) {
     console.error('Error getting total withdrawals:', error)
     throw new Error(`Failed to get total withdrawals: ${error.message || 'Unknown error'}`)
@@ -958,6 +1186,14 @@ export async function withdrawContractFunds(amount: string): Promise<string> {
     console.log('  - Waiting for confirmation...')
     
     const receipt = await tx.wait()
+    
+    if (!receipt) {
+      if (tx.hash) {
+        console.warn('⚠️ Transaction confirmation returned null. Using transaction hash:', tx.hash)
+        return tx.hash
+      }
+      throw new Error('Transaction confirmation failed: receipt is null and no transaction hash available')
+    }
     
     console.log('✅ Withdrawal confirmed!')
     console.log('  - Block Number:', receipt.blockNumber)

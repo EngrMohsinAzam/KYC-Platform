@@ -1,12 +1,12 @@
 'use client'
 
 import { createConfig, http, type Config } from 'wagmi'
-import { bscTestnet } from 'wagmi/chains'
+import { bsc } from 'wagmi/chains'
 import { injected, metaMask, walletConnect, coinbaseWallet } from 'wagmi/connectors'
 
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'dac575710eb8362c0d28c55d2dcf73dc'
 
-const chains = [bscTestnet] as const
+const chains = [bsc] as const
 
 // Store MetaMask provider reference globally so connector can access it
 let metaMaskProviderRef: any = null
@@ -59,7 +59,7 @@ function getOrCreateWagmiConfig(): Config {
       }),
     ],
     transports: {
-      [bscTestnet.id]: http('https://data-seed-prebsc-1-s1.binance.org:8545/'),
+      [bsc.id]: http('https://bsc-dataseed.binance.org/'),
     },
   })
 

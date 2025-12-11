@@ -1588,44 +1588,26 @@ export default function UploadDocument() {
       {!isCameraActive && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
           <div className="space-y-2">
-            {currentImage ? (
-              <>
-                <Button 
-                  onClick={handleContinue} 
-                  disabled={!canContinue}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  {currentSide === 'front' && needsBackSide && frontImage 
-                    ? 'Continue to Back Side →' 
-                    : currentSide === 'back' && backImage && frontImage
-                    ? 'Continue'
-                    : currentSide === 'back' && !backImage
-                    ? 'Upload Back Side to Continue'
-                    : 'Continue'}
-                </Button>
-                <button 
-                  onClick={handleRetake}
-                  className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium"
-                >
-                  Retake Photo
-                </button>
-              </> 
-            ) : (
-              isMobile ? (
-                <Button 
-                  onClick={handleNativeCamera}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                >
-                  Take Photo
-                </Button>
-              ) : (
-                <Button 
-                  onClick={handleCameraClick}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                >
-                  Take Photo
-                </Button>
-              )
+            <Button 
+              onClick={handleContinue} 
+              disabled={!canContinue}
+              className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+            >
+              {currentSide === 'front' && needsBackSide && frontImage 
+                ? 'Continue to Back Side →' 
+                : currentSide === 'back' && backImage && frontImage
+                ? 'Continue'
+                : currentSide === 'back' && !backImage
+                ? 'Upload Back Side to Continue'
+                : 'Continue'}
+            </Button>
+            {currentImage && (
+              <button 
+                onClick={handleRetake}
+                className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium"
+              >
+                Retake Photo
+              </button>
             )}
           </div>
           <p className="text-xs text-gray-500 text-center mt-2">Powered by Mira</p>

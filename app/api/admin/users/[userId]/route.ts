@@ -4,7 +4,7 @@ const API_BASE_URL = 'https://xzfjrnv9-3099.asse.devtunnels.ms'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -16,7 +16,8 @@ export async function GET(
       )
     }
 
-    const userId = params.userId
+    // Await params (required in Next.js 14+)
+    const { userId } = await params
     const encodedUserId = encodeURIComponent(userId)
 
     const response = await fetch(`${API_BASE_URL}/api/admin/users/${encodedUserId}`, {

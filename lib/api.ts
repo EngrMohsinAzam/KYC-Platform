@@ -55,7 +55,7 @@ export const submitKYCData = async (data: {
   amount?: string
   timestamp?: string
   feeUnit?: number
-}): Promise<{ success: boolean; message?: string; data?: any }> => {
+}): Promise<{ success: boolean; message?: string; data?: any; errors?: any[]; isBackendIssue?: boolean }> => {
   console.log('🔥 submitKYCData FUNCTION CALLED!')
   console.log('📥 Received data parameter:', {
     hasUserId: !!data.userId,
@@ -75,43 +75,92 @@ export const submitKYCData = async (data: {
     console.log('  ✅ FormData created:', formData)
     console.log('full name ',formData.get('fullName'))
     
-    // Add text fields
-    formData.append('userId', data.userId)
+    // Add text fields - ensure no empty strings for required fields
+    // Validate required fields before sending
+    const requiredFields: string[] = []
+    
+    if (!data.userId || data.userId.trim() === '') {
+      requiredFields.push('userId')
+    }
+    if (!data.blockchainAddressId || data.blockchainAddressId.trim() === '') {
+      requiredFields.push('blockchainAddressId')
+    }
+    if (!data.fullName || data.fullName.trim() === '') {
+      requiredFields.push('fullName')
+    }
+    if (!data.email || data.email.trim() === '') {
+      requiredFields.push('email')
+    }
+    if (!data.phone || data.phone.trim() === '') {
+      requiredFields.push('phone')
+    }
+    if (!data.countryName || data.countryName.trim() === '') {
+      requiredFields.push('countryName')
+    }
+    if (!data.cityName || data.cityName.trim() === '') {
+      requiredFields.push('cityName')
+    }
+    if (!data.idType || data.idType.trim() === '') {
+      requiredFields.push('idType')
+    }
+    if (!data.usaResidence || data.usaResidence.trim() === '') {
+      requiredFields.push('usaResidence')
+    }
+    if (!data.identityDocumentFront || data.identityDocumentFront.trim() === '') {
+      requiredFields.push('identityDocumentFront')
+    }
+    if (!data.liveInImage || data.liveInImage.trim() === '') {
+      requiredFields.push('liveInImage')
+    }
+    
+    if (requiredFields.length > 0) {
+      const errorMsg = `Missing required fields: ${requiredFields.join(', ')}`
+      console.error('❌ Validation Error:', errorMsg)
+      throw new Error(errorMsg)
+    }
+    
+    formData.append('userId', data.userId.trim())
     // Always send blockchainAddressId - backend requires it
-    // Ensure it's not undefined or null
-    const blockchainAddressId = data.blockchainAddressId || ''
+    const blockchainAddressId = data.blockchainAddressId.trim()
     formData.append('blockchainAddressId', blockchainAddressId)
-    console.log('  ✅ Added blockchainAddressId:', blockchainAddressId || '(empty string)')
-    formData.append('fullName', data.fullName)
+    console.log('  ✅ Added blockchainAddressId:', blockchainAddressId)
+    formData.append('fullName', data.fullName.trim())
     // Add individual name fields if provided
-    if (data.firstName) {
-      formData.append('firstName', data.firstName)
-      console.log('  ✅ Added firstName:', data.firstName)
+    // Add optional name fields (only if they have values)
+    if (data.firstName && data.firstName.trim()) {
+      formData.append('firstName', data.firstName.trim())
+      console.log('  ✅ Added firstName:', data.firstName.trim())
     }
-    if (data.lastName) {
-      formData.append('lastName', data.lastName)
-      console.log('  ✅ Added lastName:', data.lastName)
+    if (data.lastName && data.lastName.trim()) {
+      formData.append('lastName', data.lastName.trim())
+      console.log('  ✅ Added lastName:', data.lastName.trim())
     }
-    if (data.fatherName) {
-      formData.append('fatherName', data.fatherName)
-      console.log('  ✅ Added fatherName:', data.fatherName)
+    if (data.fatherName && data.fatherName.trim()) {
+      formData.append('fatherName', data.fatherName.trim())
+      console.log('  ✅ Added fatherName:', data.fatherName.trim())
     }
-    formData.append('email', data.email)
-    formData.append('phone', data.phone)
-    if (data.address) {
-      formData.append('address', data.address)
-      console.log('  ✅ Added address:', data.address)
+    
+    // Required fields
+    formData.append('email', data.email.trim())
+    formData.append('phone', data.phone.trim())
+    
+    // Optional address field
+    if (data.address && data.address.trim()) {
+      formData.append('address', data.address.trim())
+      console.log('  ✅ Added address:', data.address.trim())
     }
-    formData.append('countryName', data.countryName)
-    formData.append('cityName', data.cityName)
-    formData.append('idType', data.idType)
-    formData.append('usaResidence', data.usaResidence)
+    
+    // Required location fields
+    formData.append('countryName', data.countryName.trim())
+    formData.append('cityName', data.cityName.trim())
+    formData.append('idType', data.idType.trim())
+    formData.append('usaResidence', data.usaResidence.trim())
     formData.append('feeUnit', String(data.feeUnit || 2))
     
     // Add CNIC if provided (backend expects 'cnicNumber')
-    if (data.cnic) {
-      formData.append('cnicNumber', data.cnic)
-      console.log('  ✅ Added cnicNumber:', data.cnic)
+    if (data.cnic && data.cnic.trim()) {
+      formData.append('cnicNumber', data.cnic.trim())
+      console.log('  ✅ Added cnicNumber:', data.cnic.trim())
     }
     
     // Add blockchain transaction details if available
@@ -218,14 +267,38 @@ export const submitKYCData = async (data: {
     // Log all FormData entries for debugging
     console.log('\n📦 FormData Contents (all fields being sent):')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    const formDataEntries: Record<string, any> = {}
     for (const [key, value] of formData.entries()) {
       if (value instanceof File) {
         console.log(`  ✅ ${key}: File (${value.name}, ${value.size} bytes, ${value.type})`)
+        formDataEntries[key] = `File: ${value.name}, ${value.size} bytes`
       } else {
-        console.log(`  ✅ ${key}: ${value}`)
+        const valueStr = String(value)
+        // Truncate long values for logging
+        const displayValue = valueStr.length > 100 ? valueStr.substring(0, 100) + '...' : valueStr
+        console.log(`  ✅ ${key}: ${displayValue}`)
+        formDataEntries[key] = valueStr.length > 0 ? 'Present' : 'EMPTY'
       }
     }
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('\n📊 FormData Summary:')
+    console.log(JSON.stringify(formDataEntries, null, 2))
+    
+    // Check for empty critical fields
+    const criticalFields = ['userId', 'blockchainAddressId', 'email', 'fullName', 'phone', 'countryName', 'cityName', 'idType', 'usaResidence']
+    const emptyFields: string[] = []
+    for (const [key, value] of formData.entries()) {
+      if (criticalFields.includes(key)) {
+        const valueStr = String(value)
+        if (!valueStr || valueStr.trim() === '') {
+          emptyFields.push(key)
+          console.error(`  ❌ ${key}: EMPTY or missing!`)
+        }
+      }
+    }
+    if (emptyFields.length > 0) {
+      throw new Error(`Critical fields are empty: ${emptyFields.join(', ')}. Please check your data before submission.`)
+    }
     
     console.log('\n🚀 Making POST API Request...')
     const fullEndpoint = `${API_BASE_URL}/api/kyc/submit`
@@ -233,11 +306,39 @@ export const submitKYCData = async (data: {
     console.log('  - Method: POST')
     console.log('  - Content-Type: multipart/form-data (auto-set by browser)')
     
-    const response = await fetch(fullEndpoint, {
-      method: 'POST',
-      body: formData,
-      // Don't set Content-Type header - browser will set it automatically with boundary for FormData
-    })
+    // Test backend connection first
+    console.log('\n🔍 Testing backend connection...')
+    try {
+      const healthCheckUrl = `${API_BASE_URL}/api/health` // Try health endpoint if available
+      const healthResponse = await fetch(healthCheckUrl, { method: 'GET', signal: AbortSignal.timeout(5000) })
+      console.log('  - Backend health check:', healthResponse.status)
+    } catch (healthError) {
+      console.warn('  - Health check failed (this is OK if endpoint doesn\'t exist):', healthError)
+    }
+    
+    // Make the actual request with timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
+    
+    let response: Response
+    try {
+      response = await fetch(fullEndpoint, {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+        // Don't set Content-Type header - browser will set it automatically with boundary for FormData
+      })
+      clearTimeout(timeoutId)
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId)
+      if (fetchError.name === 'AbortError') {
+        throw new Error('Backend API request timed out. Please check your internet connection and try again.')
+      }
+      if (fetchError.message?.includes('Failed to fetch') || fetchError.message?.includes('NetworkError')) {
+        throw new Error('Cannot connect to backend server. Please check your internet connection and ensure the backend is running.')
+      }
+      throw fetchError
+    }
     
     console.log('\n📡 API Request Sent!')
     console.log('  - Waiting for response...')
@@ -248,20 +349,76 @@ export const submitKYCData = async (data: {
     console.log('  - OK:', response.ok)
     
     if (!response.ok) {
+      let errorData: any = null
       let errorText = ''
       try {
         errorText = await response.text()
         console.error('\n❌ Backend API Error Response:')
         console.error('  - Status:', response.status)
         console.error('  - Status Text:', response.statusText)
-        console.error('  - Error Response Body:', errorText)
+        console.error('  - Error Response Body (raw):', errorText)
+        
+        // Try to parse as JSON
+        try {
+          errorData = JSON.parse(errorText)
+          console.error('  - Error Response (parsed):', JSON.stringify(errorData, null, 2))
+        } catch (jsonError) {
+          console.error('  - Could not parse as JSON, treating as plain text')
+        }
       } catch (parseError) {
-        console.error('  - Could not parse error response')
+        console.error('  - Could not read error response')
       }
+      
+      // Check if it's a connection issue
+      if (response.status === 0 || response.status >= 500) {
+        return {
+          success: false,
+          message: `Backend server error (${response.status}). The backend server may be down or unreachable. Please check if the backend is running at ${API_BASE_URL}`,
+          errors: [],
+          isBackendIssue: true
+        }
+      }
+      
+      // Extract validation errors if available
+      let errorMessage = `Backend API error: ${response.status} ${response.statusText}`
+      let isBackendIssue = false
+      
+      if (errorData) {
+        if (errorData.message) {
+          errorMessage = errorData.message
+        }
+        
+        // If validation errors exist, add them to the message
+        if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+          const validationErrors = errorData.errors.map((err: any) => {
+            if (typeof err === 'string') return err
+            if (err.field && err.message) return `${err.field}: ${err.message}`
+            if (err.message) return err.message
+            return JSON.stringify(err)
+          }).join(', ')
+          errorMessage += ` - Validation errors: ${validationErrors}`
+        } else if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length === 0) {
+          // Empty errors array - backend validation failed but didn't provide details
+          // This might be a backend issue - the backend should provide specific validation errors
+          errorMessage = 'Validation failed - Backend did not provide specific error details. This may be a backend configuration issue. Please check:\n' +
+            '1. All required fields are filled\n' +
+            '2. Images are properly uploaded\n' +
+            '3. Backend API is correctly configured'
+          isBackendIssue = true
+        }
+      } else if (errorText) {
+        errorMessage += ` - ${errorText}`
+      }
+      
+      console.error('  - Final Error Message:', errorMessage)
+      console.error('  - Is Backend Issue:', isBackendIssue)
       console.log('========================================\n')
+      
       return {
         success: false,
-        message: `Backend API error: ${response.status} ${response.statusText}${errorText ? ' - ' + errorText : ''}`
+        message: errorMessage,
+        errors: errorData?.errors || [],
+        isBackendIssue
       }
     }
     

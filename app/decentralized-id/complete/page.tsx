@@ -54,7 +54,7 @@ export default function VerificationComplete() {
       ctx.fillText(anonymousId, 40, 200)
       
       ctx.font = '14px Inter'
-      ctx.fillText('Blockchain: BSC Testnet', 40, 250)
+      ctx.fillText('Blockchain: BSC Mainnet', 40, 250)
       ctx.fillText('Verified: Oct 24, 2025', 40, 280)
       
       // Convert to blob and download
@@ -139,7 +139,7 @@ export default function VerificationComplete() {
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div>
                 <p className="text-xs opacity-90 mb-1">Blockchain:</p>
-                <p className="text-sm font-semibold">BSC Testnet</p>
+                <p className="text-sm font-semibold">BSC Mainnet</p>
               </div>
               <div>
                 <p className="text-xs opacity-90 mb-1">Verified:</p>
@@ -165,7 +165,7 @@ export default function VerificationComplete() {
         </div>
 
         <p className="text-sm text-text-secondary mb-6 text-center leading-relaxed">
-          Your identity has been verified and stamped on the Binance Smart Chain Testnet. This anonymous ID protects your privacy while proving your verification status.
+          Your identity has been verified and stamped on the Binance Smart Chain. This anonymous ID protects your privacy while proving your verification status.
         </p>
 
         <div className="flex gap-3">

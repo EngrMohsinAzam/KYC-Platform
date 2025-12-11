@@ -1,9 +1,9 @@
 // Smart Contract Addresses
 export const CONTRACT_ADDRESSES = {
-  KYC: '0xeaF70C9Cc7bD5CdbB8aF4cd07B6a2452f0AB4E36', // BSC Testnet
+  KYC: '0x132f342D1E8Adc9B4F8A71cEe374b14c7aD45655', // BSC Mainnet
 }
 
-// KYC Smart Contract ABI
+// KYC Smart Contract ABI (SimpleKYCWithBNB)
 export const KYC_ABI = [
 	{
 		"inputs": [
@@ -29,28 +29,6 @@ export const KYC_ABI = [
 	{
 		"inputs": [],
 		"name": "ExpectedPause",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
 		"type": "error"
 	},
 	{
@@ -200,25 +178,25 @@ export const KYC_ABI = [
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
 				"name": "newOwner",
 				"type": "address"
 			}
 		],
-		"name": "OwnershipTransferred",
+		"name": "OwnerAdded",
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "pause",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "removedOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnerRemoved",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -234,64 +212,6 @@ export const KYC_ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint128",
-				"name": "_newFee",
-				"type": "uint128"
-			}
-		],
-		"name": "setFee",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "_combinedDataHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "string",
-				"name": "_metadataUrl",
-				"type": "string"
-			}
-		],
-		"name": "submitKYC",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "unpause",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"anonymous": false,
 		"inputs": [
 			{
@@ -305,39 +225,75 @@ export const KYC_ABI = [
 		"type": "event"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "bytes32",
-				"name": "_combinedDataHash",
-				"type": "bytes32"
-			},
-			{
-				"internalType": "string",
-				"name": "_metadataUrl",
-				"type": "string"
-			}
-		],
-		"name": "updateDocuments",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
+		"inputs": [],
+		"name": "MAX_FEE",
+		"outputs": [
 			{
 				"internalType": "uint256",
-				"name": "_amount",
+				"name": "",
 				"type": "uint256"
 			}
 		],
-		"name": "withdrawBNB",
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MIN_FEE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "PRICE_STALENESS_THRESHOLD",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_newOwner",
+				"type": "address"
+			}
+		],
+		"name": "addOwner",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"stateMutability": "payable",
-		"type": "receive"
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "authorizedOwners",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
 	},
 	{
 		"inputs": [],
@@ -354,12 +310,12 @@ export const KYC_ABI = [
 	},
 	{
 		"inputs": [],
-		"name": "COMPANY_WALLET",
+		"name": "getAuthorizedOwners",
 		"outputs": [
 			{
-				"internalType": "address",
+				"internalType": "address[]",
 				"name": "",
-				"type": "address"
+				"type": "address[]"
 			}
 		],
 		"stateMutability": "view",
@@ -424,34 +380,6 @@ export const KYC_ABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "getFinancialSummary",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "collected",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "withdrawn",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "currentBalance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "pending",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -477,9 +405,9 @@ export const KYC_ABI = [
 				"type": "uint40"
 			},
 			{
-				"internalType": "uint56",
+				"internalType": "uint88",
 				"name": "paidFee",
-				"type": "uint56"
+				"type": "uint88"
 			},
 			{
 				"internalType": "address",
@@ -500,6 +428,30 @@ export const KYC_ABI = [
 				"internalType": "uint16",
 				"name": "updateCount",
 				"type": "uint16"
+			},
+			{
+				"internalType": "uint16",
+				"name": "resubmissionCount",
+				"type": "uint16"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_user",
+				"type": "address"
+			}
+		],
+		"name": "getResubmissionCount",
+		"outputs": [
+			{
+				"internalType": "uint16",
+				"name": "",
+				"type": "uint16"
 			}
 		],
 		"stateMutability": "view",
@@ -515,49 +467,18 @@ export const KYC_ABI = [
 				"type": "uint128"
 			},
 			{
-				"internalType": "uint128",
-				"name": "currentFee",
-				"type": "uint128"
+				"internalType": "uint256",
+				"name": "totalCollectionBNB",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalWithdrawnBNB",
+				"type": "uint256"
 			},
 			{
 				"internalType": "uint256",
 				"name": "balance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalCollected",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalWithdrawals",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getTotalCollectedFees",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getTotalWithdrawn",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
 				"type": "uint256"
 			}
 		],
@@ -622,6 +543,25 @@ export const KYC_ABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_address",
+				"type": "address"
+			}
+		],
+		"name": "isAuthorizedOwner",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "kycFee",
 		"outputs": [
@@ -660,9 +600,9 @@ export const KYC_ABI = [
 				"type": "uint40"
 			},
 			{
-				"internalType": "uint56",
+				"internalType": "uint88",
 				"name": "paidFee",
-				"type": "uint56"
+				"type": "uint88"
 			},
 			{
 				"internalType": "address",
@@ -683,6 +623,11 @@ export const KYC_ABI = [
 				"internalType": "uint16",
 				"name": "updateCount",
 				"type": "uint16"
+			},
+			{
+				"internalType": "uint16",
+				"name": "resubmissionCount",
+				"type": "uint16"
 			}
 		],
 		"stateMutability": "view",
@@ -690,12 +635,12 @@ export const KYC_ABI = [
 	},
 	{
 		"inputs": [],
-		"name": "MAX_FEE",
+		"name": "ownerCount",
 		"outputs": [
 			{
-				"internalType": "uint256",
+				"internalType": "uint8",
 				"name": "",
-				"type": "uint256"
+				"type": "uint8"
 			}
 		],
 		"stateMutability": "view",
@@ -703,28 +648,9 @@ export const KYC_ABI = [
 	},
 	{
 		"inputs": [],
-		"name": "MIN_FEE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
+		"name": "pause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -756,6 +682,32 @@ export const KYC_ABI = [
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "_owner",
+				"type": "address"
+			}
+		],
+		"name": "removeOwner",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint128",
+				"name": "_newFee",
+				"type": "uint128"
+			}
+		],
+		"name": "setFee",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
@@ -773,8 +725,26 @@ export const KYC_ABI = [
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_combinedDataHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "string",
+				"name": "_metadataUrl",
+				"type": "string"
+			}
+		],
+		"name": "submitKYC",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
-		"name": "totalCollectedFees",
+		"name": "totalCollection",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -810,6 +780,55 @@ export const KYC_ABI = [
 		],
 		"stateMutability": "view",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "unpause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "_combinedDataHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "string",
+				"name": "_metadataUrl",
+				"type": "string"
+			}
+		],
+		"name": "updateDocuments",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdrawAllBNB",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawBNB",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ] as const
 

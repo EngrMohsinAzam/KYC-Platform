@@ -1,7 +1,8 @@
 'use client'
 
-import { useReducer, ReactNode, useEffect } from 'react'
+import { useReducer, ReactNode, useEffect, useRef } from 'react'
 import { AppContext, initialState, AppState, Action } from './AppContext'
+import { saveKYCDocuments, loadKYCDocuments, clearExpiredCaches } from '@/lib/kyc-cache'
 
 const STORAGE_KEY = 'kyc_app_state'
 
@@ -141,32 +142,117 @@ function appReducer(state: AppState, action: Action): AppState {
 export function AppProvider({ children }: { children: ReactNode }) {
   // Initialize state with data from localStorage
   const [state, dispatch] = useReducer(appReducer, { ...initialState, ...loadState() })
+  const isRestoringRef = useRef(false)
+  const hasRestoredRef = useRef(false)
 
-  // Load state on mount
+  // Auto-save images to IndexedDB when they change
   useEffect(() => {
-    const savedState = loadState()
-    if (savedState.selectedCountry) {
-      dispatch({ type: 'SET_COUNTRY', payload: savedState.selectedCountry })
+    // Skip if we're currently restoring (to avoid saving during restore)
+    if (isRestoringRef.current) return
+    
+    // Only save if we have at least one image
+    if (state.documentImageFront || state.documentImageBack || state.selfieImage) {
+      const email = state.personalInfo?.email
+      const userId = state.user?.id || state.user?.anonymousId
+      
+      saveKYCDocuments(
+        {
+          documentImageFront: state.documentImageFront,
+          documentImageBack: state.documentImageBack,
+          selfieImage: state.selfieImage,
+        },
+        email,
+        userId
+      ).catch((error) => {
+        console.error('Failed to auto-save images to cache:', error)
+      })
     }
-    if (savedState.selectedCity) {
-      dispatch({ type: 'SET_CITY', payload: savedState.selectedCity })
+  }, [state.documentImageFront, state.documentImageBack, state.selfieImage, state.personalInfo?.email, state.user?.id, state.user?.anonymousId])
+
+  // Load state and restore images from cache on mount
+  useEffect(() => {
+    if (hasRestoredRef.current) return // Only restore once
+    
+    const restoreFromCache = async () => {
+      isRestoringRef.current = true
+      hasRestoredRef.current = true
+      
+      try {
+        // First, load text data from localStorage
+        const savedState = loadState()
+        if (savedState.selectedCountry) {
+          dispatch({ type: 'SET_COUNTRY', payload: savedState.selectedCountry })
+        }
+        if (savedState.selectedCity) {
+          dispatch({ type: 'SET_CITY', payload: savedState.selectedCity })
+        }
+        if (savedState.selectedIssuingCountry) {
+          dispatch({ type: 'SET_ISSUING_COUNTRY', payload: savedState.selectedIssuingCountry })
+        }
+        if (savedState.selectedIdType) {
+          dispatch({ type: 'SET_ID_TYPE', payload: savedState.selectedIdType })
+        }
+        if (savedState.isResidentUSA !== undefined) {
+          dispatch({ type: 'SET_RESIDENT_USA', payload: savedState.isResidentUSA })
+        }
+        if (savedState.connectedWallet) {
+          dispatch({ type: 'SET_WALLET', payload: savedState.connectedWallet })
+        }
+        if (savedState.personalInfo) {
+          dispatch({ type: 'SET_PERSONAL_INFO', payload: savedState.personalInfo })
+        }
+
+        // Then, restore images from IndexedDB (works on mobile too)
+        const email = savedState.personalInfo?.email
+        const userId = savedState.personalInfo?.email || savedState.user?.id || savedState.user?.anonymousId
+        
+        try {
+          const cachedDocs = await loadKYCDocuments(email, userId)
+          
+          if (cachedDocs) {
+            console.log('🔄 Restoring KYC documents from cache...')
+            console.log('  - Email:', email)
+            console.log('  - UserId:', userId)
+            console.log('  - Has front:', !!cachedDocs.documentImageFront)
+            console.log('  - Has back:', !!cachedDocs.documentImageBack)
+            console.log('  - Has selfie:', !!cachedDocs.selfieImage)
+            
+            // Restore all cached images (during initial restore, state won't have images yet)
+            if (cachedDocs.documentImageFront) {
+              dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: cachedDocs.documentImageFront })
+              dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: cachedDocs.documentImageFront })
+            }
+            
+            if (cachedDocs.documentImageBack) {
+              dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: cachedDocs.documentImageBack })
+            }
+            
+            if (cachedDocs.selfieImage) {
+              dispatch({ type: 'SET_SELFIE_IMAGE', payload: cachedDocs.selfieImage })
+            }
+            
+            console.log('✅ KYC documents restored from cache')
+          } else {
+            console.log('ℹ️ No cached documents found to restore')
+          }
+        } catch (cacheError) {
+          console.error('❌ Error loading cached documents:', cacheError)
+          // Continue even if cache load fails
+        }
+
+        // Clear expired caches in background (don't wait)
+        clearExpiredCaches().catch(() => {
+          // Ignore errors for cleanup
+        })
+      } catch (error) {
+        console.error('Failed to restore from cache:', error)
+      } finally {
+        isRestoringRef.current = false
+      }
     }
-    if (savedState.selectedIssuingCountry) {
-      dispatch({ type: 'SET_ISSUING_COUNTRY', payload: savedState.selectedIssuingCountry })
-    }
-    if (savedState.selectedIdType) {
-      dispatch({ type: 'SET_ID_TYPE', payload: savedState.selectedIdType })
-    }
-    if (savedState.isResidentUSA !== undefined) {
-      dispatch({ type: 'SET_RESIDENT_USA', payload: savedState.isResidentUSA })
-    }
-    if (savedState.connectedWallet) {
-      dispatch({ type: 'SET_WALLET', payload: savedState.connectedWallet })
-    }
-    if (savedState.personalInfo) {
-      dispatch({ type: 'SET_PERSONAL_INFO', payload: savedState.personalInfo })
-    }
-  }, [])
+
+    restoreFromCache()
+  }, []) // Only run once on mount
 
   return (
     <AppContext.Provider value={{ state, dispatch }}>

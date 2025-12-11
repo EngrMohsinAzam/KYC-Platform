@@ -8,9 +8,9 @@ export const walletConnectConfig = {
   },
   chains: [
     {
-      id: 97, 
-      name: 'Binance Smart Chain Testnet',
-      network: 'bsc-testnet',
+      id: 56, 
+      name: 'Binance Smart Chain',
+      network: 'bsc',
       nativeCurrency: {
         decimals: 18,
         name: 'BNB',
@@ -18,19 +18,19 @@ export const walletConnectConfig = {
       },
       rpcUrls: {
         default: {
-          http: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
+          http: ['https://bsc-dataseed.binance.org'],
         },
         public: {
-          http: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
+          http: ['https://bsc-dataseed.binance.org'],
         },
       },
       blockExplorers: {
         default: {
           name: 'BscScan',
-          url: 'https://testnet.bscscan.com',
+          url: 'https://bscscan.com',
         },
       },
-      testnet: true,
+      testnet: false,
     },
   ],
 }

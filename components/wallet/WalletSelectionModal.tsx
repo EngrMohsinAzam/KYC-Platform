@@ -5,7 +5,7 @@ import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { detectInstalledWallets, DetectedWallet } from '@/lib/wallet-detection'
-import { switchToBSCTestnet } from '@/lib/network-switch'
+import { switchToBSCMainnet } from '@/lib/network-switch'
 import { isMobileDevice, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
 
 interface WalletSelectionModalProps {
@@ -122,11 +122,11 @@ export function WalletSelectionModal({
         }
       }
       
-      // Auto-switch to BSC Testnet before connecting (if provider exists)
+      // Auto-switch to BSC Mainnet before connecting (if provider exists)
       if (wallet.provider) {
         try {
           setSwitchingNetwork(true)
-          await switchToBSCTestnet(wallet.provider)
+          await switchToBSCMainnet(wallet.provider)
           setSwitchingNetwork(false)
         } catch (err: any) {
           console.error('Error switching network:', err)

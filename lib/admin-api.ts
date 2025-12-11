@@ -91,8 +91,8 @@ export const getDashboardStats = async (): Promise<{ success: boolean; data?: Da
   try {
     const token = getAdminToken()
     if (!token) {
-      console.error('❌ No admin token found')
-      return { success: false, message: 'Not authenticated' }
+      console.error('❌ No admin token found - user needs to login')
+      return { success: false, message: 'Not authenticated - Please login' }
     }
 
     // Use Next.js API route proxy to avoid CORS issues
@@ -270,6 +270,32 @@ export const getUsers = async (params: GetUsersParams = {}): Promise<GetUsersRes
       },
     })
 
+    if (!response.ok) {
+      const errorText = await response.text()
+      let errorData
+      try {
+        errorData = JSON.parse(errorText)
+      } catch {
+        errorData = { message: errorText || `HTTP ${response.status}: ${response.statusText}` }
+      }
+      
+      // Handle 401 Unauthorized specifically
+      if (response.status === 401) {
+        console.warn('⚠️ Admin authentication failed (401) - token may be invalid or expired')
+        return {
+          success: false,
+          message: errorData.message || 'Invalid or inactive admin account.',
+        }
+      }
+      
+      // For other errors, log as error
+      console.error('❌ Users API Error Response:', errorText)
+      return {
+        success: false,
+        message: errorData.message || `Failed to fetch users: ${response.status} ${response.statusText}`,
+      }
+    }
+    
     const data = await response.json()
     return data
   } catch (error: any) {

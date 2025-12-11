@@ -69,15 +69,15 @@ export default function ConfirmBlockstamp() {
       const network = await getNetworkInfo()
       if (network) {
         setCurrentNetwork(network.name)
-        // Binance Smart Chain Testnet chainId is 97
-        const isBSCTestnet = network.chainId === '97'
-        setIsCorrectNetwork(isBSCTestnet)
+        // Binance Smart Chain Mainnet chainId is 56
+        const isBSCMainnet = network.chainId === '56'
+        setIsCorrectNetwork(isBSCMainnet)
         
         // Set blockchain name
-        setBlockchainName(network.name || 'Binance Smart Chain Testnet')
+        setBlockchainName(network.name || 'Binance Smart Chain')
         
-        if (!isBSCTestnet) {
-          setError(`Wrong Network: You are connected to ${network.name}. Please switch to Binance Smart Chain Testnet (BSC Testnet) to continue.`)
+        if (!isBSCMainnet) {
+          setError(`Wrong Network: You are connected to ${network.name}. Please switch to Binance Smart Chain (BSC Mainnet) to continue.`)
           setCheckingBalance(false)
           setLoadingTransactionData(false)
           return
@@ -102,7 +102,7 @@ export default function ConfirmBlockstamp() {
     } catch (err: any) {
       console.error('Error checking balance:', err)
       if (err.message.includes('not found') || err.message.includes('BAD_DATA')) {
-        setError(`Contract Error: The KYC contract was not found. This usually means you're on the wrong network. Please switch to Binance Smart Chain Testnet (BSC Testnet) in MetaMask.`)
+        setError(`Contract Error: The KYC contract was not found. This usually means you're on the wrong network. Please switch to Binance Smart Chain (BSC Mainnet) in MetaMask.`)
       } else {
         setError(err.message || 'Failed to check balance. Please ensure you are on the correct network.')
       }
@@ -150,13 +150,13 @@ export default function ConfirmBlockstamp() {
 
     try {
       const network = await getNetworkInfo()
-      if (network && network.chainId !== '97') {
-        const switchToBSC = confirm('You need to be on Binance Smart Chain Testnet. Would you like to switch now?')
+      if (network && network.chainId !== '56') {
+        const switchToBSC = confirm('You need to be on Binance Smart Chain. Would you like to switch now?')
         if (switchToBSC) {
           try {
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0x61' }],
+              params: [{ chainId: '0x38' }],
             })
             await new Promise(resolve => setTimeout(resolve, 1000))
           } catch (switchError: any) {
@@ -164,11 +164,11 @@ export default function ConfirmBlockstamp() {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: '0x61',
-                  chainName: 'Binance Smart Chain Testnet',
+                  chainId: '0x38',
+                  chainName: 'Binance Smart Chain',
                   nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
-                  blockExplorerUrls: ['https://testnet.bscscan.com/']
+                  rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                  blockExplorerUrls: ['https://bscscan.com/']
                 }]
               })
               await new Promise(resolve => setTimeout(resolve, 1000))
@@ -201,11 +201,8 @@ export default function ConfirmBlockstamp() {
       return
     }
 
-    // Check if already verified
-    if (kycStatus?.isVerified || kycStatus?.hasSubmitted) {
-      setError('You have already submitted KYC verification. Please check your transaction history.')
-      return
-    }
+    // Note: Multiple submissions are now allowed
+    // Removed the check that prevented resubmission - users can submit KYC multiple times
 
     setLoading(true)
     setError(null)
@@ -220,6 +217,44 @@ export default function ConfirmBlockstamp() {
       
       // Create metadata URL (optional, can be empty string)
       const metadataUrl = `https://kyx-platform.com/kyc/${state.connectedWallet}`
+
+      // CRITICAL: Verify network before transaction
+      console.log('🌐 Verifying network connection...')
+      try {
+        const { getNetworkInfo } = await import('@/lib/web3')
+        const { switchToBSCMainnet } = await import('@/lib/network-switch')
+        const networkInfo = await getNetworkInfo()
+        
+        if (!networkInfo) {
+          throw new Error('Could not detect network. Please ensure your wallet is connected.')
+        }
+        
+        if (!networkInfo.isCorrectNetwork) {
+          console.log('⚠️ Wrong network detected! Attempting to switch...')
+          const ethereum = (window as any).ethereum
+          if (ethereum) {
+            await switchToBSCMainnet(ethereum)
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            
+            // Verify switch
+            const newNetworkInfo = await getNetworkInfo()
+            if (!newNetworkInfo?.isCorrectNetwork) {
+              throw new Error('Failed to switch to BSC Mainnet. Please switch manually in your wallet to Binance Smart Chain (Chain ID: 56).')
+            }
+            console.log('✅ Successfully switched to BSC Mainnet')
+          } else {
+            throw new Error('Please switch to BSC Mainnet (Chain ID: 56) in your wallet.')
+          }
+        } else {
+          console.log('✅ Network verification passed - connected to BSC Mainnet')
+        }
+      } catch (networkError: any) {
+        console.error('❌ Network verification failed:', networkError)
+        setError(networkError.message || 'Network error. Please ensure you are connected to BSC Mainnet.')
+        setLoading(false)
+        setTransactionStatus('idle')
+        return
+      }
 
       // Submit KYC verification to smart contract (this will pay $2 USD in BNB)
       const transactionHash = await submitKYCVerification(anonymousId, metadataUrl)
@@ -334,6 +369,18 @@ export default function ConfirmBlockstamp() {
       // Store transaction hash
       localStorage.setItem('kycTransactionHash', transactionHash)
 
+      // Clear KYC cache after successful submission
+      try {
+        const { clearKYCCache } = await import('@/lib/kyc-cache')
+        const email = personalInfo?.email
+        const userId = anonymousId
+        await clearKYCCache(email, userId)
+        console.log('✅ KYC cache cleared after successful submission')
+      } catch (cacheError) {
+        console.error('Failed to clear cache after submission:', cacheError)
+        // Don't fail the submission if cache clearing fails
+      }
+
       // Wait a moment to show success animation before navigating
       await new Promise(resolve => setTimeout(resolve, 1500))
 
@@ -341,8 +388,57 @@ export default function ConfirmBlockstamp() {
       // The review page will show "Under review" status
       router.push('/verify/review')
     } catch (err: any) {
-      console.error('Transaction error:', err)
-      setError(err.message || 'Transaction failed. Please try again.')
+      console.error('❌ Transaction error:', err)
+      console.error('Error details:', {
+        code: err.code,
+        message: err.message,
+        reason: err.reason
+      })
+      
+      // Provide user-friendly error messages
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      let errorMessage = 'Transaction failed. Please try again.'
+      
+      // User cancellation
+      if (err.code === 4001 || 
+          err.message?.includes('user rejected') || 
+          err.message?.includes('User denied') ||
+          err.message?.includes('canceled') ||
+          err.message?.includes('rejected') ||
+          err.message?.includes('Transaction was canceled')) {
+        errorMessage = isMobile
+          ? 'Transaction was canceled. You rejected the transaction in MetaMask mobile app. Please try again and tap "Confirm" when prompted.'
+          : 'Transaction was canceled. You rejected the transaction in your wallet. Please try again and click "Confirm" when MetaMask prompts you.'
+      }
+      // Network errors
+      else if (err.message?.includes('network') || 
+               err.message?.includes('chain') ||
+               err.message?.includes('wrong network') ||
+               err.message?.includes('Chain ID')) {
+        errorMessage = 'Network error. Please ensure you are connected to BSC Mainnet (Chain ID: 56) in your wallet.'
+      }
+      // Insufficient funds
+      else if (err.message?.includes('insufficient funds') ||
+               err.message?.includes('insufficient balance') ||
+               err.message?.includes('Insufficient BNB')) {
+        errorMessage = 'Insufficient BNB balance. You need enough BNB for the fee (~$2 USD) plus gas fees (~0.001-0.002 BNB).'
+      }
+      // Contract errors
+      else if (err.message?.includes('not found') || 
+               err.message?.includes('BAD_DATA') ||
+               err.message?.includes('contract')) {
+        errorMessage = 'Contract error. Please ensure you are connected to BSC Mainnet (Chain ID: 56) and try again.'
+      }
+      // Execution reverted
+      else if (err.message?.includes('execution reverted') || err.reason) {
+        errorMessage = `Transaction failed: ${err.reason || err.message}. Please check your balance and network connection.`
+      }
+      // Generic error
+      else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
       setTransactionStatus('idle')
     } finally {
       setLoading(false)
@@ -380,7 +476,7 @@ export default function ConfirmBlockstamp() {
                 </p>
               </div>
               <p className="text-xs text-yellow-700 mt-1">
-                Please switch to Binance Smart Chain Testnet
+                Please switch to Binance Smart Chain
               </p>
             </div>
           )}
@@ -440,6 +536,7 @@ export default function ConfirmBlockstamp() {
             </div>
 
             {/* KYC Status Check */}
+            {/* Note: Multiple submissions are now allowed - removed blocking message */}
             {!checkingKYC && kycStatus && (kycStatus.isVerified || kycStatus.hasSubmitted) && (
               <div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-start gap-2">
@@ -448,12 +545,10 @@ export default function ConfirmBlockstamp() {
                   </svg>
                   <div>
                     <p className="text-sm font-medium text-blue-800 mb-1">
-                      {kycStatus.isVerified ? 'KYC Already Verified' : 'KYC Already Submitted'}
+                      Previous Submission Found
                     </p>
                     <p className="text-xs text-blue-700">
-                      {kycStatus.isVerified 
-                        ? 'Your KYC verification has already been completed. You can proceed to view your decentralized ID.'
-                        : 'You have already submitted your KYC verification. Please wait for confirmation.'}
+                      You have a previous KYC submission. You can submit again if needed. Each submission will create a new record.
                     </p>
                     {kycStatus.isVerified && (
                       <Button
@@ -479,7 +574,7 @@ export default function ConfirmBlockstamp() {
                   <strong>Current Network:</strong> {currentNetwork || 'Unknown'}
                 </p>
                 <p className="text-xs text-red-700 mb-1">
-                  <strong>Required Network:</strong> Binance Smart Chain Testnet (BSC Testnet)
+                  <strong>Required Network:</strong> Binance Smart Chain (BSC Mainnet)
                 </p>
                 <p className="text-xs text-red-600 mt-2">
                   <strong>How to fix:</strong>
@@ -487,7 +582,7 @@ export default function ConfirmBlockstamp() {
                 <ol className="text-xs text-red-700 list-decimal list-inside mt-1 space-y-1">
                   <li>Open MetaMask extension</li>
                   <li>Click the network dropdown (top of MetaMask)</li>
-                  <li>Select &quot;BSC Testnet&quot; or click &quot;Add Network&quot; below</li>
+                  <li>Select &quot;Binance Smart Chain&quot; or click &quot;Add Network&quot; below</li>
                   <li>If adding manually: Chain ID = 97, RPC = https://data-seed-prebsc-1-s1.binance.org:8545/</li>
                 </ol>
               </div>
@@ -495,10 +590,10 @@ export default function ConfirmBlockstamp() {
                 variant="secondary"
                 onClick={async () => {
                   try {
-                    // Try to switch to BSC Testnet (chainId: 97)
+                    // Try to switch to BSC Mainnet (chainId: 56)
                     await window.ethereum.request({
                       method: 'wallet_switchEthereumChain',
-                      params: [{ chainId: '0x61' }], // 97 in hex
+                      params: [{ chainId: '0x38' }], // 56 in hex
                     })
                     // Reload after switching
                     setTimeout(() => window.location.reload(), 1000)
@@ -523,7 +618,7 @@ export default function ConfirmBlockstamp() {
                         // Reload after adding
                         setTimeout(() => window.location.reload(), 1000)
                       } catch (addError) {
-                        alert('Failed to add network. Please add Binance Smart Chain Testnet manually in MetaMask.')
+                        alert('Failed to add network. Please add Binance Smart Chain manually in MetaMask.')
                       }
                     } else {
                       alert(`Failed to switch network: ${switchError.message}`)
@@ -532,7 +627,7 @@ export default function ConfirmBlockstamp() {
                 }}
                 className="w-full text-sm"
               >
-                Switch to BSC Testnet
+                Switch to BSC Mainnet
               </Button>
             </div>
           </div>
@@ -560,7 +655,7 @@ export default function ConfirmBlockstamp() {
             <div className="fixed md:relative bottom-0 left-0 right-0 p-4 md:p-0 bg-white md:bg-transparent border-t md:border-t-0">
               <Button 
                 onClick={handleConfirm}
-                disabled={loading || checkingBalance || checkingKYC || (bnbBalance !== null && parseFloat(bnbBalance) < 0.01) || (kycStatus?.isVerified || kycStatus?.hasSubmitted) || !isCorrectNetwork || transactionStatus === 'success'}
+                disabled={loading || checkingBalance || checkingKYC || !isCorrectNetwork || transactionStatus === 'success'}
                 className={`w-full rounded-lg py-3 font-medium transition-all duration-300 ${
                   transactionStatus === 'success' 
                     ? 'bg-green-600 hover:bg-green-600 text-white' 

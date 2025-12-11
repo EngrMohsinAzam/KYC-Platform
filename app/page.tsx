@@ -207,13 +207,13 @@ export default function Home() {
 
     try {
       const network = await getNetworkInfo()
-      if (network && network.chainId !== '97') {
-        const switchToBSC = confirm('You need to be on Binance Smart Chain Testnet. Would you like to switch now?')
+      if (network && network.chainId !== '56') {
+        const switchToBSC = confirm('You need to be on Binance Smart Chain. Would you like to switch now?')
         if (switchToBSC) {
           try {
             await window.ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0x61' }],
+              params: [{ chainId: '0x38' }],
             })
             await new Promise(resolve => setTimeout(resolve, 1000))
           } catch (switchError: any) {
@@ -221,11 +221,11 @@ export default function Home() {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [{
-                  chainId: '0x61',
-                  chainName: 'Binance Smart Chain Testnet',
+                  chainId: '0x38',
+                  chainName: 'Binance Smart Chain',
                   nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
-                  blockExplorerUrls: ['https://testnet.bscscan.com/']
+                  rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                  blockExplorerUrls: ['https://bscscan.com/']
                 }]
               })
               await new Promise(resolve => setTimeout(resolve, 1000))

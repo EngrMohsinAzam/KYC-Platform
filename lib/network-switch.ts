@@ -1,24 +1,24 @@
 /**
  * Network Switching Utility
- * Automatically switches wallet to BSC Testnet
+ * Automatically switches wallet to BSC Mainnet
  */
 
-const BSC_TESTNET_CONFIG = {
-  chainId: '0x61', // 97 in hex
-  chainName: 'Binance Smart Chain Testnet',
+const BSC_MAINNET_CONFIG = {
+  chainId: '0x38', // 56 in hex
+  chainName: 'Binance Smart Chain',
   nativeCurrency: {
     name: 'BNB',
     symbol: 'BNB',
     decimals: 18,
   },
-  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
-  blockExplorerUrls: ['https://testnet.bscscan.com/'],
+  rpcUrls: ['https://bsc-dataseed.binance.org/'],
+  blockExplorerUrls: ['https://bscscan.com/'],
 }
 
 /**
- * Switch wallet network to BSC Testnet
+ * Switch wallet network to BSC Mainnet
  */
-export async function switchToBSCTestnet(provider?: any): Promise<boolean> {
+export async function switchToBSCMainnet(provider?: any): Promise<boolean> {
   if (typeof window === 'undefined') {
     return false
   }
@@ -30,10 +30,10 @@ export async function switchToBSCTestnet(provider?: any): Promise<boolean> {
   }
 
   try {
-    // Try to switch to BSC Testnet
+    // Try to switch to BSC Mainnet
     await ethereum.request({
       method: 'wallet_switchEthereumChain',
-      params: [{ chainId: BSC_TESTNET_CONFIG.chainId }],
+      params: [{ chainId: BSC_MAINNET_CONFIG.chainId }],
     })
     
     // Wait a bit for the switch to complete
@@ -46,27 +46,27 @@ export async function switchToBSCTestnet(provider?: any): Promise<boolean> {
         // Add the chain
         await ethereum.request({
           method: 'wallet_addEthereumChain',
-          params: [BSC_TESTNET_CONFIG],
+          params: [BSC_MAINNET_CONFIG],
         })
         
         // Wait a bit for the chain to be added
         await new Promise(resolve => setTimeout(resolve, 1000))
         return true
       } catch (addError: any) {
-        console.error('Error adding BSC Testnet:', addError)
-        throw new Error('Failed to add BSC Testnet. Please add it manually in your wallet.')
+        console.error('Error adding BSC Mainnet:', addError)
+        throw new Error('Failed to add BSC Mainnet. Please add it manually in your wallet.')
       }
     } else {
-      console.error('Error switching to BSC Testnet:', switchError)
+      console.error('Error switching to BSC Mainnet:', switchError)
       throw new Error(`Failed to switch network: ${switchError.message}`)
     }
   }
 }
 
 /**
- * Check if wallet is on BSC Testnet
+ * Check if wallet is on BSC Mainnet
  */
-export async function isOnBSCTestnet(provider?: any): Promise<boolean> {
+export async function isOnBSCMainnet(provider?: any): Promise<boolean> {
   if (typeof window === 'undefined') {
     return false
   }
@@ -79,10 +79,14 @@ export async function isOnBSCTestnet(provider?: any): Promise<boolean> {
 
   try {
     const chainId = await ethereum.request({ method: 'eth_chainId' })
-    return chainId === BSC_TESTNET_CONFIG.chainId
+    return chainId === BSC_MAINNET_CONFIG.chainId
   } catch (error) {
     console.error('Error checking chain ID:', error)
     return false
   }
 }
+
+// Keep old function name for backward compatibility (will be removed in future)
+export const switchToBSCTestnet = switchToBSCMainnet
+export const isOnBSCTestnet = isOnBSCMainnet
 

@@ -247,17 +247,27 @@ export default function AdminDashboard() {
     }
   }
 
-  // Check authentication immediately on mount
+  // Check authentication immediately on mount - CRITICAL: This must run first
   useEffect(() => {
-    const token = getAdminToken()
-    if (!token) {
-      // No token - redirect to login immediately
-      setIsAuthenticated(false)
-      router.replace('/admin')
-      return
+    const checkAuth = () => {
+      const token = getAdminToken()
+      if (!token) {
+        // No token - redirect to login immediately (no API call needed)
+        console.log('❌ No admin token found, redirecting to login...')
+        setIsAuthenticated(false)
+        setLoading(false)
+        router.replace('/admin')
+        return
+      }
+      
+      // Token exists - set authenticated
+      // We'll verify it's valid when we make the first API call
+      // This prevents unnecessary 401 errors on page load
+      console.log('✅ Admin token found, setting authenticated state')
+      setIsAuthenticated(true)
     }
-    // Token exists - set authenticated and load data
-    setIsAuthenticated(true)
+    
+    checkAuth()
   }, [router])
 
   // Load contract data (balance and withdrawals) - lazy load blockchain functions
@@ -402,14 +412,22 @@ export default function AdminDashboard() {
 
   // Load dashboard data only when authenticated - defer contract data
   useEffect(() => {
+    // CRITICAL: Only load data if authenticated is explicitly true
+    // Don't load if null (checking) or false (not authenticated)
     if (isAuthenticated === true) {
+      console.log('✅ Authentication confirmed, loading dashboard data...')
       loadDashboardData()
       // Defer contract data loading - load after initial render to improve FCP
       const timer = setTimeout(() => {
         loadContractData()
       }, 500) // Delay to improve initial load
       return () => clearTimeout(timer)
+    } else if (isAuthenticated === false) {
+      // Not authenticated - ensure we don't try to load data
+      console.log('❌ Not authenticated, skipping data load')
+      setLoading(false)
     }
+    // If isAuthenticated is null, we're still checking - don't load data yet
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, currentPage, statusFilter, searchTerm])
 
@@ -479,11 +497,13 @@ export default function AdminDashboard() {
         statsResult.message?.includes('No token') || 
         statsResult.message?.includes('Access denied') || 
         statsResult.message?.includes('Not authenticated') ||
-        statsResult.message?.includes('Unauthorized')
+        statsResult.message?.includes('Unauthorized') ||
+        statsResult.message?.includes('Invalid or inactive')
       )) {
-        console.error('❌ Authentication error in stats API')
+        console.error('❌ Authentication error in stats API:', statsResult.message)
         setIsAuthenticated(false)
         removeAdminToken()
+        setLoading(false)
         router.replace('/admin')
         return
       }
@@ -571,10 +591,13 @@ export default function AdminDashboard() {
         usersResult.message?.includes('No token') || 
         usersResult.message?.includes('Access denied') || 
         usersResult.message?.includes('Not authenticated') ||
-        usersResult.message?.includes('Unauthorized')
+        usersResult.message?.includes('Unauthorized') ||
+        usersResult.message?.includes('Invalid or inactive')
       )) {
+        console.error('❌ Authentication error in users API:', usersResult.message)
         setIsAuthenticated(false)
         removeAdminToken()
+        setLoading(false)
         router.replace('/admin')
         return
       }

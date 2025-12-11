@@ -13,7 +13,7 @@ import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/lib/we
 import { submitKYCData } from '@/lib/api'
 import { formatWalletAddress } from '@/lib/utils'
 import { ethers } from 'ethers'
-import { switchToBSCTestnet } from '@/lib/network-switch'
+import { switchToBSCMainnet } from '@/lib/network-switch'
 import { setMetaMaskProvider } from '@/lib/wagmi-config'
 import { DetectedWallet, detectInstalledWallets } from '@/lib/wallet-detection'
 import { isMobileDevice } from '@/lib/mobile-wallet'
@@ -141,7 +141,7 @@ export default function ReviewContent() {
       }
       
       // Set blockchain name
-      const blockchainNameValue = networkInfo.name || 'Binance Smart Chain Testnet'
+      const blockchainNameValue = networkInfo.name || 'Binance Smart Chain'
       setBlockchainName(blockchainNameValue)
       console.log('✅ Blockchain name set to:', blockchainNameValue)
       
@@ -316,11 +316,11 @@ export default function ReviewContent() {
             localStorage.setItem('lastConnectedWallet', wallet.id)
             localStorage.setItem('lastConnectorId', metaMaskConnector.id)
             
-            // Ensure we're on BSC Testnet
+            // Ensure we're on BSC Mainnet
             try {
-              console.log('🌐 Switching to BSC Testnet...')
-              await switchToBSCTestnet(wallet.provider)
-              console.log('✅ Successfully switched to BSC Testnet')
+              console.log('🌐 Switching to BSC Mainnet...')
+              await switchToBSCMainnet(wallet.provider)
+              console.log('✅ Successfully switched to BSC Mainnet')
               // Wait a moment for network switch to propagate
               await new Promise(resolve => setTimeout(resolve, 1000))
             } catch (networkErr: any) {
@@ -328,7 +328,7 @@ export default function ReviewContent() {
               // On mobile, network switch errors are common - don't block connection
               // User can manually switch if needed
               if (networkErr?.code !== 4001) {
-                setNetworkError(`Please switch to BSC Testnet manually in your wallet.`)
+                setNetworkError(`Please switch to BSC Mainnet manually in your wallet.`)
               }
             }
             
@@ -361,11 +361,11 @@ export default function ReviewContent() {
                   // Try to switch network
                   try {
                     if (win.ethereum) {
-                      await switchToBSCTestnet(win.ethereum)
+                      await switchToBSCMainnet(win.ethereum)
                     }
                   } catch (networkErr) {
                     console.warn('⚠️ Network switch error (non-blocking):', networkErr)
-                    setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+                    setNetworkError('Please switch to BSC Mainnet manually in your wallet.')
                   }
                   
                   setConnecting(false)
@@ -401,11 +401,11 @@ export default function ReviewContent() {
                 // Try to switch network
                 try {
                   if (win.ethereum) {
-                    await switchToBSCTestnet(win.ethereum)
+                    await switchToBSCMainnet(win.ethereum)
                   }
                 } catch (networkErr) {
                   console.warn('⚠️ Network switch error (non-blocking):', networkErr)
-                  setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+                  setNetworkError('Please switch to BSC Mainnet manually in your wallet.')
                 }
                 
                 console.log('✅ MetaMask connected via WalletConnect!')
@@ -438,11 +438,11 @@ export default function ReviewContent() {
               // Try to switch network
               try {
                 if (win.ethereum) {
-                  await switchToBSCTestnet(win.ethereum)
+                  await switchToBSCMainnet(win.ethereum)
                 }
               } catch (networkErr) {
                 console.warn('⚠️ Network switch error (non-blocking):', networkErr)
-                setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+                setNetworkError('Please switch to BSC Mainnet manually in your wallet.')
               }
               
               setConnecting(false)
@@ -492,11 +492,11 @@ export default function ReviewContent() {
               // Try to switch network
               try {
                 if (win.ethereum) {
-                  await switchToBSCTestnet(win.ethereum)
+                  await switchToBSCMainnet(win.ethereum)
                 }
               } catch (networkErr) {
                 console.warn('⚠️ Network switch error (non-blocking):', networkErr)
-                setNetworkError('Please switch to BSC Testnet manually in your wallet.')
+                setNetworkError('Please switch to BSC Mainnet manually in your wallet.')
               }
               
               console.log(`✅ ${wallet.name} connected via WalletConnect!`)
@@ -529,7 +529,7 @@ export default function ReviewContent() {
           localStorage.setItem('lastConnectorId', 'coinbaseWallet')
           
           try {
-            await switchToBSCTestnet(wallet.provider)
+            await switchToBSCMainnet(wallet.provider)
           } catch (networkErr) {
             console.warn('⚠️ Network switch error (non-blocking):', networkErr)
           }
@@ -575,7 +575,7 @@ export default function ReviewContent() {
             localStorage.setItem('lastConnectorId', 'injected')
             
             try {
-              await switchToBSCTestnet(wallet.provider)
+              await switchToBSCMainnet(wallet.provider)
             } catch (networkErr) {
               console.warn('⚠️ Network switch error (non-blocking):', networkErr)
             }
@@ -612,7 +612,7 @@ export default function ReviewContent() {
       localStorage.setItem('lastConnectorId', connector.id)
       
       try {
-        await switchToBSCTestnet(wallet.provider)
+        await switchToBSCMainnet(wallet.provider)
       } catch (networkErr) {
         console.warn('⚠️ Network switch error (non-blocking):', networkErr)
       }
@@ -720,18 +720,86 @@ export default function ReviewContent() {
       return
     }
 
-    // Validate all required information before proceeding
-    console.log('✅ Validating KYC data before blockchain submission...')
+    // CRITICAL: Comprehensive validation BEFORE blockchain submission
+    console.log('✅ Validating ALL KYC data before blockchain submission...')
     const validation = validateKYCData()
     
-    if (!validation.isValid) {
-      console.error('❌ Validation failed. Missing fields:', validation.missingFields)
-      const missingList = validation.missingFields.map((field, index) => `${index + 1}. ${field}`).join('\n')
-      setError(`⚠️ Missing Information\n\nPlease complete the following before submitting to blockchain:\n\n${missingList}\n\nPlease go back and complete these fields.`)
+    // Additional comprehensive validation for backend submission
+    const missingFields: string[] = []
+    const personalInfo = state.personalInfo
+    
+    // Check personal information
+    if (!personalInfo) {
+      missingFields.push('Personal information')
+    } else {
+      if (!personalInfo.firstName?.trim()) missingFields.push('First name')
+      if (!personalInfo.lastName?.trim()) missingFields.push('Last name')
+      if (!personalInfo.fatherName?.trim()) missingFields.push("Father's name")
+      if (!personalInfo.idNumber?.trim()) missingFields.push('ID number')
+      if (!personalInfo.email?.trim()) missingFields.push('Email address')
+      if (!personalInfo.phone?.trim()) missingFields.push('Phone number')
+    }
+    
+    // Check documents
+    if (!state.documentImageFront) missingFields.push('Front document image')
+    if (!state.selfieImage) missingFields.push('Selfie image')
+    // Back document is optional for passport
+    if (state.selectedIdType !== 'passport' && !state.documentImageBack) {
+      missingFields.push('Back document image')
+    }
+    
+    // Check location
+    if (!state.selectedCountry) missingFields.push('Country')
+    if (!state.selectedCity) missingFields.push('City')
+    if (!state.selectedIdType) missingFields.push('ID type')
+    if (state.isResidentUSA === undefined) missingFields.push('USA residence status')
+    
+    // Check wallet
+    if (!address) missingFields.push('Blockchain wallet address')
+    
+    // Combine validation results
+    const allMissingFields = [...validation.missingFields, ...missingFields.filter(f => !validation.missingFields.includes(f))]
+    
+    if (!validation.isValid || allMissingFields.length > 0) {
+      console.error('❌ Validation failed. Missing fields:', allMissingFields)
+      const missingList = allMissingFields.map((field, index) => `${index + 1}. ${field}`).join('\n')
+      setError(`⚠️ Missing Information\n\nPlease complete the following BEFORE submitting to blockchain:\n\n${missingList}\n\nPlease go back and complete these fields.`)
       return
     }
     
-    console.log('✅ All required information is complete. Proceeding to blockchain submission...')
+    // Validate data format and completeness
+    console.log('📋 Validating data completeness...')
+    const fullName = `${personalInfo?.firstName || ''} ${personalInfo?.lastName || ''}`.trim()
+    if (!fullName || fullName.length < 2) {
+      setError('Full name is required and must be at least 2 characters. Please check first name and last name.')
+      return
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(personalInfo?.email || '')) {
+      setError('Please enter a valid email address.')
+      return
+    }
+    
+    // Validate phone format (at least 10 digits)
+    const phoneDigits = (personalInfo?.phone || '').replace(/\D/g, '')
+    if (phoneDigits.length < 10) {
+      setError('Please enter a valid phone number (at least 10 digits).')
+      return
+    }
+    
+    // Validate images are base64 and not empty
+    if (state.documentImageFront && (!state.documentImageFront.startsWith('data:image') || state.documentImageFront.length < 100)) {
+      setError('Front document image is invalid. Please upload a valid image.')
+      return
+    }
+    if (state.selfieImage && (!state.selfieImage.startsWith('data:image') || state.selfieImage.length < 100)) {
+      setError('Selfie image is invalid. Please upload a valid image.')
+      return
+    }
+    
+    console.log('✅ All validation passed. Data is complete and ready for blockchain submission.')
 
     try {
       console.log('✅ Starting KYC submission process...')
@@ -765,19 +833,73 @@ export default function ReviewContent() {
         console.log('💰 BNB Balance:', balance)
       } catch (balanceError: any) {
         console.error('❌ Error checking balance:', balanceError)
-        // If balance check fails, we'll still try to proceed (the contract will reject if insufficient)
+        // If balance check fails, we'll still try to proceed (the contract will validate balance)
         console.warn('⚠️ Continuing despite balance check error - contract will validate balance')
         balance = '0' // Set default, contract will check actual balance
       }
       
-      // Check if user has at least 0.01 BNB (should be enough for fee + gas)
-      if (parseFloat(balance) < 0.01) {
-        console.error('❌ Insufficient balance:', balance)
-        setError('Insufficient BNB balance. You need at least 0.01 BNB to proceed (for $2 USD fee + gas).')
+      // Calculate actual required BNB amount dynamically (based on current BNB price for $2 USD + gas)
+      console.log('💰 Calculating required BNB amount...')
+      let requiredBNBAmount: number = 0.01 // Default fallback (conservative estimate)
+      let requiredBNBFormatted: string = '0.01'
+      try {
+        const { calculateRequiredBNB } = await import('@/lib/web3')
+        const { ethers } = await import('ethers')
+        
+        // Try to calculate from contract (requires wallet connection)
+        // If this fails on mobile, we'll use a more conservative fallback
+        const requiredBNBWei = await calculateRequiredBNB()
+        const requiredBNBFormattedWei = ethers.formatEther(requiredBNBWei)
+        requiredBNBAmount = parseFloat(requiredBNBFormattedWei)
+        requiredBNBFormatted = requiredBNBFormattedWei
+        
+        // Add gas reserve (~0.001-0.002 BNB for gas fees)
+        // Use higher gas reserve on mobile (0.003) as mobile transactions can be more expensive
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        const gasReserve = isMobile ? 0.003 : 0.002 // Higher reserve for mobile
+        const totalRequired = requiredBNBAmount + gasReserve
+        requiredBNBAmount = totalRequired
+        requiredBNBFormatted = totalRequired.toFixed(8)
+        
+        console.log('💰 Required BNB calculation:')
+        console.log('  - Fee amount ($2 USD):', requiredBNBFormattedWei, 'BNB')
+        console.log('  - Gas reserve:', gasReserve, 'BNB', isMobile ? '(mobile)' : '(desktop)')
+        console.log('  - Total required:', requiredBNBFormatted, 'BNB')
+      } catch (calcError: any) {
+        console.warn('⚠️ Could not calculate required BNB from contract, using conservative fallback:', calcError.message)
+        // Use more conservative fallback for mobile if calculation fails
+        // $2 USD at ~$600/BNB = ~0.0033 BNB, plus gas = ~0.005-0.006 BNB total
+        // But we'll use 0.01 BNB as a safe fallback to ensure users have enough
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        if (isMobile) {
+          // More conservative for mobile (0.01 BNB = ~$6 at $600/BNB, which is safe)
+          requiredBNBAmount = 0.01
+          requiredBNBFormatted = '0.01'
+          console.log('  - Using mobile fallback: 0.01 BNB (safe estimate)')
+        } else {
+          // Desktop fallback
+          requiredBNBAmount = 0.005
+          requiredBNBFormatted = '0.005'
+          console.log('  - Using desktop fallback: 0.005 BNB')
+        }
+      }
+      
+      // Check if user has sufficient balance
+      const balanceNum = parseFloat(balance)
+      if (balanceNum < requiredBNBAmount) {
+        console.error('❌ Insufficient balance:', balance, 'BNB')
+        console.error('  - Required:', requiredBNBFormatted, 'BNB')
+        setError(
+          `Insufficient BNB balance. You need at least ${requiredBNBFormatted} BNB ` +
+          `(for $2 USD fee + gas). Current balance: ${balance} BNB. Please add more BNB to your wallet.`
+        )
         setProcessingPayment(false)
         return
       }
       console.log('✅ Balance check passed')
+      console.log('  - Balance:', balance, 'BNB')
+      console.log('  - Required:', requiredBNBFormatted, 'BNB')
+      console.log('  - Sufficient:', (balanceNum - requiredBNBAmount).toFixed(8), 'BNB remaining')
 
       // Generate anonymous ID from user data
       const personalInfo = state.personalInfo
@@ -788,6 +910,50 @@ export default function ReviewContent() {
       }
 
       const anonymousId = `${personalInfo.email}-${Date.now()}`
+      
+      // CRITICAL: Verify network before transaction
+      console.log('========================================')
+      console.log('🌐 STEP 0: Verifying network connection...')
+      console.log('========================================')
+      try {
+        const networkInfo = await getNetworkInfo()
+        if (!networkInfo) {
+          throw new Error('Could not detect network. Please ensure your wallet is connected.')
+        }
+        
+        console.log('📋 Network Info:')
+        console.log('  - Current Chain ID:', networkInfo.chainId)
+        console.log('  - Network Name:', networkInfo.name)
+        console.log('  - Is Correct Network:', networkInfo.isCorrectNetwork)
+        console.log('  - Required Network:', networkInfo.requiredNetworkName)
+        
+        if (!networkInfo.isCorrectNetwork) {
+          console.log('⚠️ Wrong network detected! Attempting to switch...')
+          const { switchToBSCMainnet } = await import('@/lib/network-switch')
+          const ethereum = (window as any).ethereum
+          if (ethereum) {
+            await switchToBSCMainnet(ethereum)
+            // Wait for network switch
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            
+            // Verify switch was successful
+            const newNetworkInfo = await getNetworkInfo()
+            if (!newNetworkInfo?.isCorrectNetwork) {
+              throw new Error('Failed to switch to BSC Mainnet. Please switch manually in your wallet to Binance Smart Chain (Chain ID: 56).')
+            }
+            console.log('✅ Successfully switched to BSC Mainnet')
+          } else {
+            throw new Error('Please switch to BSC Mainnet (Chain ID: 56) in your wallet.')
+          }
+        } else {
+          console.log('✅ Network verification passed - connected to BSC Mainnet')
+        }
+      } catch (networkError: any) {
+        console.error('❌ Network verification failed:', networkError)
+        setError(networkError.message || 'Network error. Please ensure you are connected to BSC Mainnet.')
+        setProcessingPayment(false)
+        return
+      }
       
       // Submit to smart contract (this will handle the $2 payment)
       console.log('========================================')
@@ -838,18 +1004,36 @@ export default function ReviewContent() {
           errorMessage = isMobile 
             ? 'Transaction timeout: Please check your MetaMask mobile app. If you already confirmed, wait a moment.'
             : txError.message
-        } else if (txError.message?.includes('user rejected') || txError.code === 4001) {
+        } else if (txError.code === 4001 || 
+                   txError.message?.includes('user rejected') || 
+                   txError.message?.includes('User denied') ||
+                   txError.message?.includes('canceled') ||
+                   txError.message?.includes('rejected') ||
+                   txError.message?.includes('Transaction was canceled')) {
           errorMessage = isMobile
-            ? 'Transaction was rejected in MetaMask. Please try again and confirm the transaction.'
-            : 'Transaction was rejected. Please try again.'
-        } else if (txError.message?.includes('insufficient funds')) {
-          errorMessage = 'Insufficient funds. You need enough BNB for the fee (~$2 USD) plus gas. Please add more BNB to your wallet.'
-        } else if (txError.message?.includes('network') || txError.message?.includes('chain')) {
-          errorMessage = 'Network error. Please ensure you are connected to BSC Testnet in your wallet.'
+            ? 'Transaction was canceled. You rejected the transaction in MetaMask mobile app. Please try again and tap "Confirm" when the transaction popup appears.'
+            : 'Transaction was canceled. You rejected the transaction in your wallet. Please try again and click "Confirm" when MetaMask prompts you.'
+        } else if (txError.message?.includes('insufficient funds') ||
+                   txError.message?.includes('insufficient balance') ||
+                   txError.message?.includes('Insufficient BNB')) {
+          errorMessage = 'Insufficient BNB balance. You need enough BNB for the fee (~$2 USD) plus gas fees (~0.001-0.002 BNB). Please add more BNB to your wallet.'
+        } else if (txError.message?.includes('network') || 
+                   txError.message?.includes('chain') ||
+                   txError.message?.includes('wrong network') ||
+                   txError.message?.includes('Chain ID')) {
+          errorMessage = 'Network error. Please ensure you are connected to BSC Mainnet (Chain ID: 56) in your wallet. The app will try to switch automatically.'
+        } else if (txError.message?.includes('not found') || 
+                   txError.message?.includes('BAD_DATA') ||
+                   txError.message?.includes('contract')) {
+          errorMessage = 'Contract error. Please ensure you are connected to BSC Mainnet (Chain ID: 56) and try again.'
+        } else if (txError.message?.includes('execution reverted') || txError.reason) {
+          errorMessage = `Transaction failed: ${txError.reason || txError.message}. Please check your balance and network connection.`
         } else if (txError.message) {
           errorMessage = `Transaction failed: ${txError.message}`
         }
         
+        setError(errorMessage)
+        setProcessingPayment(false)
         throw new Error(errorMessage)
       }
 
@@ -870,25 +1054,54 @@ export default function ReviewContent() {
         return idTypeMap[frontendIdType] || frontendIdType
       }
 
-      // Prepare submission data
+      // Prepare submission data - ensure no empty strings for required fields
+      const fullName = `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim()
+      if (!fullName) {
+        throw new Error('Full name is required. Please ensure first name and last name are provided.')
+      }
+      
+      if (!address || address.trim() === '') {
+        throw new Error('Blockchain wallet address is required. Please connect your wallet.')
+      }
+      
+      if (!personalInfo.email || personalInfo.email.trim() === '') {
+        throw new Error('Email address is required.')
+      }
+      
+      if (!personalInfo.phone || personalInfo.phone.trim() === '') {
+        throw new Error('Phone number is required.')
+      }
+      
+      if (!state.selectedCountry || state.selectedCountry.trim() === '') {
+        throw new Error('Country is required.')
+      }
+      
+      if (!state.selectedCity || state.selectedCity.trim() === '') {
+        throw new Error('City is required.')
+      }
+      
+      if (!state.selectedIdType || state.selectedIdType.trim() === '') {
+        throw new Error('ID type is required.')
+      }
+      
       const submissionData = {
-        userId: personalInfo.email,
-        blockchainAddressId: address,
-        fullName: `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim() || '',
-        firstName: personalInfo.firstName,
-        lastName: personalInfo.lastName,
-        fatherName: personalInfo.fatherName,
-        email: personalInfo.email,
-        phone: personalInfo.phone || '',
-        address: personalInfo.address || '',
-        countryName: state.selectedCountry || '',
-        cityName: state.selectedCity || '',
-        idType: mapIdTypeToBackend(state.selectedIdType || ''),
+        userId: personalInfo.email.trim(),
+        blockchainAddressId: address.trim(),
+        fullName: fullName,
+        firstName: personalInfo.firstName?.trim() || '',
+        lastName: personalInfo.lastName?.trim() || '',
+        fatherName: personalInfo.fatherName?.trim() || '',
+        email: personalInfo.email.trim(),
+        phone: personalInfo.phone.trim(),
+        address: personalInfo.address?.trim() || '',
+        countryName: state.selectedCountry.trim(),
+        cityName: state.selectedCity.trim(),
+        idType: mapIdTypeToBackend(state.selectedIdType.trim()),
         usaResidence: state.isResidentUSA ? 'yes' : 'no',
         identityDocumentFront: state.documentImageFront || '',
         identityDocumentBack: state.documentImageBack || '',
         liveInImage: state.selfieImage || '',
-        cnic: personalInfo.idNumber || '',
+        cnic: personalInfo.idNumber?.trim() || '',
         transactionHash: txHash,
         feeUnit: 2,
       }
@@ -949,6 +1162,66 @@ export default function ReviewContent() {
         throw new Error(`Backend API call failed: ${apiError.message || 'Unknown error'}`)
       }
 
+      if (!result.success) {
+        // Handle validation errors
+        let errorMessage = result.message || 'Backend submission failed'
+        
+        // Check if it's a backend connection issue
+        if ((result as any).isBackendIssue) {
+          errorMessage = `⚠️ Backend Server Issue\n\n${errorMessage}\n\n` +
+            `The backend server may be:\n` +
+            `- Down or unreachable\n` +
+            `- Not properly configured\n` +
+            `- Experiencing validation errors\n\n` +
+            `Please contact support or check the backend server status.`
+          console.error('❌ Backend server issue detected')
+        } else if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
+          // If there are specific validation errors, show them
+          const validationErrors = result.errors.map((err: any) => {
+            if (typeof err === 'string') return err
+            if (err.field && err.message) return `${err.field}: ${err.message}`
+            return JSON.stringify(err)
+          }).join('\n')
+          errorMessage = `Validation failed:\n${validationErrors}`
+        } else if (result.message?.includes('Validation failed')) {
+          // Backend returned validation failed but no specific errors
+          errorMessage = '⚠️ Validation Failed\n\n' +
+            'The backend rejected the submission but did not specify which fields are missing.\n\n' +
+            'Please verify all required fields are filled:\n' +
+            '✓ Email address\n' +
+            '✓ Full name (first + last)\n' +
+            '✓ Phone number\n' +
+            '✓ Country and city\n' +
+            '✓ ID type\n' +
+            '✓ Front document image\n' +
+            '✓ Selfie image\n' +
+            '✓ Blockchain wallet address\n\n' +
+            'If all fields are filled, this may be a backend configuration issue.'
+        }
+        
+        console.error('❌ Backend submission failed:', errorMessage)
+        console.error('📋 Data that was sent:', {
+          userId: submissionData.userId,
+          email: submissionData.email,
+          blockchainAddressId: submissionData.blockchainAddressId,
+          fullName: submissionData.fullName,
+          phone: submissionData.phone,
+          countryName: submissionData.countryName,
+          cityName: submissionData.cityName,
+          idType: submissionData.idType,
+          usaResidence: submissionData.usaResidence,
+          hasFrontImage: !!submissionData.identityDocumentFront,
+          hasBackImage: !!submissionData.identityDocumentBack,
+          hasSelfie: !!submissionData.liveInImage,
+          frontImageLength: submissionData.identityDocumentFront?.length || 0,
+          selfieImageLength: submissionData.liveInImage?.length || 0,
+          transactionHash: submissionData.transactionHash
+        })
+        setError(errorMessage)
+        setSubmittingToBackend(false)
+        throw new Error(errorMessage)
+      }
+
       if (result.success) {
         // Store ID details in context
         const currentIdNumber = state.personalInfo?.idNumber || state.idNumber || '6278881828373231'
@@ -964,6 +1237,17 @@ export default function ReviewContent() {
         // Mark as submitted and store transaction hash
         localStorage.setItem('kycSubmitted', 'true')
         localStorage.setItem('kycTransactionHash', txHash)
+        
+        // Clear KYC cache after successful submission
+        const { clearKYCCache } = await import('@/lib/kyc-cache')
+        const email = state.personalInfo?.email
+        const userId = state.personalInfo?.email // Use email as userId
+        await clearKYCCache(email, userId).catch((error) => {
+          console.error('Failed to clear cache after submission:', error)
+          // Don't fail the submission if cache clearing fails
+        })
+        console.log('✅ KYC cache cleared after successful submission')
+        
         setKycSubmitted(true)
         setSubmittingToBackend(false)
       } else {

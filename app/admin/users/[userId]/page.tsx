@@ -529,7 +529,7 @@ export default function UserDetailsPage() {
                     <p className="text-[10px] sm:text-xs md:text-sm text-gray-600">Transaction Hash</p>
                     {user.transactionHash ? (
                       <a
-                        href={`https://testnet.bscscan.com/tx/${user.transactionHash}`}
+                        href={`https://bscscan.com/tx/${user.transactionHash}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-xs sm:text-sm md:text-base text-blue-600 hover:text-blue-800 font-medium underline break-all font-mono"

@@ -25,7 +25,7 @@ export default function ConnectWallet() {
   const { connect, connectors } = useConnect()
   const idNumber = state.personalInfo?.idNumber || state.idNumber || '6278081828373231'
   const [gasFee] = useState('0.0012 BNB')
-  const [blockchain] = useState('Binance Smart Chain Testnet')
+  const [blockchain] = useState('Binance Smart Chain')
   const [showHelpModal, setShowHelpModal] = useState(false)
   const [networkError, setNetworkError] = useState<string | null>(null)
   const [currentNetwork, setCurrentNetwork] = useState<string | null>(null)
@@ -296,13 +296,13 @@ export default function ConnectWallet() {
       const network = await getNetworkInfo()
       if (network) {
         setCurrentNetwork(network.name)
-        if (network.chainId !== '97') {
-          const switchToBSC = confirm('You need to be on Binance Smart Chain Testnet. Would you like to switch now?')
+        if (network.chainId !== '56') {
+          const switchToBSC = confirm('You need to be on Binance Smart Chain. Would you like to switch now?')
           if (switchToBSC) {
             try {
               await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0x61' }], // 97 in hex
+                params: [{ chainId: '0x38' }], // 56 in hex
               })
               await new Promise(resolve => setTimeout(resolve, 1000))
             } catch (switchError: any) {
@@ -310,24 +310,24 @@ export default function ConnectWallet() {
                 await window.ethereum.request({
                   method: 'wallet_addEthereumChain',
                   params: [{
-                    chainId: '0x61',
-                    chainName: 'Binance Smart Chain Testnet',
+                    chainId: '0x38',
+                    chainName: 'Binance Smart Chain',
                     nativeCurrency: {
                       name: 'BNB',
                       symbol: 'BNB',
                       decimals: 18
                     },
-                    rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
-                    blockExplorerUrls: ['https://testnet.bscscan.com/']
+                    rpcUrls: ['https://bsc-dataseed.binance.org/'],
+                    blockExplorerUrls: ['https://bscscan.com/']
                   }]
                 })
                 await new Promise(resolve => setTimeout(resolve, 1000))
               } else {
-                setNetworkError('Failed to switch network. Please switch manually to Binance Smart Chain Testnet.')
+                setNetworkError('Failed to switch network. Please switch manually to Binance Smart Chain.')
               }
             }
           } else {
-            setNetworkError('Please switch to Binance Smart Chain Testnet to continue')
+            setNetworkError('Please switch to Binance Smart Chain to continue')
           }
         } else {
           setNetworkError(null)
@@ -371,24 +371,15 @@ export default function ConnectWallet() {
         console.warn('Could not check KYC status:', err)
       }
       
-      // If already submitted, show message and redirect to status check
+      // Note: Multiple submissions are now allowed
+      // Removed the redirect that prevented resubmission - users can submit KYC multiple times
+      // If user has previous submission, show info but allow proceeding
       if (alreadySubmitted) {
-        setConnecting(false)
-        setShowMobileInstructions(false)
-        
-        if (isApproved) {
-          // If approved, show message about checking status by email/CNIC
-          alert('Your KYC has already been submitted and approved. Please check your status using your CNIC number.')
-          router.push('/verify/check-status')
-        } else {
-          // If pending/submitted, redirect to status check
-          alert('Your KYC has already been submitted. Please check your status using your CNIC number.')
-          router.push('/verify/check-status')
-        }
-        return
+        console.log('ℹ️ Previous submission found, but allowing resubmission')
+        // Don't block - allow user to proceed with new submission
       }
       
-      // Wallet is connected and no previous submission, proceed to confirm page
+      // Wallet is connected, proceed to confirm page (allows resubmission)
       setConnecting(false)
       setShowMobileInstructions(false)
       router.push('/decentralized-id/confirm')
@@ -602,7 +593,7 @@ export default function ConnectWallet() {
                 Current network: {currentNetwork || 'Unknown'}
               </p>
               <p className="text-xs text-yellow-700">
-                Required: Binance Smart Chain Testnet (Chain ID: 97)
+                Required: Binance Smart Chain (Chain ID: 56)
               </p>
             </div>
           )}

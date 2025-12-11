@@ -2,7 +2,7 @@
 
 ## Smart Contract Addresses
 
-- **KYC Contract**: `0xeaF70C9Cc7bD5CdbB8aF4cd07B6a2452f0AB4E36` (BSC Testnet)
+- **KYC Contract**: `0x132f342D1E8Adc9B4F8A71cEe374b14c7aD45655` (BSC Mainnet)
 
 ## Setup Instructions
 
@@ -17,9 +17,10 @@
    - You can get the ABI from your contract deployment or from Etherscan
 
 3. **Network Configuration**
-   - The app currently defaults to Ethereum mainnet
-   - Update `getExplorerUrl()` in `app/decentralized-id/complete/page.tsx` to match your network
-   - For testnets, update the explorer URL (e.g., `https://sepolia.etherscan.io`)
+   - The app is configured for Binance Smart Chain (BSC) Mainnet
+   - Chain ID: 56 (0x38 in hex)
+   - RPC URL: `https://bsc-dataseed.binance.org/`
+   - Block Explorer: `https://bscscan.com/`
 
 ## How It Works
 
@@ -31,10 +32,10 @@
 
 ## Important Notes
 
-- The KYC contract function `submitKYCVerification` may need adjustment based on your actual contract
-- Make sure the contract addresses match your deployed contracts
-- Update the ABI if your contract functions differ
-- Test on a testnet first before deploying to mainnet
+- The KYC contract function `submitKYC` is used for submissions
+- Contract address: `0x132f342D1E8Adc9B4F8A71cEe374b14c7aD45655` on BSC Mainnet
+- The ABI is already configured in `lib/contracts.ts`
+- Contract name: `SimpleKYCWithBNB`
 
 ## Contract Function Requirements
 

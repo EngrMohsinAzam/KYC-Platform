@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const API_BASE_URL =  'https://xzfjrnv9-3099.asse.devtunnels.ms/'
+const API_BASE_URL =  'https://xzfjrnv9-3099.asse.devtunnels.ms'
 
 export async function POST(request: NextRequest) {
   try {
