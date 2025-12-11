@@ -675,9 +675,9 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     // Use safe fallback if estimation failed
     if (!estimationSuccess) {
       console.warn('⚠️ Gas estimation failed after all attempts, using safe fallback values')
-      gasLimit = BigInt(isMobileSubmit ? 400000 : 350000)
-      // Use higher gas price for BSC mainnet (3-5 gwei is typical, use 5 gwei for safety)
-      gasPrice = BigInt(5000000000) // 5 gwei
+      gasLimit = BigInt(isMobileSubmit ? 450000 : 350000) // Higher limit for mobile
+      // Use higher gas price for mobile to prevent cancellations (7-8 gwei for mobile, 5 gwei for desktop)
+      gasPrice = BigInt(isMobileSubmit ? 8000000000 : 5000000000) // 8 gwei mobile, 5 gwei desktop
       console.log(`  - Fallback Gas Limit: ${gasLimit.toString()} (${isMobileSubmit ? 'mobile' : 'desktop'} default)`)
       console.log(`  - Fallback Gas Price: ${ethers.formatUnits(gasPrice, 'gwei')} gwei`)
       console.log('  ℹ️ Transaction will proceed with fallback values')
@@ -691,19 +691,34 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     
     // Use EIP-1559 if available, otherwise use legacy gasPrice
     if (maxFeePerGas && maxPriorityFeePerGas) {
-      txOptions.maxFeePerGas = maxFeePerGas
-      txOptions.maxPriorityFeePerGas = maxPriorityFeePerGas
+      // Add buffer for mobile (30% vs 20% for desktop)
+      const bufferPercent = isMobileSubmit ? 130 : 120
+      const bufferedMaxFee = (maxFeePerGas * BigInt(bufferPercent)) / BigInt(100)
+      const bufferedMaxPriority = (maxPriorityFeePerGas * BigInt(bufferPercent)) / BigInt(100)
+      
+      txOptions.maxFeePerGas = bufferedMaxFee
+      txOptions.maxPriorityFeePerGas = bufferedMaxPriority
       console.log('📋 Transaction Parameters (EIP-1559):')
       console.log('  - Value (BNB fee):', requiredBNBFormatted, 'BNB')
       console.log('  - Gas Limit:', gasLimit.toString())
-      console.log('  - Max Fee Per Gas:', ethers.formatUnits(maxFeePerGas, 'gwei'), 'gwei')
-      console.log('  - Max Priority Fee Per Gas:', ethers.formatUnits(maxPriorityFeePerGas, 'gwei'), 'gwei')
+      console.log('  - Max Fee Per Gas:', ethers.formatUnits(bufferedMaxFee, 'gwei'), 'gwei', isMobileSubmit ? '(mobile +30%)' : '(desktop +20%)')
+      console.log('  - Max Priority Fee Per Gas:', ethers.formatUnits(bufferedMaxPriority, 'gwei'), 'gwei')
     } else {
-      txOptions.gasPrice = gasPrice || BigInt(5000000000)
+      // Add buffer for mobile (30% vs 20% for desktop) and ensure minimum
+      const bufferPercent = isMobileSubmit ? 130 : 120
+      const baseGasPrice = gasPrice || BigInt(5000000000)
+      const bufferedGasPrice = (baseGasPrice * BigInt(bufferPercent)) / BigInt(100)
+      
+      // Ensure minimum gas price for mobile (at least 7 gwei to prevent cancellations)
+      const minGasPrice = BigInt(isMobileSubmit ? 7000000000 : 5000000000) // 7 gwei mobile, 5 gwei desktop
+      const finalGasPrice = bufferedGasPrice > minGasPrice ? bufferedGasPrice : minGasPrice
+      
+      txOptions.gasPrice = finalGasPrice
       console.log('📋 Transaction Parameters (Legacy):')
       console.log('  - Value (BNB fee):', requiredBNBFormatted, 'BNB')
       console.log('  - Gas Limit:', gasLimit.toString())
-      console.log('  - Gas Price:', ethers.formatUnits(txOptions.gasPrice, 'gwei'), 'gwei')
+      console.log('  - Base Gas Price:', ethers.formatUnits(baseGasPrice, 'gwei'), 'gwei')
+      console.log('  - Final Gas Price:', ethers.formatUnits(finalGasPrice, 'gwei'), 'gwei', isMobileSubmit ? '(mobile +30%, min 7 gwei)' : '(desktop +20%)')
     }
     
     // Submit with BNB payment (payable function)
@@ -735,8 +750,23 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
           txError.message?.includes('User denied') ||
           txError.message?.includes('User rejected') ||
           txError.message?.includes('canceled') ||
-          txError.message?.includes('rejected')) {
-        throw new Error('Transaction was canceled. You rejected the transaction in your wallet. Please try again and confirm the transaction when MetaMask prompts you.')
+          txError.message?.includes('rejected') ||
+          txError.message?.includes('Transaction cancelled')) {
+        const mobileMsg = isMobileSubmit
+          ? 'Transaction was canceled. Please try again and tap "Confirm" in MetaMask mobile app when prompted. The app will use a higher gas price to ensure the transaction goes through.'
+          : 'Transaction was canceled. You rejected the transaction in your wallet. Please try again and confirm the transaction when MetaMask prompts you.'
+        throw new Error(mobileMsg)
+      }
+      
+      // Handle gas price issues (common cause of cancellations on mobile)
+      if (txError.message?.includes('gas') && 
+          (txError.message?.includes('underpriced') || 
+           txError.message?.includes('too low') ||
+           txError.message?.includes('intrinsic gas'))) {
+        const mobileMsg = isMobileSubmit
+          ? 'Transaction failed due to low gas price. Please try again - the app will automatically use a higher gas price (7-8 gwei) for mobile transactions.'
+          : 'Transaction failed due to gas price issues. Please try again.'
+        throw new Error(mobileMsg)
       }
       
       // Handle transaction replacement/rejection
