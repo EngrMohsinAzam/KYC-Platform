@@ -1676,39 +1676,54 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Withdrawal Amount (BNB)
             </label>
-            <input
-              type="number"
-              step="0.00000001"
-              min="0"
-              value={amount}
-              onChange={(e) => {
-                const inputValue = e.target.value
-                // Prevent negative values
-                if (inputValue === '' || inputValue === '-') {
-                  setAmount('')
-                  setError('')
-                  return
-                }
-                const numValue = parseFloat(inputValue)
-                // Only allow positive numbers or zero
-                if (!isNaN(numValue) && numValue >= 0) {
-                  setAmount(inputValue)
-                  setError('')
-                } else {
-                  // If negative, don't update the value
-                  setError('Amount must be greater than or equal to 0')
-                }
-              }}
-              onKeyDown={(e) => {
-                // Prevent typing minus sign
-                if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
-                  e.preventDefault()
-                }
-              }}
-              placeholder="0.00000000"
-              disabled={!isConnected || !isOwner}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-            />
+            <div className="relative">
+              <input
+                type="number"
+                step="0.00000001"
+                min="0"
+                value={amount}
+                onChange={(e) => {
+                  const inputValue = e.target.value
+                  // Prevent negative values
+                  if (inputValue === '' || inputValue === '-') {
+                    setAmount('')
+                    setError('')
+                    return
+                  }
+                  const numValue = parseFloat(inputValue)
+                  // Only allow positive numbers or zero
+                  if (!isNaN(numValue) && numValue >= 0) {
+                    setAmount(inputValue)
+                    setError('')
+                  } else {
+                    // If negative, don't update the value
+                    setError('Amount must be greater than or equal to 0')
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Prevent typing minus sign
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                    e.preventDefault()
+                  }
+                }}
+                placeholder="0.00000000"
+                disabled={!isConnected || !isOwner}
+                className="w-full px-4 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (contractBalance !== null && contractBalance > 0) {
+                    setAmount(contractBalance.toFixed(8))
+                    setError('')
+                  }
+                }}
+                disabled={!isConnected || !isOwner || contractBalance === null || contractBalance <= 0}
+                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:text-blue-600 disabled:hover:bg-blue-50"
+              >
+                Max
+              </button>
+            </div>
             {contractBalance !== null && amount && parseFloat(amount) > contractBalance && (
               <p className="mt-1 text-sm text-red-600">
                 Amount exceeds contract balance
