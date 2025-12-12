@@ -275,6 +275,61 @@ export async function loadKYCDocuments(
   }
 }
 
+// Clear all KYC caches (when starting new submission)
+export async function clearAllKYCCaches(): Promise<void> {
+  if (typeof window === 'undefined') return
+
+  try {
+    const db = await openDB()
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([STORE_NAME], 'readwrite')
+      const store = transaction.objectStore(STORE_NAME)
+      const request = store.clear()
+
+      request.onsuccess = () => {
+        console.log('✅ All KYC caches cleared from IndexedDB')
+        // Also clear sessionStorage and localStorage
+        try {
+          sessionStorage.clear()
+          // Clear all localStorage items that start with cache key prefix
+          const keysToRemove: string[] = []
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key && key.startsWith(CACHE_KEY_PREFIX)) {
+              keysToRemove.push(key)
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key))
+        } catch {
+          // Ignore storage errors
+        }
+        resolve()
+      }
+
+      request.onerror = () => {
+        console.error('❌ Error clearing all IndexedDB caches:', request.error)
+        reject(request.error)
+      }
+    })
+  } catch (error) {
+    console.error('❌ Failed to clear all KYC caches:', error)
+    // Try to clear localStorage anyway
+    try {
+      const keysToRemove: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith(CACHE_KEY_PREFIX)) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+      sessionStorage.clear()
+    } catch {
+      // Ignore
+    }
+  }
+}
+
 // Clear cached documents (after successful submission)
 export async function clearKYCCache(email?: string, userId?: string): Promise<void> {
   if (typeof window === 'undefined') return
@@ -290,22 +345,25 @@ export async function clearKYCCache(email?: string, userId?: string): Promise<vo
 
       request.onsuccess = () => {
         console.log('✅ KYC cache cleared from IndexedDB')
-        // Also clear from sessionStorage
+        // Also clear from sessionStorage and localStorage
         try {
           sessionStorage.removeItem(cacheKey)
           sessionStorage.removeItem('kyc_session_id')
+          // Also clear localStorage fallback cache
+          localStorage.removeItem(cacheKey)
         } catch {
-          // Ignore sessionStorage errors
+          // Ignore storage errors
         }
         resolve()
       }
 
       request.onerror = () => {
         console.error('❌ Error clearing IndexedDB cache:', request.error)
-        // Still try to clear sessionStorage
+        // Still try to clear sessionStorage and localStorage
         try {
           sessionStorage.removeItem(cacheKey)
           sessionStorage.removeItem('kyc_session_id')
+          localStorage.removeItem(cacheKey)
         } catch {
           // Ignore
         }
@@ -314,11 +372,12 @@ export async function clearKYCCache(email?: string, userId?: string): Promise<vo
     })
   } catch (error) {
     console.error('❌ Failed to clear KYC cache:', error)
-    // Try to clear sessionStorage anyway
+    // Try to clear sessionStorage and localStorage anyway
     try {
       const cacheKey = getCacheKey(email, userId)
       sessionStorage.removeItem(cacheKey)
       sessionStorage.removeItem('kyc_session_id')
+      localStorage.removeItem(cacheKey)
     } catch {
       // Ignore
     }

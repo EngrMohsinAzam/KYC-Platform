@@ -561,18 +561,39 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     const bnbBalanceFormatted = ethers.formatEther(bnbBalance)
     console.log('  - Current BNB Balance:', bnbBalanceFormatted, 'BNB')
     
-    // Reserve some BNB for gas (estimate 0.001 BNB for gas)
-    const gasReserve = ethers.parseEther('0.001')
-    const totalRequired = requiredBNB + gasReserve
+    // Detect mobile device early (used throughout the function)
+    const isMobileSubmit = isMobileDevice()
     
-    if (bnbBalance < totalRequired) {
+    // Reserve realistic BNB for gas (lower estimate)
+    // Mobile: 0.0015 BNB, Desktop: 0.001 BNB
+    const gasReserveAmount = isMobileSubmit ? '0.0015' : '0.001'
+    const gasReserve = ethers.parseEther(gasReserveAmount)
+    const totalRequired = requiredBNB + gasReserve
+    const totalRequiredFormatted = ethers.formatEther(totalRequired)
+    
+    console.log('  - Fee amount ($2 USD):', requiredBNBFormatted, 'BNB')
+    console.log('  - Gas reserve:', gasReserveAmount, 'BNB', isMobileSubmit ? '(mobile)' : '(desktop)')
+    console.log('  - Total required:', totalRequiredFormatted, 'BNB')
+    
+    // Add 5% buffer for price fluctuations and rounding errors
+    const totalRequiredWithBuffer = (totalRequired * BigInt(105)) / BigInt(100)
+    const totalRequiredWithBufferFormatted = ethers.formatEther(totalRequiredWithBuffer)
+    
+    if (bnbBalance < totalRequiredWithBuffer) {
+      const balanceUSD = (parseFloat(bnbBalanceFormatted) * 600).toFixed(2)
+      const requiredUSD = (parseFloat(totalRequiredWithBufferFormatted) * 600).toFixed(2)
       throw new Error(
-        `Insufficient BNB balance. You need at least ${ethers.formatEther(totalRequired)} BNB ` +
-        `(${requiredBNBFormatted} BNB for fee + ~0.001 BNB for gas). ` +
-        `Current balance: ${bnbBalanceFormatted} BNB. Please add more BNB to your wallet.`
+        `Insufficient BNB balance.\n\n` +
+        `Current balance: ${bnbBalanceFormatted} BNB (~$${balanceUSD})\n` +
+        `Required: ${totalRequiredWithBufferFormatted} BNB (~$${requiredUSD})\n\n` +
+        `You need at least ${totalRequiredWithBufferFormatted} BNB for the $2 USD fee plus gas.\n` +
+        `Please add more BNB to your wallet.`
       )
     }
     console.log('✅ BNB balance check passed')
+    console.log('  - Balance:', bnbBalanceFormatted, 'BNB')
+    console.log('  - Required (with buffer):', totalRequiredWithBufferFormatted, 'BNB')
+    console.log('  - Remaining after transaction:', ethers.formatEther(bnbBalance - totalRequiredWithBuffer), 'BNB')
 
     console.log('\n🔍 Checking Contract Status...')
     try {
@@ -600,7 +621,6 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     const metadataUrlToUse = metadataUrl || `https://kyx-platform.com/kyc/${userAddress}`
     
     // Gas estimation with retry logic and mobile-specific handling
-    const isMobileSubmit = isMobileDevice()
     let gasLimit: bigint = BigInt(isMobileSubmit ? 400000 : 350000)
     let gasPrice: bigint | null = null
     let maxFeePerGas: bigint | null = null
@@ -699,8 +719,8 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
       txOptions.maxFeePerGas = bufferedMaxFee
       txOptions.maxPriorityFeePerGas = bufferedMaxPriority
       console.log('📋 Transaction Parameters (EIP-1559):')
-      console.log('  - Value (BNB fee):', requiredBNBFormatted, 'BNB')
-      console.log('  - Gas Limit:', gasLimit.toString())
+    console.log('  - Value (BNB fee):', requiredBNBFormatted, 'BNB')
+    console.log('  - Gas Limit:', gasLimit.toString())
       console.log('  - Max Fee Per Gas:', ethers.formatUnits(bufferedMaxFee, 'gwei'), 'gwei', isMobileSubmit ? '(mobile +30%)' : '(desktop +20%)')
       console.log('  - Max Priority Fee Per Gas:', ethers.formatUnits(bufferedMaxPriority, 'gwei'), 'gwei')
     } else {
@@ -730,10 +750,10 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
       console.log('⚠️ Do NOT cancel the transaction - it will process once confirmed!')
       
       tx = await kycContract.submitKYC(combinedDataHash, metadataUrlToUse, txOptions)
-      
-      console.log('✅ Transaction sent!')
-      console.log('  - Transaction Hash:', tx.hash)
-      console.log('  - Waiting for confirmation...')
+    
+    console.log('✅ Transaction sent!')
+    console.log('  - Transaction Hash:', tx.hash)
+    console.log('  - Waiting for confirmation...')
     } catch (txError: any) {
       console.error('❌ Transaction submission error:', txError)
       console.error('Error details:', {
@@ -802,14 +822,23 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
       throw new Error(`Transaction failed: ${errorMsg}. Please check your wallet, network connection, and try again.`)
     }
     
-    // Wait for transaction confirmation
+    // Wait for transaction confirmation (longer timeout for mobile)
     let receipt: ethers.ContractTransactionReceipt | null
     try {
-      receipt = await tx.wait()
+      // Use longer timeout for mobile (5 minutes) vs desktop (3 minutes)
+      const confirmationTimeout = isMobileSubmit ? 300000 : 180000 // 5 min mobile, 3 min desktop
+      const waitPromise = tx.wait()
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Transaction confirmation timeout - check BSCScan for status')), confirmationTimeout)
+      })
+      
+      receipt = await Promise.race([waitPromise, timeoutPromise])
+      
       if (!receipt) {
         // If wait() returns null, use the transaction hash
         if (tx.hash) {
           console.warn('⚠️ Transaction confirmation returned null. Using transaction hash:', tx.hash)
+          console.warn('  Check transaction status on BSCScan:', `https://bscscan.com/tx/${tx.hash}`)
           return tx.hash
         }
         throw new Error('Transaction confirmation failed: receipt is null and no transaction hash available')
@@ -817,8 +846,13 @@ export async function submitKYCVerification(anonymousId: string, metadataUrl: st
     } catch (waitError: any) {
       // If transaction was sent but confirmation failed, still return the hash
       if (tx.hash) {
-        console.warn('⚠️ Transaction sent but confirmation check failed. Transaction hash:', tx.hash)
-        console.warn('  You can check the transaction status on BSCScan:', `https://bscscan.com/tx/${tx.hash}`)
+        if (waitError.message?.includes('timeout')) {
+          console.warn('⚠️ Transaction confirmation timeout, but transaction was sent. Hash:', tx.hash)
+          console.warn('  The transaction may still be processing. Check status on BSCScan:', `https://bscscan.com/tx/${tx.hash}`)
+        } else {
+          console.warn('⚠️ Transaction sent but confirmation check failed. Transaction hash:', tx.hash)
+          console.warn('  You can check the transaction status on BSCScan:', `https://bscscan.com/tx/${tx.hash}`)
+        }
         return tx.hash
       }
       throw waitError
@@ -1001,8 +1035,12 @@ export async function getContractOwner(): Promise<string> {
   try {
     const { provider } = await getProviderAndSigner()
     const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
-    const owner = await kycContract.owner()
-    return owner
+    // Contract uses authorizedOwners mapping, get the first authorized owner
+    const authorizedOwners = await kycContract.getAuthorizedOwners()
+    if (authorizedOwners && authorizedOwners.length > 0) {
+      return authorizedOwners[0] // Return first authorized owner
+    }
+    throw new Error('No authorized owners found in contract')
   } catch (error: any) {
     console.error('Error getting contract owner:', error)
     throw new Error(`Failed to get contract owner: ${error.message || 'Unknown error'}`)
@@ -1062,7 +1100,7 @@ export async function getTotalCollectedFees(): Promise<string> {
       try {
         const totalCollected = await kycContract.totalCollection()
         console.log('✅ totalCollection result:', totalCollected.toString())
-        return ethers.formatEther(totalCollected)
+    return ethers.formatEther(totalCollected)
       } catch (fallbackError: any) {
         console.error('❌ Both getStats and totalCollection failed:', fallbackError)
         throw new Error(`Failed to get total collected fees: ${fallbackError?.message || 'Unknown error'}`)
@@ -1076,8 +1114,12 @@ export async function getTotalCollectedFees(): Promise<string> {
 
 export async function verifyOwner(address: string): Promise<boolean> {
   try {
-    const owner = await getContractOwner()
-    return owner.toLowerCase() === address.toLowerCase()
+    const { provider } = await getProviderAndSigner()
+    const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
+    // Use isAuthorizedOwner function from contract (supports multiple owners)
+    const isOwner = await kycContract.isAuthorizedOwner(address)
+    console.log('🔐 Owner verification:', { address, isOwner })
+    return isOwner
   } catch (error: any) {
     console.error('Error verifying owner:', error)
     return false
@@ -1112,7 +1154,7 @@ export async function getTotalWithdrawals(): Promise<string> {
       try {
         const totalWithdrawn = await kycContract.totalWithdrawn()
         console.log('✅ totalWithdrawn result:', totalWithdrawn.toString())
-        return ethers.formatEther(totalWithdrawn)
+    return ethers.formatEther(totalWithdrawn)
       } catch (fallbackError: any) {
         console.error('❌ Both getStats and totalWithdrawn failed:', fallbackError)
         throw new Error(`Failed to get total withdrawals: ${fallbackError?.message || 'Unknown error'}`)
@@ -1172,15 +1214,24 @@ export async function withdrawContractFunds(amount: string): Promise<string> {
       throw new Error('Withdrawal amount is too small. Please enter a larger amount.')
     }
     
-    // Verify owner
+    // Verify owner using isAuthorizedOwner function
     console.log('\n🔐 Verifying ownership...')
-    const owner = await kycContract.owner()
-    const isOwner = owner.toLowerCase() === userAddress.toLowerCase()
-    console.log('  - Contract Owner:', owner)
-    console.log('  - Is Owner:', isOwner)
+    const isOwner = await kycContract.isAuthorizedOwner(userAddress)
+    console.log('  - User Address:', userAddress)
+    console.log('  - Is Authorized Owner:', isOwner)
     
     if (!isOwner) {
-      throw new Error('Only the contract owner can withdraw funds.')
+      // Get authorized owners for better error message
+      try {
+        const authorizedOwners = await kycContract.getAuthorizedOwners()
+        console.log('  - Authorized Owners:', authorizedOwners)
+        throw new Error(`Only authorized owners can withdraw funds. Your address (${userAddress}) is not an authorized owner.`)
+      } catch (ownerError: any) {
+        if (ownerError.message.includes('authorized owners')) {
+          throw ownerError
+        }
+        throw new Error('Only authorized owners can withdraw funds. Please ensure you are connected with an authorized owner wallet.')
+      }
     }
     
     // Estimate gas
@@ -1197,14 +1248,26 @@ export async function withdrawContractFunds(amount: string): Promise<string> {
     }
     
     const feeData = await provider.getFeeData()
-    const gasPrice = feeData.gasPrice || BigInt(5000000000)
-    console.log('  - Gas Price:', ethers.formatUnits(gasPrice, 'gwei'), 'gwei')
+    let gasPrice = feeData.gasPrice || BigInt(5000000000)
+    
+    // Add 20% buffer to gas price to ensure transaction goes through
+    gasPrice = (gasPrice * BigInt(120)) / BigInt(100)
+    
+    // Ensure minimum gas price (5 gwei for BSC mainnet)
+    const minGasPrice = BigInt(5000000000) // 5 gwei
+    if (gasPrice < minGasPrice) {
+      gasPrice = minGasPrice
+    }
+    
+    console.log('  - Base Gas Price:', ethers.formatUnits(feeData.gasPrice || BigInt(0), 'gwei'), 'gwei')
+    console.log('  - Final Gas Price (with 20% buffer):', ethers.formatUnits(gasPrice, 'gwei'), 'gwei')
     
     // Execute withdrawal
     console.log('\n⏳ Sending withdrawal transaction...')
     console.log('  - Amount (Wei):', amountBNBWei.toString())
+    console.log('  - Amount (BNB):', ethers.formatEther(amountBNBWei), 'BNB')
     console.log('  - Gas Limit:', gasLimit.toString())
-    console.log('  - Gas Price:', gasPrice.toString())
+    console.log('  - Gas Price:', ethers.formatUnits(gasPrice, 'gwei'), 'gwei')
     
     const tx = await kycContract.withdrawBNB(amountBNBWei, {
       gasLimit,
@@ -1243,7 +1306,7 @@ export async function withdrawContractFunds(amount: string): Promise<string> {
       throw error
     }
     
-    if (error.message.includes('Only the contract owner')) {
+    if (error.message.includes('Only') && (error.message.includes('owner') || error.message.includes('authorized'))) {
       throw error
     }
     

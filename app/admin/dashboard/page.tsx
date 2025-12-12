@@ -1600,7 +1600,7 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
           </button>
         </div>
 
-        <p className="text-sm text-gray-600 mb-6">Withdraw funds from the contract. Only the contract owner can withdraw.</p>
+        <p className="text-sm text-gray-600 mb-6">Withdraw funds from the contract. Only authorized owners can withdraw.</p>
 
         <div className="space-y-4">
           {error && (
@@ -1646,7 +1646,7 @@ function WithdrawModal({ onClose, onWithdrawSuccess }: { onClose: () => void; on
               {!verifyingOwner && isOwner === false && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-800 font-semibold">
-                    ⚠️ Access Denied: Only the contract owner can withdraw funds.
+                    ⚠️ Access Denied: Only authorized owners can withdraw funds. Please connect with an authorized owner wallet.
                   </p>
                 </div>
               )}

@@ -54,6 +54,7 @@ export type Action =
   | { type: 'SET_DOCUMENT_IMAGE_BACK'; payload: string }
   | { type: 'SET_SELFIE_IMAGE'; payload: string }
   | { type: 'SET_PERSONAL_INFO'; payload: { firstName: string; lastName: string; fatherName: string; idNumber: string; email: string; phone: string; address: string } }
+  | { type: 'CLEAR_KYC_DATA' }
 
 export const initialState: AppState = {
   user: null,

@@ -29,6 +29,13 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'KYX Platform - Identity Verification',
   description: 'Complete identity verification and decentralized ID creation',
+  icons: {
+    icon: [
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+    ],
+    shortcut: '/favicon-32x32.png',
+    apple: '/favicon-32x32.png',
+  },
   // Performance optimizations
   other: {
     'mobile-web-app-capable': 'yes',
@@ -51,6 +58,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Favicon */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         {/* DNS prefetch for external resources */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://data-seed-prebsc-1-s1.binance.org" />

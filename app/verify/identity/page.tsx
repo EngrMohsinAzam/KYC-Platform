@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
@@ -9,16 +9,56 @@ import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineDocumentText, HiOutlineUser } from 'react-icons/hi'
 import { updateKYCDocuments } from '@/lib/api'
 import { LoadingDots } from '@/components/ui/LoadingDots'
+import { clearKYCCache, clearAllKYCCaches } from '@/lib/kyc-cache'
 
 export default function VerifyIdentity() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { state } = useAppContext()
+  const { state, dispatch } = useAppContext()
   const [isUpdating, setIsUpdating] = useState(false)
+  const hasClearedRef = useRef(false)
   
   // Check if we're in update mode (from blur rejection)
   const isUpdateMode = searchParams.get('update') === 'true'
   const updateEmail = searchParams.get('email') || state.personalInfo?.email
+
+  // Clear old documents when user starts updating (resubmission)
+  useEffect(() => {
+    if (isUpdateMode && !hasClearedRef.current) {
+      hasClearedRef.current = true
+      const clearOldDocuments = async () => {
+        console.log('🧹 Clearing old documents - user starting resubmission/update')
+        
+        // Clear only document images (keep personal info for update)
+        // Use empty string to clear (reducer will handle undefined)
+        dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: '' })
+        dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: '' })
+        dispatch({ type: 'SET_SELFIE_IMAGE', payload: '' })
+        dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: '' })
+        
+        // Clear cache from IndexedDB - clear all to ensure selfie is also removed
+        try {
+          await clearAllKYCCaches()
+          console.log('✅ Old documents and selfie cleared for resubmission')
+        } catch (error) {
+          console.error('Failed to clear all caches:', error)
+          // Fallback: try to clear with specific email/userId
+          const email = updateEmail || state.personalInfo?.email
+          const userId = state.user?.id || state.user?.anonymousId
+          if (email || userId) {
+            try {
+              await clearKYCCache(email, userId)
+              console.log('✅ Old documents and selfie cleared (fallback)')
+            } catch (fallbackError) {
+              console.error('Failed to clear cache (fallback):', fallbackError)
+            }
+          }
+        }
+      }
+      
+      clearOldDocuments()
+    }
+  }, [isUpdateMode, updateEmail, state.personalInfo?.email, state.user?.id, state.user?.anonymousId, dispatch])
 
   const handleDocumentClick = () => {
     // Preserve update mode query params if in update mode

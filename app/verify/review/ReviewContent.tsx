@@ -101,6 +101,24 @@ export default function ReviewContent() {
     }
   }, [isConnected, address, dispatch])
 
+  // Restore personal info from localStorage on refresh if missing
+  useEffect(() => {
+    if (!state.personalInfo && typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('kyc_app_state')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          if (parsed.personalInfo) {
+            console.log('🔄 Restoring personal info from localStorage on review page')
+            dispatch({ type: 'SET_PERSONAL_INFO', payload: parsed.personalInfo })
+          }
+        }
+      } catch (error) {
+        console.error('Failed to restore personal info:', error)
+      }
+    }
+  }, [state.personalInfo, dispatch])
+
   // Check network and balance when wallet is connected
   useEffect(() => {
     console.log('🔍 Wallet connection status changed:', { isConnected, address })
@@ -840,23 +858,25 @@ export default function ReviewContent() {
       
       // Calculate actual required BNB amount dynamically (based on current BNB price for $2 USD + gas)
       console.log('💰 Calculating required BNB amount...')
-      let requiredBNBAmount: number = 0.01 // Default fallback (conservative estimate)
-      let requiredBNBFormatted: string = '0.01'
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+      let requiredBNBAmount: number = 0.004 // Lower fallback (more realistic)
+      let requiredBNBFormatted: string = '0.004'
+      let feeAmountBNB: number = 0.003 // Default fee estimate
+      
       try {
         const { calculateRequiredBNB } = await import('@/lib/web3')
         const { ethers } = await import('ethers')
         
         // Try to calculate from contract (requires wallet connection)
-        // If this fails on mobile, we'll use a more conservative fallback
         const requiredBNBWei = await calculateRequiredBNB()
         const requiredBNBFormattedWei = ethers.formatEther(requiredBNBWei)
+        feeAmountBNB = parseFloat(requiredBNBFormattedWei)
         requiredBNBAmount = parseFloat(requiredBNBFormattedWei)
         requiredBNBFormatted = requiredBNBFormattedWei
         
-        // Add gas reserve (~0.001-0.002 BNB for gas fees)
-        // Use higher gas reserve on mobile (0.003) as mobile transactions can be more expensive
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        const gasReserve = isMobile ? 0.003 : 0.002 // Higher reserve for mobile
+        // Add realistic gas reserve (much lower than before)
+        // Mobile: 0.0015 BNB, Desktop: 0.001 BNB (more realistic estimates)
+        const gasReserve = isMobile ? 0.0015 : 0.001
         const totalRequired = requiredBNBAmount + gasReserve
         requiredBNBAmount = totalRequired
         requiredBNBFormatted = totalRequired.toFixed(8)
@@ -866,32 +886,45 @@ export default function ReviewContent() {
         console.log('  - Gas reserve:', gasReserve, 'BNB', isMobile ? '(mobile)' : '(desktop)')
         console.log('  - Total required:', requiredBNBFormatted, 'BNB')
       } catch (calcError: any) {
-        console.warn('⚠️ Could not calculate required BNB from contract, using conservative fallback:', calcError.message)
-        // Use more conservative fallback for mobile if calculation fails
-        // $2 USD at ~$600/BNB = ~0.0033 BNB, plus gas = ~0.005-0.006 BNB total
-        // But we'll use 0.01 BNB as a safe fallback to ensure users have enough
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        console.warn('⚠️ Could not calculate required BNB from contract, using realistic fallback:', calcError.message)
+        // Use realistic fallback based on current BNB price (~$600/BNB)
+        // $2 USD = ~0.0033 BNB, plus gas = ~0.004-0.005 BNB total
+        // Use lower, more realistic values
         if (isMobile) {
-          // More conservative for mobile (0.01 BNB = ~$6 at $600/BNB, which is safe)
-          requiredBNBAmount = 0.01
-          requiredBNBFormatted = '0.01'
-          console.log('  - Using mobile fallback: 0.01 BNB (safe estimate)')
-        } else {
-          // Desktop fallback
+          // Mobile: $2 fee (~0.0033 BNB) + gas (~0.0015 BNB) = ~0.005 BNB
           requiredBNBAmount = 0.005
           requiredBNBFormatted = '0.005'
-          console.log('  - Using desktop fallback: 0.005 BNB')
+          feeAmountBNB = 0.0033
+          console.log('  - Using mobile fallback: 0.005 BNB (realistic estimate)')
+        } else {
+          // Desktop: $2 fee (~0.0033 BNB) + gas (~0.001 BNB) = ~0.004 BNB
+          requiredBNBAmount = 0.004
+          requiredBNBFormatted = '0.004'
+          feeAmountBNB = 0.0033
+          console.log('  - Using desktop fallback: 0.004 BNB (realistic estimate)')
         }
       }
       
-      // Check if user has sufficient balance
+      // Check if user has sufficient balance (with small buffer for rounding)
       const balanceNum = parseFloat(balance)
-      if (balanceNum < requiredBNBAmount) {
+      // Add 5% buffer to account for price fluctuations and rounding
+      const requiredWithBuffer = requiredBNBAmount * 1.05
+      
+      if (balanceNum < requiredWithBuffer) {
         console.error('❌ Insufficient balance:', balance, 'BNB')
-        console.error('  - Required:', requiredBNBFormatted, 'BNB')
+        console.error('  - Required (with 5% buffer):', requiredWithBuffer.toFixed(8), 'BNB')
+        console.error('  - Fee amount:', feeAmountBNB.toFixed(8), 'BNB')
+        console.error('  - Gas estimate:', (requiredBNBAmount - feeAmountBNB).toFixed(8), 'BNB')
+        
+        // Show more helpful error message
+        const balanceUSD = (balanceNum * 600).toFixed(2) // Approximate USD value
+        const requiredUSD = (requiredWithBuffer * 600).toFixed(2)
         setError(
-          `Insufficient BNB balance. You need at least ${requiredBNBFormatted} BNB ` +
-          `(for $2 USD fee + gas). Current balance: ${balance} BNB. Please add more BNB to your wallet.`
+          `Insufficient BNB balance.\n\n` +
+          `Current balance: ${balance} BNB (~$${balanceUSD})\n` +
+          `Required: ${requiredWithBuffer.toFixed(8)} BNB (~$${requiredUSD})\n\n` +
+          `You need at least ${requiredWithBuffer.toFixed(8)} BNB for the $2 USD fee plus gas.\n` +
+          `Please add more BNB to your wallet.`
         )
         setProcessingPayment(false)
         return
@@ -970,14 +1003,15 @@ export default function ReviewContent() {
         console.log('   1. Confirm the KYC submission transaction (BNB fee will be paid)')
         console.log('⏳ This may take a moment. Please wait...')
         
-        // Add timeout protection (3 minutes max for mobile, 5 minutes for desktop)
+        // Add timeout protection (longer for mobile to account for app switching)
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        const timeoutDuration = isMobile ? 180000 : 300000 // 3 min mobile, 5 min desktop
+        // Longer timeout for mobile (6 minutes) to allow time for app switching and confirmation
+        const timeoutDuration = isMobile ? 360000 : 300000 // 6 min mobile, 5 min desktop
         const timeoutPromise = new Promise((_, reject) => {
           setTimeout(() => reject(new Error(
             isMobile 
-              ? 'Transaction timeout: Please check your MetaMask mobile app and confirm the transaction. If you already confirmed, wait a moment for it to process.'
-              : 'Transaction timeout: The transaction is taking too long. Please check your wallet and try again.'
+              ? 'Transaction timeout: The transaction is taking longer than expected. Please check your MetaMask mobile app - if you already confirmed, the transaction may still be processing. Check BSCScan for the transaction status.'
+              : 'Transaction timeout: The transaction is taking too long. Please check your wallet and try again. If you already confirmed, check BSCScan for the transaction status.'
           )), timeoutDuration)
         })
         
@@ -985,8 +1019,11 @@ export default function ReviewContent() {
         console.log('⏳ Waiting for transaction...')
         if (isMobile) {
           console.log('📱 Mobile detected: Please check your MetaMask mobile app to confirm the transaction')
+          console.log('📱 You may need to switch to the MetaMask app - DO NOT cancel the transaction!')
+          console.log('📱 Once confirmed in MetaMask, return to this app and wait for confirmation.')
         } else {
           console.log('⏳ If MetaMask popup doesn\'t appear, check if it\'s blocked by your browser')
+          console.log('⏳ DO NOT cancel the transaction - it will process once confirmed!')
         }
         txHash = await Promise.race([txPromise, timeoutPromise]) as string
         

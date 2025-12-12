@@ -1,12 +1,69 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
+import { useAppContext } from '@/context/useAppContext'
+import { clearKYCCache, clearAllKYCCaches } from '@/lib/kyc-cache'
 
 export default function VerificationStart() {
   const router = useRouter()
+  const { state, dispatch } = useAppContext()
+
+  // Clear KYC data when user navigates to start page (starting new submission)
+  useEffect(() => {
+    const clearData = async () => {
+      console.log('🧹 Clearing KYC data - user starting new submission')
+      
+      // Set clear flag immediately to prevent AppProvider from restoring
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kyc_data_cleared', Date.now().toString())
+      }
+      
+      // Clear all documents and personal info from state
+      dispatch({ type: 'CLEAR_KYC_DATA' })
+      
+      // Clear cache from IndexedDB - try to get email from localStorage before clearing
+      let email: string | undefined
+      let userId: string | undefined
+      
+      try {
+        const stored = localStorage.getItem('kyc_app_state')
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          email = parsed.personalInfo?.email
+          userId = parsed.user?.id || parsed.user?.anonymousId
+        }
+      } catch (e) {
+        // Ignore
+      }
+      
+      // Also try from current state
+      if (!email) email = state.personalInfo?.email
+      if (!userId) userId = state.user?.id || state.user?.anonymousId
+      
+      // Always clear all caches to ensure no old documents remain
+      try {
+        await clearAllKYCCaches()
+        console.log('✅ All KYC caches cleared')
+      } catch (error) {
+        console.error('Failed to clear all KYC caches:', error)
+        // Fallback: try to clear with specific email/userId if available
+        if (email || userId) {
+          try {
+            await clearKYCCache(email, userId)
+            console.log('✅ KYC cache cleared (fallback)')
+          } catch (fallbackError) {
+            console.error('Failed to clear KYC cache (fallback):', fallbackError)
+          }
+        }
+      }
+    }
+    
+    clearData()
+  }, []) // Only run once on mount
 
   const handleContinue = () => {
     router.push('/verify/personal-info')

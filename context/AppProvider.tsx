@@ -2,9 +2,10 @@
 
 import { useReducer, ReactNode, useEffect, useRef } from 'react'
 import { AppContext, initialState, AppState, Action } from './AppContext'
-import { saveKYCDocuments, loadKYCDocuments, clearExpiredCaches } from '@/lib/kyc-cache'
+import { saveKYCDocuments, loadKYCDocuments, clearExpiredCaches, clearKYCCache } from '@/lib/kyc-cache'
 
 const STORAGE_KEY = 'kyc_app_state'
+const CLEAR_FLAG_KEY = 'kyc_data_cleared'
 
 // Load state from localStorage
 function loadState(): Partial<AppState> {
@@ -105,16 +106,48 @@ function appReducer(state: AppState, action: Action): AppState {
       newState = { ...state, documentImage: action.payload }
       break
     case 'SET_DOCUMENT_IMAGE_FRONT':
-      newState = { ...state, documentImageFront: action.payload }
+      newState = { ...state, documentImageFront: action.payload || undefined }
       break
     case 'SET_DOCUMENT_IMAGE_BACK':
-      newState = { ...state, documentImageBack: action.payload }
+      newState = { ...state, documentImageBack: action.payload || undefined }
       break
     case 'SET_SELFIE_IMAGE':
-      newState = { ...state, selfieImage: action.payload }
+      newState = { ...state, selfieImage: action.payload || undefined }
       break
     case 'SET_PERSONAL_INFO':
       newState = { ...state, personalInfo: action.payload }
+      break
+    case 'CLEAR_KYC_DATA':
+      // Clear all KYC-related data but keep user, theme, sidebar state
+      newState = {
+        ...state,
+        documentImage: undefined,
+        documentImageFront: undefined,
+        documentImageBack: undefined,
+        selfieImage: undefined,
+        personalInfo: undefined,
+        selectedCountry: undefined,
+        selectedCity: undefined,
+        selectedIssuingCountry: undefined,
+        selectedIdType: undefined,
+        isResidentUSA: undefined,
+        idNumber: undefined,
+        estimatedGasFee: undefined,
+        blockchain: undefined,
+        verificationStep: 0,
+      }
+      // Clear localStorage and set clear flag
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.removeItem(STORAGE_KEY)
+          // Set flag to prevent restoration of old documents
+          localStorage.setItem(CLEAR_FLAG_KEY, Date.now().toString())
+          // Also clear session storage
+          sessionStorage.removeItem('kyc_session_id')
+        } catch (error) {
+          console.warn('Failed to clear localStorage:', error)
+        }
+      }
       break
     default:
       newState = state
@@ -169,9 +202,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [state.documentImageFront, state.documentImageBack, state.selfieImage, state.personalInfo?.email, state.user?.id, state.user?.anonymousId])
 
+
   // Load state and restore images from cache on mount
   useEffect(() => {
     if (hasRestoredRef.current) return // Only restore once
+    
+    // Check if we're on a page that should not restore data
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname
+      // Don't restore if we're on start page or complete page (these pages clear data)
+      if (pathname === '/verify/start' || pathname === '/decentralized-id/complete') {
+        console.log('🧹 Skipping restoration - on clear page:', pathname)
+        hasRestoredRef.current = true
+        return
+      }
+    }
     
     const restoreFromCache = async () => {
       isRestoringRef.current = true
@@ -202,42 +247,62 @@ export function AppProvider({ children }: { children: ReactNode }) {
           dispatch({ type: 'SET_PERSONAL_INFO', payload: savedState.personalInfo })
         }
 
-        // Then, restore images from IndexedDB (works on mobile too)
-        const email = savedState.personalInfo?.email
-        const userId = savedState.personalInfo?.email || savedState.user?.id || savedState.user?.anonymousId
-        
-        try {
-          const cachedDocs = await loadKYCDocuments(email, userId)
-          
-          if (cachedDocs) {
-            console.log('🔄 Restoring KYC documents from cache...')
-            console.log('  - Email:', email)
-            console.log('  - UserId:', userId)
-            console.log('  - Has front:', !!cachedDocs.documentImageFront)
-            console.log('  - Has back:', !!cachedDocs.documentImageBack)
-            console.log('  - Has selfie:', !!cachedDocs.selfieImage)
-            
-            // Restore all cached images (during initial restore, state won't have images yet)
-            if (cachedDocs.documentImageFront) {
-              dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: cachedDocs.documentImageFront })
-              dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: cachedDocs.documentImageFront })
-            }
-            
-            if (cachedDocs.documentImageBack) {
-              dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: cachedDocs.documentImageBack })
-            }
-            
-            if (cachedDocs.selfieImage) {
-              dispatch({ type: 'SET_SELFIE_IMAGE', payload: cachedDocs.selfieImage })
-            }
-            
-            console.log('✅ KYC documents restored from cache')
-          } else {
-            console.log('ℹ️ No cached documents found to restore')
+        // Check if data was explicitly cleared - if so, don't restore documents or selfie
+        const clearFlag = localStorage.getItem(CLEAR_FLAG_KEY)
+        if (clearFlag) {
+          console.log('🧹 Data was cleared previously - skipping document and selfie restoration')
+          // Clear the flag after checking
+          localStorage.removeItem(CLEAR_FLAG_KEY)
+          // Also clear the cache to ensure old documents and selfie are removed
+          const email = savedState.personalInfo?.email
+          const userId = savedState.personalInfo?.email || savedState.user?.id || savedState.user?.anonymousId
+          if (email || userId) {
+            clearKYCCache(email, userId).catch((error) => {
+              console.error('Failed to clear cache after clear flag detected:', error)
+            })
           }
-        } catch (cacheError) {
-          console.error('❌ Error loading cached documents:', cacheError)
-          // Continue even if cache load fails
+          // Ensure selfie is also cleared from state if it exists
+          if (state.selfieImage) {
+            dispatch({ type: 'SET_SELFIE_IMAGE', payload: '' })
+          }
+        } else {
+          // Then, restore images from IndexedDB (works on mobile too)
+          const email = savedState.personalInfo?.email
+          const userId = savedState.personalInfo?.email || savedState.user?.id || savedState.user?.anonymousId
+          
+          try {
+            const cachedDocs = await loadKYCDocuments(email, userId)
+            
+            if (cachedDocs) {
+              console.log('🔄 Restoring KYC documents from cache...')
+              console.log('  - Email:', email)
+              console.log('  - UserId:', userId)
+              console.log('  - Has front:', !!cachedDocs.documentImageFront)
+              console.log('  - Has back:', !!cachedDocs.documentImageBack)
+              console.log('  - Has selfie:', !!cachedDocs.selfieImage)
+              
+              // Restore all cached images (during initial restore, state won't have images yet)
+              if (cachedDocs.documentImageFront) {
+                dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: cachedDocs.documentImageFront })
+                dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: cachedDocs.documentImageFront })
+              }
+              
+              if (cachedDocs.documentImageBack) {
+                dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: cachedDocs.documentImageBack })
+              }
+              
+              if (cachedDocs.selfieImage) {
+                dispatch({ type: 'SET_SELFIE_IMAGE', payload: cachedDocs.selfieImage })
+              }
+              
+              console.log('✅ KYC documents restored from cache')
+            } else {
+              console.log('ℹ️ No cached documents found to restore')
+            }
+          } catch (cacheError) {
+            console.error('❌ Error loading cached documents:', cacheError)
+            // Continue even if cache load fails
+          }
         }
 
         // Clear expired caches in background (don't wait)

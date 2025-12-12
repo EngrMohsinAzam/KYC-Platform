@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Header } from '@/components/layout/Header'
 import { useAppContext } from '@/context/useAppContext'
+import { clearKYCCache, clearAllKYCCaches } from '@/lib/kyc-cache'
 
 export default function VerificationComplete() {
-  const { state } = useAppContext()
+  const { state, dispatch } = useAppContext()
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
   
   useEffect(() => {
@@ -16,6 +17,40 @@ export default function VerificationComplete() {
     if (hash) {
       setTransactionHash(hash)
     }
+    
+    // Clear KYC data when KYC is successfully completed
+    const clearData = async () => {
+      console.log('🧹 Clearing KYC data - KYC successfully completed')
+      
+      // Set clear flag immediately to prevent AppProvider from restoring
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kyc_data_cleared', Date.now().toString())
+      }
+      
+      // Clear all documents and personal info from state
+      dispatch({ type: 'CLEAR_KYC_DATA' })
+      
+      // Clear all caches to ensure no old documents remain
+      try {
+        await clearAllKYCCaches()
+        console.log('✅ All KYC caches cleared after successful completion')
+      } catch (error) {
+        console.error('Failed to clear all KYC caches:', error)
+        // Fallback: try to clear with specific email/userId if available
+        const email = state.personalInfo?.email
+        const userId = state.user?.id || state.user?.anonymousId
+        if (email || userId) {
+          try {
+            await clearKYCCache(email, userId)
+            console.log('✅ KYC cache cleared (fallback)')
+          } catch (fallbackError) {
+            console.error('Failed to clear KYC cache (fallback):', fallbackError)
+          }
+        }
+      }
+    }
+    
+    clearData()
   }, [])
 
   const anonymousId = state.idNumber 
