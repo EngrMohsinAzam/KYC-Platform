@@ -149,6 +149,7 @@ export default function AdminDashboard() {
   const [totalCollectedFees, setTotalCollectedFees] = useState<string | null>(null)
   const [totalWithdrawals, setTotalWithdrawals] = useState<string | null>(null)
   const [loadingContractData, setLoadingContractData] = useState(false)
+  const [kycFee, setKycFee] = useState<string | null>(null)
   const { isConnected } = useAccount()
   const { connect, connectors } = useConnect()
   
@@ -821,7 +822,14 @@ export default function AdminDashboard() {
         {/* Financial Overview */}
         <div className="mb-4 sm:mb-6">
           <ChartCard title="Financial Overview">
-            <FinancialChart stats={stats} />
+            <FinancialChart 
+              stats={stats} 
+              totalCollectedFees={totalCollectedFees}
+              totalWithdrawals={totalWithdrawals}
+              contractBalance={contractBalance}
+              users={users}
+              loading={loadingContractData}
+            />
           </ChartCard>
         </div>
 
@@ -1207,20 +1215,116 @@ function StatusPieChart({ stats }: { stats: any }) {
 }
 
 // Financial Chart Component
-function FinancialChart({ stats }: { stats: any }) {
-
-  const months = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov']
-
-  // Generate data matching the design - revenue grows from ~40k to ~80k+, withdrawals stay 10-20k
-  const data = months.map((month, index) => {
-    const revenue = 40000 + (index * 7000)
-    const withdrawals = 10000 + (index % 2) * 5000
-    return {
-      month,
-      revenue: revenue,
-      withdrawals: withdrawals,
+function FinancialChart({ 
+  stats, 
+  totalCollectedFees, 
+  totalWithdrawals, 
+  contractBalance,
+  users,
+  loading 
+}: { 
+  stats: any
+  totalCollectedFees: string | null
+  totalWithdrawals: string | null
+  contractBalance: string | null
+  users: User[]
+  loading: boolean
+}) {
+  // Calculate monthly data from user submissions
+  const calculateMonthlyData = () => {
+    const now = new Date()
+    const months: string[] = []
+    const monthData: { [key: string]: { revenue: number; withdrawals: number } } = {}
+    
+    // Get last 7 months
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const monthKey = date.toLocaleDateString('en-US', { month: 'short' })
+      months.push(monthKey)
+      monthData[monthKey] = { revenue: 0, withdrawals: 0 }
     }
-  })
+    
+    // Calculate revenue from user submissions (each approved submission = KYC fee)
+    // Use actual KYC fee from contract if available, otherwise estimate
+    // KYC fee is typically $2 USD, which is approximately 0.0033 BNB (at ~$600/BNB)
+    const kycFeeBNB = 0.0033 // Default estimate - can be updated with actual contract fee
+    
+    users.forEach((user) => {
+      if (user.submittedAt && user.kycStatus?.toLowerCase() === 'approved') {
+        try {
+          const submittedDate = new Date(user.submittedAt)
+          if (isNaN(submittedDate.getTime())) return
+          
+          const submittedYear = submittedDate.getFullYear()
+          const submittedMonth = submittedDate.getMonth()
+          
+          // Find matching month
+          for (let i = 6; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+            if (date.getFullYear() === submittedYear && date.getMonth() === submittedMonth) {
+              const monthKey = date.toLocaleDateString('en-US', { month: 'short' })
+              if (monthData[monthKey]) {
+                monthData[monthKey].revenue += kycFeeBNB
+              }
+              break
+            }
+          }
+        } catch (error) {
+          console.warn('Error processing user submission date:', error)
+        }
+      }
+    })
+    
+    // For withdrawals, we can't calculate historical data from contract
+    // So we'll distribute total withdrawals proportionally based on revenue
+    const totalRevenue = Object.values(monthData).reduce((sum, m) => sum + m.revenue, 0)
+    const totalWithdrawalsNum = totalWithdrawals ? parseFloat(totalWithdrawals) : 0
+    
+    if (totalRevenue > 0 && totalWithdrawalsNum > 0) {
+      // Distribute withdrawals proportionally to revenue
+      Object.keys(monthData).forEach((monthKey) => {
+        const revenue = monthData[monthKey].revenue
+        if (revenue > 0) {
+          monthData[monthKey].withdrawals = (revenue / totalRevenue) * totalWithdrawalsNum
+        }
+      })
+    }
+    
+    // If we have contract data, use it to scale the last month
+    const totalCollectedNum = totalCollectedFees ? parseFloat(totalCollectedFees) : 0
+    if (totalCollectedNum > 0 && totalRevenue > 0) {
+      // Scale all months proportionally to match total collected
+      const scaleFactor = totalCollectedNum / totalRevenue
+      Object.keys(monthData).forEach((monthKey) => {
+        monthData[monthKey].revenue *= scaleFactor
+        monthData[monthKey].withdrawals *= scaleFactor
+      })
+    }
+    
+    return months.map((month) => ({
+      month,
+      revenue: parseFloat(monthData[month].revenue.toFixed(8)),
+      withdrawals: parseFloat(monthData[month].withdrawals.toFixed(8)),
+    }))
+  }
+
+  const data = calculateMonthlyData()
+  
+  // Calculate max value for Y-axis
+  const maxValue = Math.max(
+    ...data.map(d => Math.max(d.revenue, d.withdrawals)),
+    totalCollectedFees ? parseFloat(totalCollectedFees) : 0,
+    totalWithdrawals ? parseFloat(totalWithdrawals) : 0
+  )
+  const yAxisMax = maxValue > 0 ? maxValue * 1.2 : 100 // Add 20% padding
+
+  if (loading) {
+    return (
+      <div className="h-64 flex items-center justify-center">
+        <LoadingDots />
+      </div>
+    )
+  }
 
   return (
     <Suspense fallback={<div className="h-64 flex items-center justify-center"><LoadingDots /></div>}>
@@ -1228,11 +1332,18 @@ function FinancialChart({ stats }: { stats: any }) {
         <LazyBarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <LazyCartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
           <LazyXAxis dataKey="month" stroke="#6b7280" />
-          <LazyYAxis domain={[0, 140000]} stroke="#6b7280" />
-          <LazyTooltip />
+          <LazyYAxis domain={[0, yAxisMax]} stroke="#6b7280" />
+          <LazyTooltip 
+            formatter={(value: any, name: any) => {
+              if (value === null || value === undefined) return ''
+              const numValue = typeof value === 'number' ? value : parseFloat(String(value)) || 0
+              return [`${numValue.toFixed(8)} BNB`, name]
+            }}
+            labelFormatter={(label) => `Month: ${label}`}
+          />
           <LazyLegend wrapperStyle={{ paddingTop: '20px' }} />
-          <LazyBar dataKey="revenue" fill="#3b82f6" name="revenue" radius={[4, 4, 0, 0]} />
-          <LazyBar dataKey="withdrawals" fill="#f59e0b" name="withdrawals" radius={[4, 4, 0, 0]} />
+          <LazyBar dataKey="revenue" fill="#3b82f6" name="Revenue (BNB)" radius={[4, 4, 0, 0]} />
+          <LazyBar dataKey="withdrawals" fill="#f59e0b" name="Withdrawals (BNB)" radius={[4, 4, 0, 0]} />
         </LazyBarChart>
       </LazyResponsiveContainer>
     </Suspense>
