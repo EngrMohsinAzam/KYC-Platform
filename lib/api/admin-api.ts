@@ -1,5 +1,6 @@
 // Admin API utilities
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xzfjrnv9-3099.asse.devtunnels.ms'
+// API base URL - imported from centralized config
+import { API_BASE_URL } from '../config/config'
 
 // Get admin token from localStorage
 export const getAdminToken = (): string | null => {

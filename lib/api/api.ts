@@ -1,5 +1,5 @@
-// API base URL - update this to your backend URL
-const API_BASE_URL = 'https://xzfjrnv9-3099.asse.devtunnels.ms'
+// API base URL - imported from centralized config
+import { API_BASE_URL } from '../config/config'
 
 // Convert base64 image to File object
 const base64ToFile = (base64String: string, filename: string): File => {
@@ -217,7 +217,7 @@ export const submitKYCData = async (data: {
     console.log('========================================')
     console.log('🌐 API Configuration:')
     console.log('  - API Base URL:', API_BASE_URL)
-    console.log('  - Full Endpoint:', `${API_BASE_URL}api/kyc/submit`)
+    console.log('  - Full Endpoint:', `${API_BASE_URL}/api/kyc/submit`)
     console.log('  - Request Method: POST')
     console.log('  - Content Type: multipart/form-data (FormData)')
     

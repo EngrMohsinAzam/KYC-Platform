@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { getAdminToken, getUserDetails, updateUserStatus, User } from '@/lib/admin-api'
+import { getAdminToken, getUserDetails, updateUserStatus, User } from '@/lib/api/admin-api'
 import { XCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
 import {

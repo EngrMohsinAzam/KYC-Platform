@@ -2,7 +2,8 @@
 
 import { useReducer, ReactNode, useEffect, useRef } from 'react'
 import { AppContext, initialState, AppState, Action } from './AppContext'
-import { saveKYCDocuments, loadKYCDocuments, clearExpiredCaches, clearKYCCache } from '@/lib/kyc-cache'
+// Document caching disabled - imports kept for clear functions only
+import { clearExpiredCaches, clearKYCCache } from '@/lib/utils/kyc-cache'
 
 const STORAGE_KEY = 'kyc_app_state'
 const CLEAR_FLAG_KEY = 'kyc_data_cleared'
@@ -178,29 +179,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const isRestoringRef = useRef(false)
   const hasRestoredRef = useRef(false)
 
-  // Auto-save images to IndexedDB when they change
-  useEffect(() => {
-    // Skip if we're currently restoring (to avoid saving during restore)
-    if (isRestoringRef.current) return
-    
-    // Only save if we have at least one image
-    if (state.documentImageFront || state.documentImageBack || state.selfieImage) {
-      const email = state.personalInfo?.email
-      const userId = state.user?.id || state.user?.anonymousId
-      
-      saveKYCDocuments(
-        {
-          documentImageFront: state.documentImageFront,
-          documentImageBack: state.documentImageBack,
-          selfieImage: state.selfieImage,
-        },
-        email,
-        userId
-      ).catch((error) => {
-        console.error('Failed to auto-save images to cache:', error)
-      })
-    }
-  }, [state.documentImageFront, state.documentImageBack, state.selfieImage, state.personalInfo?.email, state.user?.id, state.user?.anonymousId])
+  // Document caching disabled - documents are no longer cached
+  // useEffect(() => {
+  //   // Skip if we're currently restoring (to avoid saving during restore)
+  //   if (isRestoringRef.current) return
+  //   
+  //   // Only save if we have at least one image
+  //   if (state.documentImageFront || state.documentImageBack || state.selfieImage) {
+  //     const email = state.personalInfo?.email
+  //     const userId = state.user?.id || state.user?.anonymousId
+  //     
+  //     saveKYCDocuments(
+  //       {
+  //         documentImageFront: state.documentImageFront,
+  //         documentImageBack: state.documentImageBack,
+  //         selfieImage: state.selfieImage,
+  //       },
+  //       email,
+  //       userId
+  //     ).catch((error) => {
+  //       console.error('Failed to auto-save images to cache:', error)
+  //     })
+  //   }
+  // }, [state.documentImageFront, state.documentImageBack, state.selfieImage, state.personalInfo?.email, state.user?.id, state.user?.anonymousId])
 
 
   // Load state and restore images from cache on mount
@@ -266,43 +267,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             dispatch({ type: 'SET_SELFIE_IMAGE', payload: '' })
           }
         } else {
-          // Then, restore images from IndexedDB (works on mobile too)
-          const email = savedState.personalInfo?.email
-          const userId = savedState.personalInfo?.email || savedState.user?.id || savedState.user?.anonymousId
-          
-          try {
-            const cachedDocs = await loadKYCDocuments(email, userId)
-            
-            if (cachedDocs) {
-              console.log('🔄 Restoring KYC documents from cache...')
-              console.log('  - Email:', email)
-              console.log('  - UserId:', userId)
-              console.log('  - Has front:', !!cachedDocs.documentImageFront)
-              console.log('  - Has back:', !!cachedDocs.documentImageBack)
-              console.log('  - Has selfie:', !!cachedDocs.selfieImage)
-              
-              // Restore all cached images (during initial restore, state won't have images yet)
-              if (cachedDocs.documentImageFront) {
-                dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: cachedDocs.documentImageFront })
-                dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: cachedDocs.documentImageFront })
-              }
-              
-              if (cachedDocs.documentImageBack) {
-                dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: cachedDocs.documentImageBack })
-              }
-              
-              if (cachedDocs.selfieImage) {
-                dispatch({ type: 'SET_SELFIE_IMAGE', payload: cachedDocs.selfieImage })
-              }
-              
-              console.log('✅ KYC documents restored from cache')
-            } else {
-              console.log('ℹ️ No cached documents found to restore')
-            }
-          } catch (cacheError) {
-            console.error('❌ Error loading cached documents:', cacheError)
-            // Continue even if cache load fails
-          }
+          // Document caching disabled - documents are no longer restored from cache
+          // Documents will only exist in state during the current session
+          console.log('ℹ️ Document caching disabled - documents not restored from cache')
         }
 
         // Clear expired caches in background (don't wait)

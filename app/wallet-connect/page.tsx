@@ -7,7 +7,7 @@ import dynamicImport from 'next/dynamic'
 
 // Dynamically import the component with SSR disabled
 const WalletConnectPageContent = dynamicImport(
-  () => import('./WalletConnectContent'),
+  () => import('@/page/wallet-connect/WalletConnectContent'),
   { ssr: false }
 )
 

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Header } from '@/components/layout/Header'
 import { useAppContext } from '@/context/useAppContext'
-import { clearKYCCache, clearAllKYCCaches } from '@/lib/kyc-cache'
+import { clearKYCCache, clearAllKYCCaches } from '@/lib/utils/kyc-cache'
 
 export default function VerificationComplete() {
   const { state, dispatch } = useAppContext()

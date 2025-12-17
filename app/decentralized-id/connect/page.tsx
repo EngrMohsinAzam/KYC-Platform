@@ -7,10 +7,10 @@ import { Header } from '@/components/layout/Header'
 import { HelpModal } from '@/components/ui/HelpModal'
 import { WalletSelectionModal } from '@/components/wallet/WalletSelectionModal'
 import { useAppContext } from '@/context/useAppContext'
-import { getNetworkInfo, isMetaMaskInstalled, checkKYCStatus } from '@/lib/web3'
-import { checkStatusByWallet } from '@/lib/api'
-import { isMobileDevice, openMetaMaskMobile, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
-import { DetectedWallet, detectInstalledWallets } from '@/lib/wallet-detection'
+import { getNetworkInfo, isMetaMaskInstalled, checkKYCStatus } from '@/lib/wallet/web3'
+import { checkStatusByWallet } from '@/lib/api/api'
+import { isMobileDevice, openMetaMaskMobile, getMobileWalletDeepLink } from '@/lib/wallet/mobile-wallet'
+import { DetectedWallet, detectInstalledWallets } from '@/lib/wallet/wallet-detection'
 import { useConnect } from 'wagmi'
 
 declare global {
@@ -254,7 +254,7 @@ export default function ConnectWallet() {
           
           // Only proceed with connectWallet if we're on desktop or if ethereum is available on mobile
           if (!isMobile || window.ethereum) {
-            const { connectWallet } = await import('@/lib/web3')
+            const { connectWallet } = await import('@/lib/wallet/web3')
             
             try {
               // This will ALWAYS prompt MetaMask for permission

@@ -20,7 +20,7 @@ const HelpModal = dynamic(() => import('@/components/ui/HelpModal').then(mod => 
 let blockchainFunctions: any = null
 const loadBlockchainFunctions = async () => {
   if (!blockchainFunctions) {
-    blockchainFunctions = await import('@/lib/web3')
+    blockchainFunctions = await import('@/lib/wallet/web3')
   }
   return blockchainFunctions
 }
@@ -29,7 +29,7 @@ const loadBlockchainFunctions = async () => {
 let apiFunctions: any = null
 const loadApiFunctions = async () => {
   if (!apiFunctions) {
-    apiFunctions = await import('@/lib/api')
+    apiFunctions = await import('@/lib/api/api')
   }
   return apiFunctions
 }

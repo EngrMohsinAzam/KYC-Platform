@@ -9,15 +9,15 @@ import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { HelpModal } from '@/components/ui/HelpModal'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
-import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/lib/web3'
-import { submitKYCData } from '@/lib/api'
-import { formatWalletAddress } from '@/lib/utils'
+import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/lib/wallet/web3'
+import { submitKYCData } from '@/lib/api/api'
+import { formatWalletAddress } from '@/lib/utils/utils'
 import { ethers } from 'ethers'
-import { switchToBSCMainnet } from '@/lib/network-switch'
-import { setMetaMaskProvider } from '@/lib/wagmi-config'
-import { DetectedWallet, detectInstalledWallets } from '@/lib/wallet-detection'
-import { isMobileDevice } from '@/lib/mobile-wallet'
-import '@/lib/wagmi-config'
+import { switchToBSCMainnet } from '@/lib/wallet/network-switch'
+import { setMetaMaskProvider } from '@/lib/wallet/wagmi-config'
+import { DetectedWallet, detectInstalledWallets } from '@/lib/wallet/wallet-detection'
+import { isMobileDevice } from '@/lib/wallet/mobile-wallet'
+import '@/lib/wallet/wagmi-config'
 
 export default function ReviewContent() {
   const router = useRouter()
@@ -864,7 +864,7 @@ export default function ReviewContent() {
       let feeAmountBNB: number = 0.003 // Default fee estimate
       
       try {
-        const { calculateRequiredBNB } = await import('@/lib/web3')
+        const { calculateRequiredBNB } = await import('@/lib/wallet/web3')
         const { ethers } = await import('ethers')
         
         // Try to calculate from contract (requires wallet connection)
@@ -962,7 +962,7 @@ export default function ReviewContent() {
         
         if (!networkInfo.isCorrectNetwork) {
           console.log('⚠️ Wrong network detected! Attempting to switch...')
-          const { switchToBSCMainnet } = await import('@/lib/network-switch')
+          const { switchToBSCMainnet } = await import('@/lib/wallet/network-switch')
           const ethereum = (window as any).ethereum
           if (ethereum) {
             await switchToBSCMainnet(ethereum)
@@ -1276,7 +1276,7 @@ export default function ReviewContent() {
         localStorage.setItem('kycTransactionHash', txHash)
         
         // Clear KYC cache after successful submission
-        const { clearKYCCache } = await import('@/lib/kyc-cache')
+        const { clearKYCCache } = await import('@/lib/utils/kyc-cache')
         const email = state.personalInfo?.email
         const userId = state.personalInfo?.email // Use email as userId
         await clearKYCCache(email, userId).catch((error) => {
@@ -1368,7 +1368,6 @@ export default function ReviewContent() {
                     <p className="text-xs font-mono text-gray-800 break-all">{transactionHash}</p>
                   </div>
                 )}
-                <p className="text-xs text-gray-500">Powered by Mira</p>
               </div>
             </div>
           </div>
@@ -1636,12 +1635,12 @@ export default function ReviewContent() {
                   {processingPayment ? (
                     <>
                       <LoadingDots size="sm" color="#ffffff" />
-                      <span>Processing transaction</span>
+                      <span> </span>
                     </>
                   ) : submittingToBackend ? (
                     <>
                       <LoadingDots size="sm" color="#ffffff" />
-                      <span>Submitting</span>
+                      <span></span>
                     </>
                   ) : (
                     'Confirm blockstamp'

@@ -27,7 +27,7 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'KYX Platform - Identity Verification',
+  title: 'KYC Platform - Identity Verification',
   description: 'Complete identity verification and decentralized ID creation',
   icons: {
     icon: [

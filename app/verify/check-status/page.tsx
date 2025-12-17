@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Header } from '@/components/layout/Header'
-import { checkStatusByEmail } from '@/lib/api'
+import { checkStatusByEmail } from '@/lib/api/api'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 
 // Validate email format

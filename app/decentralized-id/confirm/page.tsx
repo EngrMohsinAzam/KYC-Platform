@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
-import { checkBNBBalance, submitKYCVerification, isMetaMaskInstalled, getNetworkInfo, connectWallet, checkKYCStatus } from '@/lib/web3'
-import { submitKYCData } from '@/lib/api'
+import { checkBNBBalance, submitKYCVerification, isMetaMaskInstalled, getNetworkInfo, connectWallet, checkKYCStatus } from '@/lib/wallet/web3'
+import { submitKYCData } from '@/lib/api/api'
+import { API_BASE_URL } from '@/lib/config'
 import { ethers } from 'ethers'
 
 declare global {
@@ -221,8 +222,8 @@ export default function ConfirmBlockstamp() {
       // CRITICAL: Verify network before transaction
       console.log('🌐 Verifying network connection...')
       try {
-        const { getNetworkInfo } = await import('@/lib/web3')
-        const { switchToBSCMainnet } = await import('@/lib/network-switch')
+        const { getNetworkInfo } = await import('@/lib/wallet/web3')
+        const { switchToBSCMainnet } = await import('@/lib/wallet/network-switch')
         const networkInfo = await getNetworkInfo()
         
         if (!networkInfo) {
@@ -263,7 +264,7 @@ export default function ConfirmBlockstamp() {
       setTransactionStatus('success')
 
       // Get transaction receipt for additional details
-      const { getProviderAndSigner } = await import('@/lib/web3')
+      const { getProviderAndSigner } = await import('@/lib/wallet/web3')
       const { provider: web3Provider } = await getProviderAndSigner()
       const receipt = await web3Provider.getTransactionReceipt(transactionHash)
       
@@ -306,7 +307,7 @@ export default function ConfirmBlockstamp() {
       console.log('========================================')
       console.log('🚀 STARTING BACKEND API SUBMISSION')
       console.log('========================================')
-      console.log('API URL:', process.env.NEXT_PUBLIC_API_URL || 'https://xzfjrnv9-3099.asse.devtunnels.ms')
+      console.log('API URL:', API_BASE_URL)
       console.log('Submitting KYC data to backend API...')
       console.log('Data being submitted:', {
         userId: anonymousId,
@@ -371,7 +372,7 @@ export default function ConfirmBlockstamp() {
 
       // Clear KYC cache after successful submission
       try {
-        const { clearKYCCache } = await import('@/lib/kyc-cache')
+        const { clearKYCCache } = await import('@/lib/utils/kyc-cache')
         const email = personalInfo?.email
         const userId = anonymousId
         await clearKYCCache(email, userId)

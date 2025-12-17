@@ -4,9 +4,9 @@ import { useState } from 'react'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { LoadingDots } from '@/components/ui/LoadingDots'
-import { detectInstalledWallets, DetectedWallet } from '@/lib/wallet-detection'
-import { switchToBSCMainnet } from '@/lib/network-switch'
-import { isMobileDevice, getMobileWalletDeepLink } from '@/lib/mobile-wallet'
+import { detectInstalledWallets, DetectedWallet } from '@/lib/wallet/wallet-detection'
+import { switchToBSCMainnet } from '@/lib/wallet/network-switch'
+import { isMobileDevice, getMobileWalletDeepLink } from '@/lib/wallet/mobile-wallet'
 
 interface WalletSelectionModalProps {
   isOpen: boolean

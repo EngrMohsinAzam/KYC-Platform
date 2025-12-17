@@ -7,9 +7,9 @@ import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineDocumentText, HiOutlineUser } from 'react-icons/hi'
-import { updateKYCDocuments } from '@/lib/api'
+import { updateKYCDocuments } from '@/lib/api/api'
 import { LoadingDots } from '@/components/ui/LoadingDots'
-import { clearKYCCache, clearAllKYCCaches } from '@/lib/kyc-cache'
+import { clearKYCCache, clearAllKYCCaches } from '@/lib/utils/kyc-cache'
 
 export default function VerifyIdentity() {
   const router = useRouter()
@@ -379,9 +379,6 @@ export default function VerifyIdentity() {
                   ? 'Update Documents' 
                   : 'Continue'}
               </Button>
-              <p className="text-xs text-gray-500 text-center mt-3">
-                Powered by Mira
-              </p>
             </div>
           </div>
         </div>
@@ -400,9 +397,6 @@ export default function VerifyIdentity() {
             ? 'Update Documents' 
             : 'Continue'}
         </Button>
-        <p className="text-xs text-gray-500 text-center mt-2">
-          Powered by Mira
-        </p>
       </div>
     </div>
   )

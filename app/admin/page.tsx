@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { adminLogin, getAdminToken } from '@/lib/admin-api'
+import { adminLogin, getAdminToken } from '@/lib/api/admin-api'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 
 export default function AdminLogin() {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-const API_BASE_URL = 'https://xzfjrnv9-3099.asse.devtunnels.ms'
+import { API_BASE_URL } from '@/lib/config'
 
 export async function GET(
   request: NextRequest,

@@ -1577,8 +1577,6 @@ export default function UploadDocument() {
                   </button>
                 )}
               </div>
-              
-              <p className="text-xs text-gray-500 text-center mt-3">Powered by Mira</p>
             </div>
           </div>
         </div>
@@ -1610,7 +1608,6 @@ export default function UploadDocument() {
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-500 text-center mt-2">Powered by Mira</p>
         </div>
       )}
     </div>

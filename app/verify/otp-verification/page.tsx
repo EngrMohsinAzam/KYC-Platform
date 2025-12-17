@@ -270,11 +270,11 @@ import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
-import { getCountryByValue, getCitiesForCountry } from '@/lib/countries'
+import { getCountryByValue, getCitiesForCountry } from '@/lib/utils/countries'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 
-// API base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xzfjrnv9-3099.asse.devtunnels.ms'
+// API base URL - imported from centralized config
+import { API_BASE_URL } from '../../../lib/config/config'
 
 // Note: Image conversion and submission is now handled in the review page
 
@@ -526,13 +526,12 @@ export default function OTPVerification() {
               {loading ? (
                 <>
                   <LoadingDots size="sm" color="#ffffff" />
-                  <span>Submitting </span>
+                  <span></span>
                 </>
               ) : (
                 'Verify & Continue'
               )}
             </Button>
-            <p className="text-xs text-text-light text-center mt-2">Powered by Mira</p>
           </div>
         </div>
       </main>

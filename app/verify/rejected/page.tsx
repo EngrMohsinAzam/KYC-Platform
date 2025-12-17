@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
-import { checkStatusByEmail, updateKYCDocuments } from '@/lib/api'
+import { Footer } from '@/components/layout/Footer'
+import { checkStatusByEmail, updateKYCDocuments } from '@/lib/api/api'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
@@ -27,10 +28,13 @@ export default function Rejected() {
     days: number
     hours: number
     minutes: number
+    seconds: number
     canReapply: boolean
     reapplyDate?: string
   } | null>(null)
   const [isBlurRejection, setIsBlurRejection] = useState(false)
+  const [isWrongDocumentRejection, setIsWrongDocumentRejection] = useState(false)
+  const [rejectionDate, setRejectionDate] = useState<Date | null>(null)
   const [updatingDocuments, setUpdatingDocuments] = useState(false)
   const [documentFront, setDocumentFront] = useState<string | null>(state.documentImageFront || null)
   const [documentBack, setDocumentBack] = useState<string | null>(state.documentImageBack || null)
@@ -111,6 +115,57 @@ export default function Rejected() {
     }
   }
 
+  // Dynamic countdown timer for wrong document rejections (3-day ban)
+  useEffect(() => {
+    if (!isWrongDocumentRejection || !rejectionDate) {
+      return
+    }
+
+    const banEndDate = new Date(rejectionDate)
+    banEndDate.setDate(banEndDate.getDate() + 3) // 3-day ban
+
+    const updateCountdown = () => {
+      const now = new Date()
+      const diff = banEndDate.getTime() - now.getTime()
+
+      if (diff > 0) {
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+        const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+
+        setTimeRemaining({
+          days,
+          hours,
+          minutes,
+          seconds,
+          canReapply: false,
+          reapplyDate: banEndDate.toISOString()
+        })
+        setCanRetry(false)
+      } else {
+        // Ban period has passed - user can reapply
+        setTimeRemaining({
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          canReapply: true,
+          reapplyDate: banEndDate.toISOString()
+        })
+        setCanRetry(true)
+      }
+    }
+
+    // Update immediately
+    updateCountdown()
+
+    // Update every second
+    const interval = setInterval(updateCountdown, 1000)
+
+    return () => clearInterval(interval)
+  }, [isWrongDocumentRejection, rejectionDate])
+
   // Sync modal states with main states
   useEffect(() => {
     if (showDocumentModal) {
@@ -157,15 +212,70 @@ export default function Rejected() {
           
           // Check if rejection reason is "Picture is blur"
           const rejectionReason = result.data.rejectionReason || ''
-          setIsBlurRejection(rejectionReason.toLowerCase().includes('blur') || rejectionReason === 'Picture is blur')
+          const isBlur = rejectionReason.toLowerCase().includes('blur') || rejectionReason === 'Picture is blur'
+          setIsBlurRejection(isBlur)
           
-          // Use timeRemaining from API response
-          if (result.data.timeRemaining) {
-            setTimeRemaining(result.data.timeRemaining)
-            setCanRetry(result.data.timeRemaining.canReapply)
+          // Check if rejection is due to wrong documents (not blur)
+          // Common reasons: wrong document, invalid document, incorrect document, document mismatch, etc.
+          const wrongDocKeywords = ['wrong', 'document', 'invalid', 'incorrect', 'mismatch', 'not match', 'does not match', 'unacceptable', 'not acceptable']
+          const isWrongDoc = !isBlur && wrongDocKeywords.some(keyword => 
+            rejectionReason.toLowerCase().includes(keyword)
+          )
+          setIsWrongDocumentRejection(isWrongDoc)
+          
+          // Get rejection date from API or use current date
+          const rejectedAt = result.data.rejectedAt || result.data.updatedAt || result.data.createdAt
+          const rejectionDateObj = rejectedAt ? new Date(rejectedAt) : new Date()
+          setRejectionDate(rejectionDateObj)
+          
+          // If wrong document rejection, calculate 3-day ban
+          if (isWrongDoc) {
+            const banEndDate = new Date(rejectionDateObj)
+            banEndDate.setDate(banEndDate.getDate() + 3) // Add 3 days
+            
+            // Calculate initial time remaining
+            const now = new Date()
+            const diff = banEndDate.getTime() - now.getTime()
+            
+            if (diff > 0) {
+              const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+              const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+              const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+              const seconds = Math.floor((diff % (1000 * 60)) / 1000)
+              
+              setTimeRemaining({
+                days,
+                hours,
+                minutes,
+                seconds,
+                canReapply: false,
+                reapplyDate: banEndDate.toISOString()
+              })
+              setCanRetry(false)
+            } else {
+              // Ban period has passed
+              setTimeRemaining({
+                days: 0,
+                hours: 0,
+                minutes: 0,
+                seconds: 0,
+                canReapply: true,
+                reapplyDate: banEndDate.toISOString()
+              })
+              setCanRetry(true)
+            }
           } else {
-            setCanRetry(true)
-            setTimeRemaining(null)
+            // Use timeRemaining from API response for other rejections
+            if (result.data.timeRemaining) {
+              setTimeRemaining({
+                ...result.data.timeRemaining,
+                seconds: result.data.timeRemaining.seconds || 0
+              })
+              setCanRetry(result.data.timeRemaining.canReapply)
+            } else {
+              setCanRetry(true)
+              setTimeRemaining(null)
+            }
           }
         } else {
           // Unknown status or not found - redirect to under review as default
@@ -589,48 +699,133 @@ export default function Rejected() {
               Unfortunately, your KYC verification has been rejected.
             </p>
             
-            {rejectionData?.rejectionReason && (
-              <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm font-semibold text-yellow-900 mb-1">Rejection Reason:</p>
-                <p className="text-sm text-yellow-800">{rejectionData.rejectionReason}</p>
-              </div>
-            )}
+            {rejectionData?.rejectionReason && (() => {
+              // Format rejection reason text
+              const reason = rejectionData.rejectionReason || ''
+              let displayReason = reason
+              const isBlur = reason.toLowerCase().includes('picture is blur') || 
+                            reason.toLowerCase().includes('blur') ||
+                            reason.toLowerCase().includes('selfie')
+              
+              // Simplify common rejection reasons
+              if (reason.toLowerCase().includes('document is wrong') || 
+                  reason.toLowerCase().includes('wrong document') ||
+                  reason.toLowerCase().includes('document wrong')) {
+                displayReason = 'Wrong Document'
+              } else if (isBlur) {
+                displayReason = 'Blurry Picture'
+              } else if (reason.toLowerCase().includes('invalid')) {
+                displayReason = 'Invalid Document'
+              } else if (reason.toLowerCase().includes('incorrect')) {
+                displayReason = 'Incorrect Document'
+              }
+              
+              return (
+                <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg flex items-center gap-3">
+                  <div className="flex-shrink-0 relative">
+                    {isBlur ? (
+                      // Camera/Selfie icon for blurry picture
+                      <>
+                        <svg 
+                          className="w-6 h-6 text-gray-400" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 001.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" 
+                          />
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" 
+                          />
+                        </svg>
+                        <svg 
+                          className="w-4 h-4 text-red-500 absolute -top-1 -right-1" 
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path 
+                            fillRule="evenodd" 
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
+                            clipRule="evenodd" 
+                          />
+                        </svg>
+                      </>
+                    ) : (
+                      // Document icon for wrong document
+                      <>
+                        <svg 
+                          className="w-6 h-6 text-gray-400" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" 
+                          />
+                        </svg>
+                        <svg 
+                          className="w-4 h-4 text-red-500 absolute -top-1 -right-1" 
+                          fill="currentColor" 
+                          viewBox="0 0 20 20"
+                        >
+                          <path 
+                            fillRule="evenodd" 
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" 
+                            clipRule="evenodd" 
+                          />
+                        </svg>
+                      </>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-900 font-medium">{displayReason}</p>
+                </div>
+              )
+            })()}
 
             {!canRetry && timeRemaining && (
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm font-semibold text-blue-900 mb-2">
-                  Wait Period Required
-                </p>
-                <p className="text-sm text-blue-800 mb-2">
-                  You need to wait before you can apply again.
-                </p>
-                <div className="text-sm text-blue-700 space-y-1">
+              <div className="mb-4 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+                <div className="flex items-center justify-center gap-6">
                   {timeRemaining.days > 0 && (
-                    <p>Days: {timeRemaining.days}</p>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-gray-900">{timeRemaining.days}</div>
+                      <div className="text-xs text-gray-600 mt-1">Day{timeRemaining.days > 1 ? 's' : ''}</div>
+                    </div>
                   )}
                   {timeRemaining.hours > 0 && (
-                    <p>Hours: {timeRemaining.hours}</p>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-gray-900">{timeRemaining.hours}</div>
+                      <div className="text-xs text-gray-600 mt-1">Hour{timeRemaining.hours > 1 ? 's' : ''}</div>
+                    </div>
                   )}
-                  {timeRemaining.minutes > 0 && (
-                    <p>Minutes: {timeRemaining.minutes}</p>
-                  )}
-                  {timeRemaining.reapplyDate && (
-                    <p className="text-xs mt-2">
-                      You can reapply on: {new Date(timeRemaining.reapplyDate).toLocaleString()}
-                    </p>
+                  {timeRemaining.days === 0 && timeRemaining.hours === 0 && (
+                    <div className="text-center">
+                      <div className="text-sm text-gray-600">Waiting period active</div>
+                    </div>
                   )}
                 </div>
+                {timeRemaining.reapplyDate && (
+                  <p className="text-xs text-gray-500 text-center mt-4">
+                    You can reapply on: {new Date(timeRemaining.reapplyDate).toLocaleString()}
+                  </p>
+                )}
               </div>
             )}
 
             {/* Blur rejection - show upload button */}
             {isBlurRejection && canRetry && (
               <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <p className="text-sm font-semibold text-green-900 mb-2">
+                <p className="text-sm font-semibold text-green-900 mb-4">
                   Update Your Documents
-                </p>
-                <p className="text-sm text-green-800 mb-4">
-                  Since your rejection was due to blurry pictures, you can update your document and selfie images.
                 </p>
                 <Button
                   onClick={handleUploadDocuments}
@@ -648,29 +843,23 @@ export default function Rejected() {
               onClick={() => router.push('/verify/select-id-type')}
               className="w-full"
             >
-              Start New Verification
+              {isWrongDocumentRejection ? 'Start New Verification (Ban Period Ended)' : 'Start New Verification'}
             </Button>
             )}
             {!canRetry && timeRemaining && (
-              <div className="text-center">
-                <p className="text-sm text-gray-600 mb-2">
-                  {timeRemaining.days > 0 && `${timeRemaining.days} day${timeRemaining.days > 1 ? 's' : ''}, `}
-                  {timeRemaining.hours > 0 && `${timeRemaining.hours} hour${timeRemaining.hours > 1 ? 's' : ''}, `}
-                  {timeRemaining.minutes > 0 && `${timeRemaining.minutes} minute${timeRemaining.minutes > 1 ? 's' : ''} remaining`}
-                  {timeRemaining.days === 0 && timeRemaining.hours === 0 && timeRemaining.minutes === 0 && 'Please wait before applying again.'}
-                </p>
-                <Button 
-                  onClick={() => router.push('/')}
-                  className="w-full"
-                  variant="secondary"
-                >
-                  Go to Home
-                </Button>
-              </div>
+              <Button 
+                onClick={() => router.push('/')}
+                className="w-full"
+                variant="secondary"
+              >
+                Go to Home
+              </Button>
             )}
           </div>
         </div>
       </main>
+
+      <Footer />
 
       {/* Document Upload Modal */}
       {showDocumentModal && (

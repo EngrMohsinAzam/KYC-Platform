@@ -9,12 +9,25 @@ import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Footer } from '@/components/layout/Footer'
 import { useAppContext } from '@/context/useAppContext'
-import { getCountryOptions, getCitiesForCountry } from '@/lib/countries'
+import { getCountryOptions, getCitiesForCountry } from '@/lib/utils/countries'
 
-const idTypes = [
+// All available ID types
+const allIdTypes = [
   { value: 'passport', label: 'Passport' },
   { value: 'national-id', label: 'National ID Card' },
   { value: 'drivers-license', label: "Driver's License" },
+]
+
+// Countries WITHOUT mandatory National ID Cards
+// These countries should only show Passport and Driver's License
+// Based on KYC/compliance standards - countries that don't issue mandatory national ID cards
+const countriesWithoutIdCard = [
+  'us',      // United States - uses SSN, no mandatory ID card
+  'ca',      // Canada - uses provincial IDs, no mandatory national ID
+  'uk',      // United Kingdom - uses passport/driving license, no mandatory ID card
+  'au',      // Australia - uses Medicare/Driver License, no mandatory ID card
+  'nz',      // New Zealand - uses passport-based system, no mandatory ID card
+  'jp',      // Japan - has "My Number" but ID card not mandatory
 ]
 
 export default function SelectIdType() {
@@ -29,6 +42,12 @@ export default function SelectIdType() {
 
   const countryOptions = getCountryOptions()
   const cityOptions = country ? getCitiesForCountry(country) : []
+  
+  // Filter ID types based on selected country
+  // If country doesn't have mandatory ID cards, exclude "National ID Card"
+  const availableIdTypes = country && countriesWithoutIdCard.includes(country)
+    ? allIdTypes.filter(type => type.value !== 'national-id')
+    : allIdTypes
   
   // Filter countries based on search (for mobile)
   const filteredCountries = countrySearch
@@ -61,7 +80,7 @@ export default function SelectIdType() {
     }
   }, [showCountryDropdown])
 
-  // Reset city when country changes
+  // Reset city when country changes (only when country changes, not when idType changes)
   useEffect(() => {
     if (country) {
       setCity('')
@@ -70,6 +89,24 @@ export default function SelectIdType() {
       setShowCountryDropdown(false) // Close dropdown on mobile
     }
   }, [country, dispatch])
+
+  // Clear ID type if it's no longer valid for the selected country
+  useEffect(() => {
+    if (country && idType) {
+      const newAvailableIdTypes = countriesWithoutIdCard.includes(country)
+        ? allIdTypes.filter(type => type.value !== 'national-id')
+        : allIdTypes
+      
+      if (!newAvailableIdTypes.find(type => type.value === idType)) {
+        setIdType('')
+        dispatch({ type: 'SET_ID_TYPE', payload: '' })
+      }
+    } else if (!country && idType) {
+      // If country is cleared, also clear ID type
+      setIdType('')
+      dispatch({ type: 'SET_ID_TYPE', payload: '' })
+    }
+  }, [country, idType, dispatch])
 
   // Update city in context when it changes
   useEffect(() => {
@@ -226,10 +263,11 @@ export default function SelectIdType() {
                   <span className="text-red-500 ml-1">*</span>
                 </label>
                 <Select
-                  placeholder="Select ID type"
-                  options={idTypes}
+                  placeholder={country ? "Select ID type" : "Select country first"}
+                  options={availableIdTypes}
                   value={idType}
                   onChange={(e) => setIdType(e.target.value)}
+                  disabled={!country}
                   className="w-full"
                 />
               </div>
@@ -282,10 +320,11 @@ export default function SelectIdType() {
                     ID type
                   </label>
                   <Select
-                    placeholder="Select ID type"
-                    options={idTypes}
+                    placeholder={country ? "Select ID type" : "Select country first"}
+                    options={availableIdTypes}
                     value={idType}
                     onChange={(e) => setIdType(e.target.value)}
+                    disabled={!country}
                   />
                 </div>
               </div>

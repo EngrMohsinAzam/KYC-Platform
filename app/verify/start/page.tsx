@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
-import { clearKYCCache, clearAllKYCCaches } from '@/lib/kyc-cache'
+import { clearKYCCache, clearAllKYCCaches } from '@/lib/utils/kyc-cache'
 
 export default function VerificationStart() {
   const router = useRouter()
@@ -200,10 +200,6 @@ export default function VerificationStart() {
               >
                 Continue
               </Button>
-
-              <p className="text-xs text-gray-500 text-center mt-4">
-                Powered by Mira
-              </p>
             </div>
           </div>
         </div>
@@ -217,9 +213,6 @@ export default function VerificationStart() {
         >
           Continue
         </Button>
-        <p className="text-xs text-gray-500 text-center mt-2">
-          Powered by Mira
-        </p>
       </div>
     </div>
   )

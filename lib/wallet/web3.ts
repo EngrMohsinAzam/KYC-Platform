@@ -501,7 +501,7 @@ async function verifyAndSwitchNetwork(): Promise<void> {
       console.log('⚠️ Wrong network detected. Current:', chainIdDecimal, 'Required: 56')
       console.log('🔄 Attempting to switch to BSC Mainnet...')
       
-      const { switchToBSCMainnet } = await import('@/lib/network-switch')
+      const { switchToBSCMainnet } = await import('./network-switch')
       await switchToBSCMainnet(ethereum)
       
       // Wait for network switch to complete

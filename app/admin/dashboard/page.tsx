@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
-import { getAdminToken, removeAdminToken, getDashboardStats, getUsers, User } from '@/lib/admin-api'
+import { getAdminToken, removeAdminToken, getDashboardStats, getUsers, User } from '@/lib/api/admin-api'
 import Link from 'next/link'
 import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
 
@@ -18,7 +18,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 let blockchainFunctions: any = null
 const loadBlockchainFunctions = async () => {
   if (!blockchainFunctions) {
-    blockchainFunctions = await import('@/lib/web3')
+    blockchainFunctions = await import('@/lib/wallet/web3')
   }
   return blockchainFunctions
 }
