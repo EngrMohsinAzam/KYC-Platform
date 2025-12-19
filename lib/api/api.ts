@@ -606,6 +606,22 @@ export const checkStatusByWallet = async (walletAddress: string): Promise<{ succ
   }
 }
 
+// Public: Check if KYC is paused
+export const getKycPausedStatus = async (): Promise<{ success: boolean; data?: any; message?: string }> => {
+  try {
+    console.log('📡 [getKycPausedStatus] Calling /api/kyc/paused-status')
+    // Use Next.js proxy route (no auth)
+    const response = await fetch('/api/kyc/paused-status', { method: 'GET' })
+    console.log('📡 [getKycPausedStatus] Response status:', response.status)
+    const data = await response.json().catch(() => ({}))
+    console.log('📡 [getKycPausedStatus] Parsed data:', JSON.stringify(data, null, 2))
+    return data
+  } catch (error: any) {
+    console.error('❌ [getKycPausedStatus] Error:', error)
+    return { success: false, message: error.message || 'Failed to fetch paused status' }
+  }
+}
+
 // Update KYC documents (for blur rejection)
 export const updateKYCDocuments = async (data: {
   email: string

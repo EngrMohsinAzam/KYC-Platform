@@ -20,6 +20,63 @@ export const removeAdminToken = (): void => {
   localStorage.removeItem('adminToken')
 }
 
+export type AdminPermissions = {
+  canApproveRejectKYC: boolean
+  canViewAllUsers: boolean
+  canViewFinancialGraph: boolean
+  canViewSupportIssues: boolean
+  canViewWallets: boolean
+  canSendEmails: boolean
+}
+
+export type AdminCapabilities = {
+  role: string
+  permissions: Partial<AdminPermissions>
+  endpoints?: string[]
+}
+
+export const getAdminCapabilities = async (): Promise<{ success: boolean; data?: AdminCapabilities; message?: string }> => {
+  try {
+    const token = getAdminToken()
+    if (!token) return { success: false, message: 'Not authenticated' }
+
+    const response = await fetch('/api/admin/capabilities', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    const data = await response.json()
+    return data
+  } catch (error: any) {
+    console.error('Get admin capabilities error:', error)
+    return { success: false, message: error.message || 'Failed to fetch capabilities' }
+  }
+}
+
+export const adminSendEmail = async (body: { to: string; subject: string; message: string }) => {
+  try {
+    const token = getAdminToken()
+    if (!token) return { success: false, message: 'Not authenticated' }
+
+    const response = await fetch('/api/admin/email', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    const data = await response.json().catch(() => ({}))
+    return response.ok ? data : { success: false, message: data?.message || `HTTP ${response.status}` }
+  } catch (error: any) {
+    console.error('Admin send email error:', error)
+    return { success: false, message: error.message || 'Failed to send email' }
+  }
+}
+
 // Admin Login
 export interface AdminLoginRequest {
   username: string

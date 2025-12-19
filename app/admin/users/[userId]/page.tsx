@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { getAdminToken, getUserDetails, updateUserStatus, User } from '@/lib/api/admin-api'
+import { getAdminToken, getUserDetails, updateUserStatus, User, getAdminCapabilities, adminSendEmail } from '@/lib/api/admin-api'
 import { XCircleIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
 import {
@@ -35,6 +35,13 @@ export default function UserDetailsPage() {
   const [error, setError] = useState('')
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectionReason, setRejectionReason] = useState('')
+  const [canApproveReject, setCanApproveReject] = useState<boolean>(true)
+  const [canViewAllUsers, setCanViewAllUsers] = useState<boolean>(true)
+  const [canSendEmails, setCanSendEmails] = useState<boolean>(false)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
+  const [emailSubject, setEmailSubject] = useState('Support Reply')
+  const [emailMessage, setEmailMessage] = useState('')
+  const [emailSending, setEmailSending] = useState(false)
   
   // Use refs to prevent duplicate API calls - track current loading userId
   const loadingUserIdRef = useRef<string | null>(null)
@@ -48,6 +55,21 @@ export default function UserDetailsPage() {
       router.push('/admin')
       return
     }
+
+    ;(async () => {
+      try {
+        const caps = await getAdminCapabilities()
+        if (caps.success && caps.data) {
+          // If endpoint exists, enforce permissions. If not, keep defaults (true).
+          const p = caps.data.permissions || {}
+          setCanApproveReject(p.canApproveRejectKYC ?? false)
+          setCanViewAllUsers(p.canViewAllUsers ?? false)
+          setCanSendEmails((p as any).canSendEmails ?? false)
+        }
+      } catch {
+        // keep defaults
+      }
+    })()
 
     // Only proceed if userId exists and we haven't already loaded/loading it
     if (!userId || loadingUserIdRef.current === userId) {
@@ -203,6 +225,23 @@ export default function UserDetailsPage() {
     return <LoadingPage message="Loading user details..." />
   }
 
+  if (!canViewAllUsers) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-4">Your admin account does not have permission to view user details.</p>
+          <button
+            onClick={() => router.push('/admin/dashboard')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Back to Dashboard
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (error || (!loading && !user)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -299,18 +338,32 @@ export default function UserDetailsPage() {
 
             {/* Action Buttons Row */}
             <div className="flex gap-2 justify-end">
+              {/* Reply via email */}
+              {canSendEmails && (
+                <button
+                  onClick={() => setEmailModalOpen(true)}
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-black text-white rounded-lg hover:bg-black/80 transition-colors text-xs sm:text-sm md:text-base"
+                >
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h6m5 8H6a2 2 0 01-2-2V6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Reply</span>
+                </button>
+              )}
               {/* Reject Button (Outlined) - Always show */}
-              <button
-                onClick={handleRejectClick}
-                disabled={updating || user.kycStatus === 'rejected'}
-                className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-red-600 text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 text-xs sm:text-sm md:text-base"
-              >
-                <XCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>Reject</span>
-              </button>
+              {canApproveReject && (
+                <button
+                  onClick={handleRejectClick}
+                  disabled={updating || user.kycStatus === 'rejected'}
+                  className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 border border-red-600 text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 text-xs sm:text-sm md:text-base"
+                >
+                  <XCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span>Reject</span>
+                </button>
+              )}
 
               {/* Approve Button (Filled) - Only show if not already approved */}
-              {user.kycStatus !== 'approved' && (
+              {canApproveReject && user.kycStatus !== 'approved' && (
               <button
                 onClick={() => handleStatusUpdate('approved')}
                 disabled={updating}
@@ -697,7 +750,7 @@ export default function UserDetailsPage() {
       </main>
 
       {/* Rejection Reason Modal */}
-      {showRejectModal && (
+      {showRejectModal && canApproveReject && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex items-center justify-between mb-4">
@@ -759,6 +812,91 @@ export default function UserDetailsPage() {
                   ) : (
                     'Confirm Rejection'
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Reply Modal */}
+      {emailModalOpen && canSendEmails && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Reply via email</h2>
+              <button
+                onClick={() => setEmailModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+                aria-label="Close"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-4">To: {user.email}</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                <input
+                  value={emailSubject}
+                  onChange={(e) => setEmailSubject(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                <textarea
+                  value={emailMessage}
+                  onChange={(e) => setEmailMessage(e.target.value)}
+                  rows={6}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-black outline-none"
+                  placeholder="Write your reply..."
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setEmailModalOpen(false)}
+                  className="flex-1 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={emailSending}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!user.email) {
+                      alert('User email is missing')
+                      return
+                    }
+                    if (!emailSubject.trim() || !emailMessage.trim()) {
+                      alert('Subject and message are required')
+                      return
+                    }
+                    try {
+                      setEmailSending(true)
+                      const res = await adminSendEmail({
+                        to: user.email,
+                        subject: emailSubject.trim(),
+                        message: emailMessage.trim(),
+                      })
+                      if (!res?.success) throw new Error(res?.message || 'Failed to send email')
+                      alert('Email sent successfully')
+                      setEmailModalOpen(false)
+                      setEmailMessage('')
+                    } catch (e: any) {
+                      alert(e?.message || 'Failed to send email')
+                    } finally {
+                      setEmailSending(false)
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-black text-white rounded-lg hover:bg-black/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={emailSending}
+                >
+                  {emailSending ? 'Sending...' : 'Send'}
                 </button>
               </div>
             </div>

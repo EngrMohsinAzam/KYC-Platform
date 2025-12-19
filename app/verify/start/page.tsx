@@ -1,16 +1,18 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { clearKYCCache, clearAllKYCCaches } from '@/lib/utils/kyc-cache'
+import { getKycPausedStatus } from '@/lib/api/api'
 
 export default function VerificationStart() {
   const router = useRouter()
   const { state, dispatch } = useAppContext()
+  const [pausedMessage, setPausedMessage] = useState<string | null>(null)
 
   // Clear KYC data when user navigates to start page (starting new submission)
   useEffect(() => {
@@ -65,7 +67,24 @@ export default function VerificationStart() {
     clearData()
   }, []) // Only run once on mount
 
+  // Guard: if KYC is paused, block the start flow
+  useEffect(() => {
+    const checkPaused = async () => {
+      try {
+        const res = await getKycPausedStatus()
+        const paused = !!(res?.data?.kycPaused ?? (res as any)?.kycPaused)
+        if (paused) {
+          setPausedMessage('KYC process has been stopped for a specific reason. We’ll let you know when you can come back.')
+        }
+      } catch {
+        // If the check fails, don't hard-block; user can proceed.
+      }
+    }
+    checkPaused()
+  }, [])
+
   const handleContinue = () => {
+    if (pausedMessage) return
     router.push('/verify/personal-info')
   }
 
@@ -93,6 +112,18 @@ export default function VerificationStart() {
         <div className="min-h-full md:flex md:items-center md:justify-center md:py-8">
           {/* Mobile Design */}
           <div className="md:hidden h-full flex flex-col px-4 pt-12 pb-32">
+            {pausedMessage && (
+              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-yellow-900">KYC temporarily paused</p>
+                <p className="text-sm text-yellow-800 mt-1">{pausedMessage}</p>
+                <button
+                  onClick={() => router.push('/')}
+                  className="mt-3 text-sm font-medium text-gray-900 underline"
+                >
+                  Back to home
+                </button>
+              </div>
+            )}
             <div className="flex-1 flex flex-col justify-center">
               {/* Title */}
               <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
@@ -146,6 +177,18 @@ export default function VerificationStart() {
           {/* Desktop Design */}
           <div className="hidden md:block w-full max-w-2xl px-4">
             <div className="bg-white rounded-2xl shadow-lg p-8 md:p-12 border border-gray-200">
+              {pausedMessage && (
+                <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-yellow-900">KYC temporarily paused</p>
+                  <p className="text-sm text-yellow-800 mt-1">{pausedMessage}</p>
+                  <button
+                    onClick={() => router.push('/')}
+                    className="mt-3 text-sm font-medium text-gray-900 underline"
+                  >
+                    Back to home
+                  </button>
+                </div>
+              )}
               {/* Title */}
               <h1 className="text-4xl font-bold text-gray-900 mb-8 text-center">
                 Identity Verification
@@ -196,6 +239,7 @@ export default function VerificationStart() {
               {/* Continue Button */}
               <Button
                 onClick={handleContinue}
+                disabled={!!pausedMessage}
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-4 font-semibold text-lg"
               >
                 Continue
@@ -209,6 +253,7 @@ export default function VerificationStart() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
         <Button
           onClick={handleContinue}
+          disabled={!!pausedMessage}
           className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-4 font-semibold text-lg"
         >
           Continue

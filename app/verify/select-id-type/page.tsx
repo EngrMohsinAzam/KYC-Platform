@@ -10,6 +10,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { Footer } from '@/components/layout/Footer'
 import { useAppContext } from '@/context/useAppContext'
 import { getCountryOptions, getCitiesForCountry } from '@/lib/utils/countries'
+import { getKycPausedStatus } from '@/lib/api/api'
 
 // All available ID types
 const allIdTypes = [
@@ -39,6 +40,7 @@ export default function SelectIdType() {
   const [countrySearch, setCountrySearch] = useState('')
   const [showCountryDropdown, setShowCountryDropdown] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [pausedMessage, setPausedMessage] = useState<string | null>(null)
 
   const countryOptions = getCountryOptions()
   const cityOptions = country ? getCitiesForCountry(country) : []
@@ -65,6 +67,22 @@ export default function SelectIdType() {
     checkMobile()
     window.addEventListener('resize', checkMobile)
     return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // Guard: prevent entering KYC flow if paused
+  useEffect(() => {
+    const checkPaused = async () => {
+      try {
+        const res = await getKycPausedStatus()
+        const paused = !!(res?.data?.kycPaused ?? (res as any)?.kycPaused)
+        if (paused) {
+          setPausedMessage('KYC process has been stopped for a specific reason. We’ll let you know when you can come back.')
+        }
+      } catch {
+        // don't hard-block on network error
+      }
+    }
+    checkPaused()
   }, [])
 
   // Close dropdown when clicking outside (mobile)
@@ -116,6 +134,7 @@ export default function SelectIdType() {
   }, [city, dispatch])
 
   const handleNext = () => {
+    if (pausedMessage) return
     dispatch({ type: 'SET_COUNTRY', payload: country })
     if (city) {
       dispatch({ type: 'SET_CITY', payload: city })
@@ -144,6 +163,15 @@ export default function SelectIdType() {
         <div className="min-h-full md:flex md:items-center md:justify-center md:py-8">
           {/* Mobile Design - Full screen, no card */}
           <div className="md:hidden h-full flex flex-col px-4 pt-6 pb-24">
+            {pausedMessage && (
+              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                <p className="text-sm font-semibold text-yellow-900">KYC temporarily paused</p>
+                <p className="text-sm text-yellow-800 mt-1">{pausedMessage}</p>
+                <button onClick={() => router.push('/')} className="mt-3 text-sm font-medium text-gray-900 underline">
+                  Back to home
+                </button>
+              </div>
+            )}
             {/* Title */}
             <h1 className="text-2xl font-semibold text-gray-900 mb-8">
               Select ID type
@@ -277,6 +305,15 @@ export default function SelectIdType() {
           {/* Desktop Design - Card with all fields */}
           <div className="hidden md:block w-full max-w-md lg:max-w-2xl px-4">
             <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
+              {pausedMessage && (
+                <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-yellow-900">KYC temporarily paused</p>
+                  <p className="text-sm text-yellow-800 mt-1">{pausedMessage}</p>
+                  <button onClick={() => router.push('/')} className="mt-3 text-sm font-medium text-gray-900 underline">
+                    Back to home
+                  </button>
+                </div>
+              )}
               {/* Title - Desktop */}
               <div className="mb-8">
                 <h1 className="text-2xl font-semibold text-gray-900 mb-2">
@@ -332,7 +369,7 @@ export default function SelectIdType() {
               {/* Desktop button */}
               <Button
                 onClick={handleNext}
-                disabled={!canProceed}
+                disabled={!canProceed || !!pausedMessage}
                 className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Next
@@ -346,7 +383,7 @@ export default function SelectIdType() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
         <Button
           onClick={handleNext}
-          disabled={!canProceed}
+          disabled={!canProceed || !!pausedMessage}
           className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
         >
           Next

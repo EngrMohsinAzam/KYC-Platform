@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { useRouter } from 'next/navigation'
 import { Modal } from './Modal'
 import { Button } from './Button'
 
@@ -17,13 +18,14 @@ function extractVideoId(url: string): string {
 }
 
 export function HelpModal({ isOpen, onClose, videoUrl }: HelpModalProps) {
+  const router = useRouter()
   const defaultVideoUrl = 'https://www.youtube.com/shorts/NVC-rvJlnlE'
   const finalVideoUrl = videoUrl || defaultVideoUrl
   const videoId = extractVideoId(finalVideoUrl)
 
   const handleContactSupport = () => {
-    // In production, this would open a support chat or form
-    window.open('mailto:support@mirakyc.com?subject=Help with Decentralized ID', '_blank')
+    onClose()
+    router.push('/support')
   }
 
   return (

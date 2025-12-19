@@ -9,6 +9,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { useAppContext } from '@/context/useAppContext'
 import { Input } from '@/components/ui/Input'
+import { Modal } from '@/components/ui/Modal'
 
 // Lazy load heavy components - only load when needed
 const HelpModal = dynamic(() => import('@/components/ui/HelpModal').then(mod => ({ default: mod.HelpModal })), {
@@ -58,6 +59,56 @@ export default function Home() {
   const [emailChecked, setEmailChecked] = useState(false)
   const [emailStatus, setEmailStatus] = useState<any>(null)
   const [showEmailInput, setShowEmailInput] = useState(false)
+  const [kycPausedMessage, setKycPausedMessage] = useState<string | null>(null)
+  const [isKycPaused, setIsKycPaused] = useState<boolean | null>(null) // null = checking, true = paused, false = not paused
+  const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
+
+  // Check KYC pause status immediately when page loads
+  useEffect(() => {
+    const checkKycPaused = async () => {
+      try {
+        console.log('🚀 [KYC Pause Check] Starting check on page load...')
+        setIsKycPaused(null) // Set to checking state
+        const { getKycPausedStatus } = await loadApiFunctions()
+        const pausedRes = await getKycPausedStatus()
+        
+        console.log('📥 [KYC Pause Check] Full response:', JSON.stringify(pausedRes, null, 2))
+        console.log('📥 [KYC Pause Check] pausedRes?.data?.kycPaused:', pausedRes?.data?.kycPaused)
+        console.log('📥 [KYC Pause Check] pausedRes?.kycPaused:', (pausedRes as any)?.kycPaused)
+        console.log('📥 [KYC Pause Check] pausedRes?.data:', pausedRes?.data)
+        console.log('📥 [KYC Pause Check] pausedRes keys:', Object.keys(pausedRes || {}))
+        
+        // Try multiple possible response shapes
+        const paused = !!(
+          pausedRes?.data?.kycPaused ?? 
+          pausedRes?.data?.paused ??
+          (pausedRes as any)?.kycPaused ?? 
+          (pausedRes as any)?.paused ??
+          pausedRes?.kycPaused ??
+          pausedRes?.paused
+        )
+        
+        console.log('✅ [KYC Pause Check] Final paused value:', paused)
+        console.log('✅ [KYC Pause Check] Type of paused:', typeof paused)
+        
+        setIsKycPaused(paused)
+        
+        if (paused) {
+          console.log('🛑 [KYC Pause Check] KYC IS PAUSED - Showing modal and blocking UI')
+          setShowMaintenanceModal(true)
+          setKycPausedMessage('KYC is not available now. It is under maintenance.')
+        } else {
+          console.log('✅ [KYC Pause Check] KYC IS NOT PAUSED - Allowing user to proceed')
+        }
+      } catch (err) {
+        console.error('❌ [KYC Pause Check] Error checking KYC pause status:', err)
+        // On error, assume not paused to allow users to proceed
+        setIsKycPaused(false)
+      }
+    }
+    
+    checkKycPaused()
+  }, [])
 
   // Defer wallet check - only run if wallet is connected
   useEffect(() => {
@@ -105,7 +156,7 @@ export default function Home() {
 
     try {
       // Lazy load API functions only when submitting
-      const { checkStatusByEmail } = await loadApiFunctions()
+      const { checkStatusByEmail, getKycPausedStatus } = await loadApiFunctions()
       const result = await checkStatusByEmail(email)
       
       if (result.success && result.data) {
@@ -167,6 +218,25 @@ export default function Home() {
           }, 1500)
         } else if (status === 'not_found') {
           // Email doesn't exist - allow KYC, proceed to verification
+          // Before starting KYC, ensure it is not paused
+          const pausedRes = await getKycPausedStatus()
+          console.log('🔍 [KYC Pause Check] Email submit check - response:', JSON.stringify(pausedRes, null, 2))
+          const paused = !!(
+            pausedRes?.data?.kycPaused ?? 
+            pausedRes?.data?.paused ??
+            (pausedRes as any)?.kycPaused ?? 
+            (pausedRes as any)?.paused ??
+            pausedRes?.kycPaused ??
+            pausedRes?.paused
+          )
+          console.log('🔍 [KYC Pause Check] Email submit check - paused:', paused)
+          if (paused) {
+            console.log('🛑 [KYC Pause Check] Blocking email submit - KYC is paused')
+            setIsKycPaused(true)
+            setShowMaintenanceModal(true)
+            setKycPausedMessage('KYC is not available now. It is under maintenance.')
+            return
+          }
           setEmailChecked(true)
           setTimeout(() => {
             router.push('/verify/select-id-type')
@@ -180,6 +250,26 @@ export default function Home() {
         }
       } else {
         // Email not found - allow KYC, proceed to verification
+        // Before starting KYC, ensure it is not paused
+        const { getKycPausedStatus } = await loadApiFunctions()
+        const pausedRes = await getKycPausedStatus()
+        console.log('🔍 [KYC Pause Check] Email not found check - response:', JSON.stringify(pausedRes, null, 2))
+        const paused = !!(
+          pausedRes?.data?.kycPaused ?? 
+          pausedRes?.data?.paused ??
+          (pausedRes as any)?.kycPaused ?? 
+          (pausedRes as any)?.paused ??
+          pausedRes?.kycPaused ??
+          pausedRes?.paused
+        )
+        console.log('🔍 [KYC Pause Check] Email not found check - paused:', paused)
+        if (paused) {
+          console.log('🛑 [KYC Pause Check] Blocking email not found flow - KYC is paused')
+          setIsKycPaused(true)
+          setShowMaintenanceModal(true)
+          setKycPausedMessage('KYC is not available now. It is under maintenance.')
+          return
+        }
         setEmailChecked(true)
         setEmailStatus({ verificationStatus: 'not_found' })
         setTimeout(() => {
@@ -294,6 +384,12 @@ export default function Home() {
         <div className="min-h-full md:flex md:items-center md:justify-center md:py-8">
           {/* Mobile Design - Full screen clean layout */}
           <div className="md:hidden h-full flex flex-col px-4 pt-6 pb-32">
+            {kycPausedMessage && (
+              <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                <p className="text-sm font-semibold text-yellow-900">KYC temporarily paused</p>
+                <p className="text-sm text-yellow-800 mt-1">{kycPausedMessage}</p>
+              </div>
+            )}
             {!showEmailInput ? (
               <>
                 {/* Unverified Badge */}
@@ -373,13 +469,13 @@ export default function Home() {
                     )}
                   </div>
                   
-                  <Button
-                    onClick={handleEmailSubmit}
-                    disabled={checkingEmail || !email}
-                    className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-3"
-                  >
-                    {checkingEmail ? 'Checking...' : 'Continue'}
-                  </Button>
+                    <Button
+                      onClick={handleEmailSubmit}
+                      disabled={checkingEmail || !email || isKycPaused === true || isKycPaused === null}
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {checkingEmail ? 'Checking...' : isKycPaused === true ? 'KYC Under Maintenance' : 'Continue'}
+                    </Button>
                   
                   {emailStatus && emailStatus.verificationStatus !== 'not_found' && (
                     <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -398,6 +494,12 @@ export default function Home() {
           {/* Desktop Design - Card layout */}
           <div className="hidden md:block w-full max-w-2xl px-4">
             <div className="bg-white rounded-2xl shadow-lg p-8 border-2 border-gray-200">
+              {kycPausedMessage && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
+                  <p className="text-sm font-semibold text-yellow-900">KYC temporarily paused</p>
+                  <p className="text-sm text-yellow-800 mt-1">{kycPausedMessage}</p>
+                </div>
+              )}
               {!showEmailInput ? (
                 <>
                   <div className="text-left mb-6 relative">
@@ -452,13 +554,13 @@ export default function Home() {
                   </div>
 
                   <div>
-                    <Button 
-                      onClick={() => setShowEmailInput(true)} 
-                      disabled={false}
-                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-3"
-                    >
-                      Start Verification
-                    </Button>
+                  <Button 
+                    onClick={() => setShowEmailInput(true)} 
+                    disabled={isKycPaused === true || isKycPaused === null}
+                    className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isKycPaused === null ? 'Checking...' : isKycPaused ? 'KYC Under Maintenance' : 'Start Verification'}
+                  </Button>
                   </div>
                 </>
               ) : (
@@ -494,10 +596,10 @@ export default function Home() {
                     
                     <Button
                       onClick={handleEmailSubmit}
-                      disabled={checkingEmail || !email}
-                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-3"
+                      disabled={checkingEmail || !email || isKycPaused === true || isKycPaused === null}
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {checkingEmail ? 'Checking...' : 'Continue'}
+                      {checkingEmail ? 'Checking...' : isKycPaused === true ? 'KYC Under Maintenance' : 'Continue'}
                     </Button>
                     
                     {emailStatus && emailStatus.verificationStatus !== 'not_found' && (
@@ -522,10 +624,10 @@ export default function Home() {
         <div className="md:hidden fixed bottom-6 left-0 right-0 px-4 pb-8">
           <Button 
             onClick={() => setShowEmailInput(true)} 
-            disabled={false}
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-4 text-base shadow-xl"
+            disabled={isKycPaused === true || isKycPaused === null}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-4 text-base shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Start Verification
+            {isKycPaused === null ? 'Checking...' : isKycPaused ? 'KYC Under Maintenance' : 'Start Verification'}
           </Button>
         </div>
       )}
@@ -535,6 +637,34 @@ export default function Home() {
         isOpen={showHelpModal} 
         onClose={() => setShowHelpModal(false)}
       />
+      
+      {/* KYC Maintenance Modal */}
+      <Modal
+        isOpen={showMaintenanceModal}
+        onClose={() => {}} // Prevent closing - user must wait
+        showCloseButton={false}
+        className="max-w-md"
+      >
+        <div className="p-6 text-center">
+          <div className="mb-4">
+            <svg className="w-16 h-16 mx-auto text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-3">
+            KYC Under Maintenance
+          </h2>
+          <p className="text-gray-600 mb-6">
+            KYC is not available now. It is under maintenance. Please check back later.
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-full py-3"
+          >
+            Refresh Page
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }

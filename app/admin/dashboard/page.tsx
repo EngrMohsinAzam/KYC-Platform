@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
-import { getAdminToken, removeAdminToken, getDashboardStats, getUsers, User } from '@/lib/api/admin-api'
+import { getAdminToken, removeAdminToken, getDashboardStats, getUsers, User, getAdminCapabilities, AdminCapabilities } from '@/lib/api/admin-api'
 import Link from 'next/link'
 import { LoadingPage, LoadingDots } from '@/components/ui/LoadingDots'
 
@@ -139,6 +139,7 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null) // null = checking, true = authenticated, false = not authenticated
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState<any>(null)
+  const [capabilities, setCapabilities] = useState<AdminCapabilities | null>(null)
   const [trendsData, setTrendsData] = useState<any[]>([])
   const [users, setUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -417,6 +418,14 @@ export default function AdminDashboard() {
     // Don't load if null (checking) or false (not authenticated)
     if (isAuthenticated === true) {
       console.log('✅ Authentication confirmed, loading dashboard data...')
+      ;(async () => {
+        try {
+          const caps = await getAdminCapabilities()
+          if (caps.success && caps.data) setCapabilities(caps.data)
+        } catch {
+          // If capabilities endpoint fails, we keep null and fall back to showing everything
+        }
+      })()
       loadDashboardData()
       // Defer contract data loading - load after initial render to improve FCP
       const timer = setTimeout(() => {
@@ -431,6 +440,20 @@ export default function AdminDashboard() {
     // If isAuthenticated is null, we're still checking - don't load data yet
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, currentPage, statusFilter, searchTerm])
+
+  const perms = useMemo(() => {
+    const p = capabilities?.permissions || {}
+    const fallback = false
+    return {
+      canViewAllUsers: p.canViewAllUsers ?? fallback,
+      canViewFinancialGraph: p.canViewFinancialGraph ?? fallback,
+      canViewWallets: false, // Admin should never see wallets (Super Admin only)
+      canApproveRejectKYC: p.canApproveRejectKYC ?? fallback,
+      canViewSupportIssues: p.canViewSupportIssues ?? fallback,
+      canSendEmails: p.canSendEmails ?? fallback,
+      role: capabilities?.role || 'admin',
+    }
+  }, [capabilities])
 
   useEffect(() => {
     // Try to connect wallet automatically after login (only once)
@@ -689,27 +712,40 @@ export default function AdminDashboard() {
               <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-0.5 sm:mt-1 hidden sm:block">Manage user verifications and analytics</p>
             </div>
             <div className="flex gap-2 sm:gap-3 flex-shrink-0 ml-2">
-              <button
-                onClick={async () => {
-                  // Connect wallet if not connected, then show modal
-                  if (!isConnected) {
-                    try {
-                      await openWallet()
-                    } catch (error) {
-                      // Error already handled in openWallet
-                      console.log('Wallet connection attempt completed')
+              {perms.canViewSupportIssues && (
+                <Link
+                  href="/admin/support"
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black text-white rounded-lg hover:bg-black/80 transition-colors text-xs sm:text-sm md:text-base flex items-center gap-1.5 sm:gap-2"
+                >
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <span className="hidden sm:inline">Support</span>
+                </Link>
+              )}
+              {perms.canViewWallets && (
+                <button
+                  onClick={async () => {
+                    // Connect wallet if not connected, then show modal
+                    if (!isConnected) {
+                      try {
+                        await openWallet()
+                      } catch (error) {
+                        // Error already handled in openWallet
+                        console.log('Wallet connection attempt completed')
+                      }
                     }
-                  }
-                  // Show modal even if connection failed - user can retry
-                  setShowWithdrawModal(true)
-                }}
-                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black text-white rounded-lg transition-colors text-xs sm:text-sm md:text-base flex items-center gap-1.5 sm:gap-2"
-              >
-                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                <span className="hidden sm:inline">Withdraw</span>
-              </button>
+                    // Show modal even if connection failed - user can retry
+                    setShowWithdrawModal(true)
+                  }}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black text-white rounded-lg transition-colors text-xs sm:text-sm md:text-base flex items-center gap-1.5 sm:gap-2"
+                >
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  <span className="hidden sm:inline">Withdraw</span>
+                </button>
+              )}
               <button
                 onClick={handleLogout}
                 className="flex p-1.5 sm:px-2 sm:py-2 border border-black text-black rounded-lg hover:bg-gray-50 transition-colors text-xs sm:text-sm items-center justify-center"
@@ -774,124 +810,113 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Second Row - Financial & Wallet Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
-          <FinancialCard
-            title="Total Collection"
-            value={loadingContractData ? 'Loading...' : `${totalCollectedFees ? parseFloat(totalCollectedFees).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 }) : '0.00000000'} BNB`}
-            change="Total collected fees"
-            changeType="positive"
-            icon="dollar"
-            color="blue"
-          />
-          <FinancialCard
-            title="Total Withdrawals"
-            value={loadingContractData ? 'Loading...' : `${totalWithdrawals ? parseFloat(totalWithdrawals).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 }) : '0.00000000'} BNB`}
-            change="All time"
-            changeType="negative"
-            icon="dollar"
-            color="yellow"
-          />
-          <FinancialCard
-            title="Contract Balance"
-            value={loadingContractData ? 'Loading...' : `${contractBalance ? parseFloat(contractBalance).toLocaleString(undefined, { minimumFractionDigits: 6, maximumFractionDigits: 8 }) : '0.00000000'} BNB`}
-            change="Current amount"
-            changeType="positive"
-            icon="dollar"
-            color="green"
-          />
-        </div>
-
-        {/* Charts Row */}
-        <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
-          {/* KYC Verification Trends - 65% width */}
-          <div className="w-full lg:w-[65%]">
-            <ChartCard title="KYC Verification Trends">
-              <TrendsChart stats={stats} trendsData={trendsData} />
-            </ChartCard>
+        {/* Financial Graph Section (permission gated) - Only show graphs, no cards */}
+        {!perms.canViewFinancialGraph && (
+          <div className="mb-4 sm:mb-6 bg-white rounded-xl border border-gray-200 p-4 text-sm text-gray-700">
+            Financial graphs are hidden for your account (missing `canViewFinancialGraph`).
           </div>
+        )}
 
-          {/* Status Distribution - 35% width */}
-          <div className="w-full lg:w-[35%]">
-            <ChartCard title="Status Distribution">
-              <StatusPieChart stats={stats} />
-            </ChartCard>
-          </div>
-        </div>
+        {/* Charts Row (financial permission gated for now) */}
+        {perms.canViewFinancialGraph && (
+          <div className="flex flex-col lg:flex-row gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+            {/* KYC Verification Trends - 65% width */}
+            <div className="w-full lg:w-[65%]">
+              <ChartCard title="KYC Verification Trends">
+                <TrendsChart stats={stats} trendsData={trendsData} />
+              </ChartCard>
+            </div>
 
-        {/* Financial Overview */}
-        <div className="mb-4 sm:mb-6">
-          <ChartCard title="Financial Overview">
-            <FinancialChart 
-              stats={stats} 
-              totalCollectedFees={totalCollectedFees}
-              totalWithdrawals={totalWithdrawals}
-              contractBalance={contractBalance}
-              users={users}
-              loading={loadingContractData}
-            />
-          </ChartCard>
-        </div>
-
-        {/* User Management Table */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-3 sm:p-4 md:p-6 border-b border-gray-200">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
-              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">User Management</h2>
-              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
-                <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:flex-initial sm:min-w-[200px]">
-                    <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
-                      <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                    </div>
-                    <input
-                      type="text"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      placeholder="Search users..."
-                      className="w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-xs sm:text-sm"
-                    />
-                  </div>
-                  <div className="relative hidden sm:block">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                      </svg>
-                    </div>
-                    <select
-                      value={statusFilter}
-                      onChange={(e) => {
-                        setStatusFilter(e.target.value)
-                        setCurrentPage(1)
-                      }}
-                      className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm appearance-none bg-white"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="pending">Pending</option>
-                      <option value="approved">Approved</option>
-                      <option value="rejected">Rejected</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                </form>
-                <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black text-white rounded-lg hover:bg-black-700 transition-colors text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  Export
-                </button>
-              </div>
+            {/* Status Distribution - 35% width */}
+            <div className="w-full lg:w-[35%]">
+              <ChartCard title="Status Distribution">
+                <StatusPieChart stats={stats} />
+              </ChartCard>
             </div>
           </div>
+        )}
 
-          <UserTable users={users} />
-        </div>
+        {/* Financial Overview */}
+        {perms.canViewFinancialGraph && (
+          <div className="mb-4 sm:mb-6">
+            <ChartCard title="Financial Overview">
+              <FinancialChart 
+                stats={stats} 
+                totalCollectedFees={totalCollectedFees}
+                totalWithdrawals={totalWithdrawals}
+                contractBalance={contractBalance}
+                users={users}
+                loading={loadingContractData}
+              />
+            </ChartCard>
+          </div>
+        )}
+
+        {/* User Management Table (permission gated) */}
+        {perms.canViewAllUsers ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-3 sm:p-4 md:p-6 border-b border-gray-200">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4">
+                <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">User Management</h2>
+                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center">
+                  <form onSubmit={handleSearch} className="flex gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:flex-initial sm:min-w-[200px]">
+                      <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+                        <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Search users..."
+                        className="w-full pl-8 sm:pl-10 pr-2 sm:pr-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-xs sm:text-sm"
+                      />
+                    </div>
+                    <div className="relative hidden sm:block">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                      </div>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => {
+                          setStatusFilter(e.target.value)
+                          setCurrentPage(1)
+                        }}
+                        className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm appearance-none bg-white"
+                      >
+                        <option value="all">All Status</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+                    </div>
+                  </form>
+                  <button className="px-3 sm:px-4 py-1.5 sm:py-2 bg-black text-white rounded-lg hover:bg-black-700 transition-colors text-xs sm:text-sm flex items-center justify-center gap-1.5 sm:gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <UserTable users={users} />
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg border border-gray-200 p-4 text-sm text-gray-700">
+            User management is hidden for your account (missing `canViewAllUsers`).
+          </div>
+        )}
       </main>
 
       {/* Withdraw Modal */}
-      {showWithdrawModal && (
+      {showWithdrawModal && perms.canViewWallets && (
         <WithdrawModal 
           onClose={() => {
             setShowWithdrawModal(false)
