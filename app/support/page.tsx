@@ -16,7 +16,12 @@ export default function SupportPage() {
   const { state } = useAppContext()
 
   const initialEmail = useMemo(() => state.personalInfo?.email || '', [state.personalInfo?.email])
-  const initialName = useMemo(() => state.personalInfo?.fullName || '', [state.personalInfo?.fullName])
+  const initialName = useMemo(() => {
+    if (state.personalInfo?.firstName || state.personalInfo?.lastName) {
+      return ` `.trim()
+    }
+    return ''
+  }, [state.personalInfo?.firstName, state.personalInfo?.lastName])
 
   const [name, setName] = useState(initialName)
   const [email, setEmail] = useState(initialEmail)
