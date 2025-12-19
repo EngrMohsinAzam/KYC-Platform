@@ -609,15 +609,46 @@ export const checkStatusByWallet = async (walletAddress: string): Promise<{ succ
 // Public: Check if KYC is paused
 export const getKycPausedStatus = async (): Promise<{ success: boolean; data?: any; message?: string }> => {
   try {
-    console.log('📡 [getKycPausedStatus] Calling /api/kyc/paused-status')
-    // Use Next.js proxy route (no auth)
-    const response = await fetch('/api/kyc/paused-status', { method: 'GET' })
+    // Call backend API directly (not through Next.js proxy)
+    const backendUrl = `${API_BASE_URL}/api/kyc/paused-status`
+    console.log('📡 [getKycPausedStatus] ==========================================')
+    console.log('📡 [getKycPausedStatus] 🚀 CALLING BACKEND API DIRECTLY')
+    console.log('📡 [getKycPausedStatus] API_BASE_URL:', API_BASE_URL)
+    console.log('📡 [getKycPausedStatus] Backend URL:', backendUrl)
+    console.log('📡 [getKycPausedStatus] Method: GET')
+    console.log('📡 [getKycPausedStatus] ==========================================')
+    
+    // Call backend directly (no Next.js proxy)
+    const response = await fetch(backendUrl, { 
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store' // Always fetch fresh data
+    })
+    
+    console.log('📡 [getKycPausedStatus] ✅ Backend API Response received')
     console.log('📡 [getKycPausedStatus] Response status:', response.status)
-    const data = await response.json().catch(() => ({}))
-    console.log('📡 [getKycPausedStatus] Parsed data:', JSON.stringify(data, null, 2))
+    console.log('📡 [getKycPausedStatus] Response OK:', response.ok)
+    
+    if (!response.ok) {
+      throw new Error(`Backend API returned status ${response.status}`)
+    }
+    
+    const data = await response.json().catch((err) => {
+      console.error('📡 [getKycPausedStatus] ❌ JSON parse error:', err)
+      return {}
+    })
+    
+    console.log('📡 [getKycPausedStatus] Parsed data from backend:', JSON.stringify(data, null, 2))
+    console.log('📡 [getKycPausedStatus] ==========================================')
     return data
   } catch (error: any) {
-    console.error('❌ [getKycPausedStatus] Error:', error)
+    console.error('❌ [getKycPausedStatus] ==========================================')
+    console.error('❌ [getKycPausedStatus] ERROR calling backend API:', error)
+    console.error('❌ [getKycPausedStatus] Error message:', error?.message)
+    console.error('❌ [getKycPausedStatus] Error stack:', error?.stack)
+    console.error('❌ [getKycPausedStatus] ==========================================')
     return { success: false, message: error.message || 'Failed to fetch paused status' }
   }
 }

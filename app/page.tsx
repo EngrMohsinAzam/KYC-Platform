@@ -1,7 +1,7 @@
 
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
@@ -62,15 +62,29 @@ export default function Home() {
   const [kycPausedMessage, setKycPausedMessage] = useState<string | null>(null)
   const [isKycPaused, setIsKycPaused] = useState<boolean | null>(null) // null = checking, true = paused, false = not paused
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false)
+  
+  // Use ref to prevent duplicate calls during the same render cycle only
+  const kycPausedCheckInProgress = useRef(false)
 
-  // Check KYC pause status immediately when page loads
+  // Check KYC pause status on every page load/refresh - always call API
   useEffect(() => {
+    // Only prevent if a call is already in progress (to avoid race conditions)
+    if (kycPausedCheckInProgress.current) {
+      console.log('⏭️ [KYC Pause Check] Call already in progress, skipping duplicate')
+      return
+    }
+
     const checkKycPaused = async () => {
       try {
-        console.log('🚀 [KYC Pause Check] Starting check on page load...')
+        kycPausedCheckInProgress.current = true
+        console.log('🚀 [KYC Pause Check] ==========================================')
+        console.log('🚀 [KYC Pause Check] Starting fresh check on page load/refresh...')
+        console.log('🚀 [KYC Pause Check] Loading API functions...')
         setIsKycPaused(null) // Set to checking state
         const { getKycPausedStatus } = await loadApiFunctions()
+        console.log('🚀 [KYC Pause Check] API functions loaded, calling getKycPausedStatus()...')
         const pausedRes = await getKycPausedStatus()
+        console.log('🚀 [KYC Pause Check] API call completed')
         
         console.log('📥 [KYC Pause Check] Full response:', JSON.stringify(pausedRes, null, 2))
         console.log('📥 [KYC Pause Check] pausedRes?.data?.kycPaused:', pausedRes?.data?.kycPaused)
@@ -104,6 +118,8 @@ export default function Home() {
         console.error('❌ [KYC Pause Check] Error checking KYC pause status:', err)
         // On error, assume not paused to allow users to proceed
         setIsKycPaused(false)
+      } finally {
+        kycPausedCheckInProgress.current = false
       }
     }
     
@@ -218,7 +234,8 @@ export default function Home() {
           }, 1500)
         } else if (status === 'not_found') {
           // Email doesn't exist - allow KYC, proceed to verification
-          // Before starting KYC, ensure it is not paused
+          // Before starting KYC, ensure it is not paused - always call API for fresh data
+          console.log('🔍 [KYC Pause Check] Email submit check - making fresh API call')
           const pausedRes = await getKycPausedStatus()
           console.log('🔍 [KYC Pause Check] Email submit check - response:', JSON.stringify(pausedRes, null, 2))
           const paused = !!(
@@ -229,10 +246,10 @@ export default function Home() {
             pausedRes?.kycPaused ??
             pausedRes?.paused
           )
+          setIsKycPaused(paused)
           console.log('🔍 [KYC Pause Check] Email submit check - paused:', paused)
           if (paused) {
             console.log('🛑 [KYC Pause Check] Blocking email submit - KYC is paused')
-            setIsKycPaused(true)
             setShowMaintenanceModal(true)
             setKycPausedMessage('KYC is not available now. It is under maintenance.')
             return
@@ -250,7 +267,8 @@ export default function Home() {
         }
       } else {
         // Email not found - allow KYC, proceed to verification
-        // Before starting KYC, ensure it is not paused
+        // Before starting KYC, ensure it is not paused - always call API for fresh data
+        console.log('🔍 [KYC Pause Check] Email not found check - making fresh API call')
         const { getKycPausedStatus } = await loadApiFunctions()
         const pausedRes = await getKycPausedStatus()
         console.log('🔍 [KYC Pause Check] Email not found check - response:', JSON.stringify(pausedRes, null, 2))
@@ -262,10 +280,10 @@ export default function Home() {
           pausedRes?.kycPaused ??
           pausedRes?.paused
         )
+        setIsKycPaused(paused)
         console.log('🔍 [KYC Pause Check] Email not found check - paused:', paused)
         if (paused) {
           console.log('🛑 [KYC Pause Check] Blocking email not found flow - KYC is paused')
-          setIsKycPaused(true)
           setShowMaintenanceModal(true)
           setKycPausedMessage('KYC is not available now. It is under maintenance.')
           return
