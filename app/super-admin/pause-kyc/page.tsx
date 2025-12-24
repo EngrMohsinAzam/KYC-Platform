@@ -13,6 +13,7 @@ function toIsoOrUndefined(value: string): string | undefined {
 }
 
 function formatCountdown(ms: number) {
+  if (!ms || isNaN(ms) || ms < 0) return '00:00:00'
   const total = Math.max(0, Math.floor(ms / 1000))
   const h = Math.floor(total / 3600)
   const m = Math.floor((total % 3600) / 60)
@@ -47,16 +48,31 @@ export default function PauseKycPage() {
       setLoading(true)
       setError('')
       const result = await getKycPausedStatus()
-      if (!result.success) {
-        setError(result.message || 'Failed to load paused status')
+      if (!result || !result.success) {
+        setError(result?.message || 'Failed to load paused status')
         return
       }
       const data = result.data || {}
       setKycPaused(!!data.kycPaused)
-      setPauseStartAt(data.pauseStartAt ? new Date(data.pauseStartAt).toISOString().slice(0, 16) : '')
-      setPauseEndAt(data.pauseEndAt ? new Date(data.pauseEndAt).toISOString().slice(0, 16) : '')
+      try {
+        if (data.pauseStartAt) {
+          const startDate = new Date(data.pauseStartAt)
+          if (!isNaN(startDate.getTime())) {
+            setPauseStartAt(startDate.toISOString().slice(0, 16))
+          }
+        }
+        if (data.pauseEndAt) {
+          const endDate = new Date(data.pauseEndAt)
+          if (!isNaN(endDate.getTime())) {
+            setPauseEndAt(endDate.toISOString().slice(0, 16))
+          }
+        }
+      } catch (dateError) {
+        console.error('Error parsing dates:', dateError)
+      }
     } catch (e: any) {
-      setError(e.message || 'Failed to load paused status')
+      console.error('Error loading paused status:', e)
+      setError(e?.message || 'Failed to load paused status')
     } finally {
       setLoading(false)
     }
@@ -74,8 +90,10 @@ export default function PauseKycPage() {
   }, [pauseEndAt])
 
   const countdown = useMemo(() => {
-    if (!kycPaused || !endMs) return null
-    return formatCountdown(endMs - now)
+    if (!kycPaused || !endMs || !now) return null
+    const diff = endMs - now
+    if (diff <= 0) return null
+    return formatCountdown(diff)
   }, [endMs, kycPaused, now])
 
   const onSave = async () => {

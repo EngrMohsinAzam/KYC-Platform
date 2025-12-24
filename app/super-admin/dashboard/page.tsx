@@ -13,6 +13,15 @@ import {
   type TimeRange,
 } from '@/lib/api/super-admin-api'
 
+// Lazy load blockchain functions
+let blockchainFunctions: any = null
+const loadBlockchainFunctions = async () => {
+  if (!blockchainFunctions) {
+    blockchainFunctions = await import('@/lib/wallet/web3')
+  }
+  return blockchainFunctions
+}
+
 export default function SuperAdminDashboard() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
@@ -22,6 +31,7 @@ export default function SuperAdminDashboard() {
   const [adminCount, setAdminCount] = useState<number>(0)
   const [summary, setSummary] = useState<any>(null)
   const [issues, setIssues] = useState<any[]>([])
+  const [blockchainAmount, setBlockchainAmount] = useState<string | null>(null)
 
   useEffect(() => {
     const token = getSuperAdminToken()
@@ -35,13 +45,25 @@ export default function SuperAdminDashboard() {
       setLoading(true)
       setError(null)
 
-      const [summaryRes, analyticsRes, adminsRes, issuesRes] = await Promise.all([
+      // Load blockchain functions and fetch financial stats
+      const blockchain = await loadBlockchainFunctions()
+      const { getFinancialStats, getHistoricalFinancialData } = blockchain
+
+      const [summaryRes, analyticsRes, adminsRes, issuesRes, financialStats, historicalData] = await Promise.all([
         superAdminDashboardSummary(),
         superAdminAnalyticsTime(range),
         superAdminListAdmins({ page: 1, limit: 200 }),
         fetch('/api/support/issues?page=1&limit=5&status=all', { headers: { Authorization: `Bearer ${token}` } })
           .then((r) => r.json())
           .catch(() => ({ success: false })),
+        getFinancialStats().catch((e: any) => {
+          console.error('Failed to fetch blockchain financial stats:', e)
+          return null
+        }),
+        getHistoricalFinancialData(range).catch((e: any) => {
+          console.error('Failed to fetch blockchain historical data:', e)
+          return null
+        }),
       ])
 
       if (!summaryRes?.success) {
@@ -60,7 +82,19 @@ export default function SuperAdminDashboard() {
         dataKycSubmissions: analyticsData?.data?.kycSubmissions,
         fullData: JSON.stringify(analyticsData, null, 2).substring(0, 500)
       })
+      
+      // Merge blockchain historical data with API analytics data
+      if (historicalData) {
+        analyticsData.amountCollected = historicalData.amountCollected || analyticsData.amountCollected
+        analyticsData.kycSubmissions = historicalData.kycSubmissions || analyticsData.kycSubmissions
+      }
+      
       setAnalytics(analyticsData)
+
+      // Set blockchain amount collected
+      if (financialStats) {
+        setBlockchainAmount(financialStats.totalCollected)
+      }
 
       if (adminsRes?.success) {
         const list = adminsRes.data?.admins || adminsRes.data?.data?.admins || adminsRes.data?.items || adminsRes.data?.results || []
@@ -133,6 +167,7 @@ export default function SuperAdminDashboard() {
     const totalApproved = Number(s.totalApprovedApplications ?? 0) || 0
     const totalCancelled = Number(s.totalCancelledApplications ?? 0) || 0
     const totalRejected = Number(s.totalRejectedApplications ?? 0) || 0
+    // Amount collected will come from blockchain, not API
     const totalAmountCollected = Number(s.totalAmountCollected ?? 0) || 0
 
     // Pending isn't in summary response; compute pending as total - (approved + rejected + cancelled)
@@ -318,7 +353,12 @@ export default function SuperAdminDashboard() {
           <KpiCard title="Total admins" value={kpis.totalAdmins} icon="admins" />
           <KpiCard title="Approved applications" value={kpis.totalApproved} icon="approved" />
           <KpiCard title="Pending applications" value={kpis.totalPending} icon="pending" />
-          <KpiCard title="Amount collected" value={kpis.totalAmountCollected} suffix=" USD" icon="amount" />
+          <KpiCard 
+            title="Amount collected" 
+            value={blockchainAmount ? parseFloat(blockchainAmount).toFixed(4) : '0.0000'} 
+            suffix=" BNB" 
+            icon="amount" 
+          />
           <KpiCard title="Cancelled applications" value={kpis.totalCancelled} icon="cancelled" />
         </div>
       )}
@@ -456,7 +496,7 @@ function KpiCard({
   icon,
 }: {
   title: string
-  value: number
+  value: number | string
   suffix?: string
   icon: 'users' | 'admins' | 'approved' | 'pending' | 'amount' | 'cancelled'
 }) {

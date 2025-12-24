@@ -12,11 +12,15 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
     return <>{children}</>
   }
 
+  // Only enable wallet gate on profile page
+  const isProfilePage = pathname === '/super-admin/profile'
+  const walletGateEnabled = isProfilePage
+
   return (
     <div className="min-h-screen bg-[#F9FAFB] flex">
       <SuperAdminSidebar />
       <div className="flex-1 min-w-0">
-        <SuperAdminWalletGate enabled={true}>{children}</SuperAdminWalletGate>
+        <SuperAdminWalletGate enabled={walletGateEnabled}>{children}</SuperAdminWalletGate>
       </div>
     </div>
   )

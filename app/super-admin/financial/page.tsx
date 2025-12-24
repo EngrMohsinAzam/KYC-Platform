@@ -5,7 +5,18 @@ import { useRouter } from 'next/navigation'
 import nextDynamic from 'next/dynamic'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { ShimmerChart, ShimmerCard } from '@/components/ui/Shimmer'
-import { getSuperAdminToken, superAdminAnalyticsTime, superAdminDashboardSummary, type TimeRange } from '@/lib/api/super-admin-api'
+import { getSuperAdminToken } from '@/lib/api/super-admin-api'
+
+// Lazy load blockchain functions
+let blockchainFunctions: any = null
+const loadBlockchainFunctions = async () => {
+  if (!blockchainFunctions) {
+    blockchainFunctions = await import('@/lib/wallet/web3')
+  }
+  return blockchainFunctions
+}
+
+type TimeRange = 'week' | 'month' | 'year'
 
 type Point = { label: string; value: number }
 
@@ -60,7 +71,11 @@ export default function SuperAdminFinancialPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [analytics, setAnalytics] = useState<any>(null)
-  const [summary, setSummary] = useState<any>(null)
+  const [summary, setSummary] = useState<{
+    totalCollected: string
+    totalWithdrawn: string
+    currentBalance: string
+  } | null>(null)
 
   useEffect(() => {
     const token = getSuperAdminToken()
@@ -71,21 +86,30 @@ export default function SuperAdminFinancialPage() {
     try {
       setLoading(true)
       setError(null)
-      const [aRes, summaryRes] = await Promise.all([
-        superAdminAnalyticsTime(range),
-        superAdminDashboardSummary(),
+      
+      const blockchain = await loadBlockchainFunctions()
+      const { getFinancialStats, getHistoricalFinancialData } = blockchain
+      
+      // Fetch summary stats and historical data in parallel
+      const [stats, historicalData] = await Promise.all([
+        getFinancialStats(),
+        getHistoricalFinancialData(range),
       ])
 
-      if (!aRes?.success) throw new Error(aRes?.message || 'Failed to load analytics')
-      setAnalytics(aRes.data || aRes)
+      // Set summary (convert BNB to number for display)
+      setSummary({
+        totalCollected: stats.totalCollected,
+        totalWithdrawn: stats.totalWithdrawn,
+        currentBalance: stats.currentBalance,
+      })
 
-      if (summaryRes?.success) {
-        setSummary(summaryRes.data || summaryRes)
-      } else {
-        setSummary(null)
-      }
+      // Set analytics for chart
+      setAnalytics({
+        amountCollected: historicalData.amountCollected,
+        kycSubmissions: historicalData.kycSubmissions,
+      })
     } catch (e: any) {
-      setError(e?.message || 'Failed to load financial record')
+      setError(e?.message || 'Failed to load financial record from blockchain')
     } finally {
       setLoading(false)
     }
@@ -97,12 +121,10 @@ export default function SuperAdminFinancialPage() {
   }, [range])
 
   const chartData = useMemo(() => {
-    const data = analytics || {}
-
-    // try multiple nesting patterns
-    const root = data.data ?? data
-    const amountSeries = normalizeSeries(root.amountCollected ?? root.amounts ?? root.amount ?? root.revenue)
-    const kycSeries = normalizeSeries(root.kycSubmissions ?? root.submissions ?? root.kyc ?? root.kycCount)
+    if (!analytics) return []
+    
+    const amountSeries = analytics.amountCollected || []
+    const kycSeries = analytics.kycSubmissions || []
 
     const length = Math.max(amountSeries.length, kycSeries.length)
     return Array.from({ length }).map((_, idx) => {
@@ -118,15 +140,9 @@ export default function SuperAdminFinancialPage() {
   }, [analytics])
 
   const totalAmountCollected = useMemo(() => {
-    const data = analytics || {}
-    const root = data.data ?? data
-    if (typeof root.totalAmountCollected === 'number') return root.totalAmountCollected
-    if (typeof root.amountCollectedTotal === 'number') return root.amountCollectedTotal
-    if (typeof root?.totals?.amountCollected === 'number') return root.totals.amountCollected
-
-    const amountSeries = normalizeSeries(root.amountCollected ?? root.amounts ?? root.amount ?? root.revenue)
-    return amountSeries.reduce((acc, p) => acc + (Number(p.value) || 0), 0)
-  }, [analytics])
+    if (!summary) return 0
+    return parseFloat(summary.totalCollected) || 0
+  }, [summary])
 
   // Lazy load recharts
   const LazyResponsiveContainer = nextDynamic(() => import('recharts').then((m) => m.ResponsiveContainer), { ssr: false })
@@ -185,7 +201,7 @@ export default function SuperAdminFinancialPage() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Amount Collected</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {Number(summary?.totalAmountCollected || 0).toLocaleString()} USD
+                  {summary ? parseFloat(summary.totalCollected).toFixed(4) : '0.0000'} BNB
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
@@ -201,7 +217,7 @@ export default function SuperAdminFinancialPage() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">Total Withdrawn</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {Number(summary?.totalWithdrawn || summary?.totalWithdrawals || 0).toLocaleString()} USD
+                  {summary ? parseFloat(summary.totalWithdrawn).toFixed(4) : '0.0000'} BNB
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
@@ -217,10 +233,7 @@ export default function SuperAdminFinancialPage() {
               <div>
                 <p className="text-sm text-gray-600 mb-1">Current Balance</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {(
-                    Number(summary?.totalAmountCollected || 0) - 
-                    Number(summary?.totalWithdrawn || summary?.totalWithdrawals || 0)
-                  ).toLocaleString()} USD
+                  {summary ? parseFloat(summary.currentBalance).toFixed(4) : '0.0000'} BNB
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
@@ -241,7 +254,7 @@ export default function SuperAdminFinancialPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-sm font-semibold text-gray-900">Amount collected ({range})</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Total: {Number(totalAmountCollected || 0).toLocaleString()} USD</p>
+              <p className="text-xs text-gray-500 mt-0.5">Total: {totalAmountCollected.toFixed(4)} BNB</p>
             </div>
           </div>
 

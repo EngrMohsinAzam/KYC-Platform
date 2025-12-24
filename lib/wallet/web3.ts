@@ -1166,6 +1166,195 @@ export async function getTotalWithdrawals(): Promise<string> {
   }
 }
 
+// Get all financial stats at once (more efficient)
+// Uses public RPC only - no wallet connection required
+export async function getFinancialStats(): Promise<{
+  totalCollected: string // BNB
+  totalWithdrawn: string // BNB
+  currentBalance: string // BNB
+  totalSubmissions: number
+}> {
+  try {
+    // Always use public RPC - never try to connect wallet
+    const rpcUrl = 'https://bsc-dataseed.binance.org/'
+    const provider = new ethers.JsonRpcProvider(rpcUrl)
+    
+    const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
+    
+    // Use getStats for efficiency - gets all stats in one call
+    try {
+      const stats = await kycContract.getStats()
+      // stats returns: [submissions, totalCollectionBNB, totalWithdrawnBNB, balance]
+      const submissions = Number(stats[0])
+      const totalCollectionBNB = ethers.formatEther(stats[1])
+      const totalWithdrawnBNB = ethers.formatEther(stats[2])
+      const balance = ethers.formatEther(stats[3])
+      
+      return {
+        totalCollected: totalCollectionBNB,
+        totalWithdrawn: totalWithdrawnBNB,
+        currentBalance: balance,
+        totalSubmissions: submissions,
+      }
+    } catch (statsError: any) {
+      // Fallback to individual calls if getStats fails
+      console.log('⚠️ getStats failed, using individual calls:', statsError?.message || statsError)
+      const [totalCollected, totalWithdrawn, balance, submissions] = await Promise.all([
+        kycContract.totalCollection().then((v: bigint) => ethers.formatEther(v)),
+        kycContract.totalWithdrawn().then((v: bigint) => ethers.formatEther(v)),
+        kycContract.getContractBalance().then((v: bigint) => ethers.formatEther(v)),
+        kycContract.totalSubmissions().then((v: bigint) => Number(v)),
+      ])
+      
+      return {
+        totalCollected,
+        totalWithdrawn,
+        currentBalance: balance,
+        totalSubmissions: submissions,
+      }
+    }
+  } catch (error: any) {
+    console.error('Error getting financial stats:', error)
+    throw new Error(`Failed to get financial stats: ${error.message || 'Unknown error'}`)
+  }
+}
+
+// Get historical events for chart data
+// Uses public RPC only - no wallet connection required
+export async function getHistoricalFinancialData(range: 'week' | 'month' | 'year'): Promise<{
+  amountCollected: Array<{ label: string; value: number }>
+  kycSubmissions: Array<{ label: string; value: number }>
+}> {
+  try {
+    // Always use public RPC - never try to connect wallet
+    const rpcUrl = 'https://bsc-dataseed.binance.org/'
+    const provider = new ethers.JsonRpcProvider(rpcUrl)
+    
+    const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
+    
+    // Calculate time range
+    const now = Math.floor(Date.now() / 1000)
+    let fromBlock = 0
+    const toBlock = 'latest'
+    
+    // Estimate blocks for time range (BSC has ~3s block time, ~20 blocks/min, ~1200 blocks/hour)
+    const blocksPerHour = 1200
+    const hoursInRange = range === 'week' ? 168 : range === 'month' ? 720 : 8760 // year
+    const estimatedBlocks = hoursInRange * blocksPerHour
+    
+    // Get current block number
+    const currentBlock = await provider.getBlockNumber()
+    fromBlock = Math.max(0, currentBlock - estimatedBlocks)
+    
+    // Fetch events using queryFilter (more reliable)
+    const kycSubmittedFilter = kycContract.filters.KYCSubmitted()
+    const bnbWithdrawnFilter = kycContract.filters.BNBWithdrawn()
+    
+    const [kycSubmittedEvents, bnbWithdrawnEvents] = await Promise.all([
+      kycContract.queryFilter(kycSubmittedFilter, fromBlock, toBlock),
+      kycContract.queryFilter(bnbWithdrawnFilter, fromBlock, toBlock),
+    ])
+    
+    // Group by time period
+    const timeMap = new Map<string, { collected: number; submissions: number }>()
+    
+    // Get unique block numbers and fetch them in batch
+    const uniqueBlockNumbers = new Set<number>()
+    kycSubmittedEvents.forEach(e => uniqueBlockNumbers.add(e.blockNumber))
+    bnbWithdrawnEvents.forEach(e => uniqueBlockNumbers.add(e.blockNumber))
+    
+    // Fetch all blocks in parallel (limit to 100 to avoid overwhelming)
+    const blockNumbersArray = Array.from(uniqueBlockNumbers).slice(0, 100)
+    const blocks = await Promise.all(
+      blockNumbersArray.map(async (blockNum) => {
+        try {
+          const block = await provider.getBlock(blockNum)
+          if (!block) {
+            return { number: blockNum, timestamp: Date.now() / 1000 }
+          }
+          return { number: block.number, timestamp: block.timestamp }
+        } catch {
+          return { number: blockNum, timestamp: Date.now() / 1000 }
+        }
+      })
+    )
+    const blockMap = new Map(blocks.map(b => [b.number, b.timestamp]))
+    
+    // Helper to get timestamp
+    const getTimestamp = (blockNumber: number) => {
+      return blockMap.get(blockNumber) || Date.now() / 1000
+    }
+    
+    // Type guard to check if event is EventLog
+    const isEventLog = (event: ethers.Log | ethers.EventLog): event is ethers.EventLog => {
+      return 'args' in event
+    }
+    
+    // Process KYC submissions (collections)
+    for (const event of kycSubmittedEvents) {
+      if (!isEventLog(event) || !event.args) continue
+      const timestamp = getTimestamp(event.blockNumber)
+      const feePaid = ethers.formatEther((event.args as any).feePaid || 0)
+      const date = new Date(timestamp * 1000)
+      
+      let key: string
+      if (range === 'week') {
+        key = date.toISOString().split('T')[0] // Daily
+      } else if (range === 'month') {
+        const week = Math.floor(date.getDate() / 7)
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-W${week + 1}` // Weekly
+      } else {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` // Monthly
+      }
+      
+      const existing = timeMap.get(key) || { collected: 0, submissions: 0 }
+      existing.collected += parseFloat(feePaid)
+      existing.submissions += 1
+      timeMap.set(key, existing)
+    }
+    
+    // Process withdrawals (subtract from collected for net)
+    for (const event of bnbWithdrawnEvents) {
+      if (!isEventLog(event) || !event.args) continue
+      const timestamp = getTimestamp(event.blockNumber)
+      const amount = ethers.formatEther((event.args as any).amount || 0)
+      const date = new Date(timestamp * 1000)
+      
+      let key: string
+      if (range === 'week') {
+        key = date.toISOString().split('T')[0]
+      } else if (range === 'month') {
+        const week = Math.floor(date.getDate() / 7)
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-W${week + 1}`
+      } else {
+        key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      }
+      
+      const existing = timeMap.get(key) || { collected: 0, submissions: 0 }
+      existing.collected -= parseFloat(amount) // Subtract withdrawals
+      timeMap.set(key, existing)
+    }
+    
+    // Convert to arrays and sort
+    const sortedKeys = Array.from(timeMap.keys()).sort()
+    const amountCollected = sortedKeys.map(key => ({
+      label: key,
+      value: Math.max(0, timeMap.get(key)!.collected), // Ensure non-negative
+    }))
+    
+    const kycSubmissions = sortedKeys.map(key => ({
+      label: key,
+      value: timeMap.get(key)!.submissions,
+    }))
+    
+    return { amountCollected, kycSubmissions }
+  } catch (error: any) {
+    console.error('Error getting historical financial data:', error)
+    // Return empty arrays on error
+    return { amountCollected: [], kycSubmissions: [] }
+  }
+}
+
 export async function withdrawContractFunds(amount: string): Promise<string> {
   try {
     console.log('========================================')
