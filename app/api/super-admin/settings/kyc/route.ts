@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/lib/config'
 
+// Force dynamic rendering since we use request.headers
+export const dynamic = 'force-dynamic'
+
 export async function PATCH(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
