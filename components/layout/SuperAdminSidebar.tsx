@@ -13,7 +13,12 @@ const NavIcon = ({ children }: { children: React.ReactNode }) => (
   <span className="w-7 h-7 flex items-center justify-center">{children}</span>
 )
 
-export function SuperAdminSidebar() {
+type SuperAdminSidebarProps = {
+  isOpen?: boolean
+  onClose?: () => void
+}
+
+export function SuperAdminSidebar({ isOpen = false, onClose }: SuperAdminSidebarProps) {
   const pathname = usePathname()
 
   const items: NavItem[] = [
@@ -87,18 +92,90 @@ export function SuperAdminSidebar() {
     },
   ]
 
+  const handleLinkClick = () => {
+    // Close sidebar on mobile when a menu item is clicked
+    if (onClose) {
+      onClose()
+    }
+  }
+
   return (
-    <aside className="hidden md:flex md:flex-col w-[260px] bg-white border-r border-gray-200 h-screen sticky top-0">
-      {/* Brand */}
-      <div className="h-[76px] px-5 flex items-center gap-3 border-b border-gray-200">
-        <div className="w-11 h-11 rounded-2xl bg-black flex items-center justify-center text-white font-bold shadow-sm">
-          SA
+    <>
+      {/* Mobile Sidebar */}
+      <aside
+        className={[
+          'md:hidden fixed top-0 left-0 z-50 flex flex-col w-[260px] bg-white border-r border-gray-200 h-screen transform transition-transform duration-300 ease-in-out',
+          isOpen ? 'translate-x-0' : '-translate-x-full',
+        ].join(' ')}
+      >
+        {/* Brand */}
+        <div className="h-[76px] px-5 flex items-center gap-3 border-b border-gray-200">
+          <div className="w-11 h-11 rounded-2xl bg-black flex items-center justify-center text-white font-bold shadow-sm">
+            SA
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-gray-900 truncate">Super Admin</p>
+            <p className="text-xs text-gray-500 truncate">KYC Platform</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            aria-label="Close menu"
+          >
+            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-900 truncate">Super Admin</p>
-          <p className="text-xs text-gray-500 truncate">KYC Platform</p>
+
+        <nav className="px-3 py-4 space-y-1 flex-1 overflow-y-auto">
+          {items.map((item) => {
+            const active = pathname === item.href
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={handleLinkClick}
+                className={[
+                  'flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors',
+                  active ? 'bg-black text-white' : 'text-gray-700 hover:bg-gray-100',
+                ].join(' ')}
+              >
+                <span className={active ? 'text-white' : 'text-gray-600'}>{item.icon}</span>
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            )
+          })}
+        </nav>
+
+        <div className="px-3 py-4 border-t border-gray-200">
+          <Link
+            href="/super-admin/logout"
+            onClick={handleLinkClick}
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <NavIcon>
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor">
+                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </NavIcon>
+            <span className="text-sm font-medium">Logout</span>
+          </Link>
         </div>
-      </div>
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex md:flex-col w-[260px] bg-white border-r border-gray-200 h-screen sticky top-0">
+        {/* Brand */}
+        <div className="h-[76px] px-5 flex items-center gap-3 border-b border-gray-200">
+          <div className="w-11 h-11 rounded-2xl bg-black flex items-center justify-center text-white font-bold shadow-sm">
+            SA
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-gray-900 truncate">Super Admin</p>
+            <p className="text-xs text-gray-500 truncate">KYC Platform</p>
+          </div>
+        </div>
 
       <nav className="px-3 py-4 space-y-1">
         {items.map((item) => {
@@ -119,20 +196,21 @@ export function SuperAdminSidebar() {
         })}
       </nav>
 
-      <div className="mt-auto px-3 py-4 border-t border-gray-200">
-        <Link
-          href="/super-admin/logout"
-          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-700 hover:bg-gray-100 transition-colors"
-        >
-          <NavIcon>
-            <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor">
-              <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-          </NavIcon>
-          <span className="text-sm font-medium">Logout</span>
-        </Link>
-      </div>
-    </aside>
+        <div className="mt-auto px-3 py-4 border-t border-gray-200">
+          <Link
+            href="/super-admin/logout"
+            className="flex items-center gap-3 px-4 py-3 rounded-2xl text-gray-700 hover:bg-gray-100 transition-colors"
+          >
+            <NavIcon>
+              <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor">
+                <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </NavIcon>
+            <span className="text-sm font-medium">Logout</span>
+          </Link>
+        </div>
+      </aside>
+    </>
   )
 }
 
