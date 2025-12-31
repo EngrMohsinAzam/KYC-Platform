@@ -47,9 +47,9 @@ export default function SuperAdminDashboard() {
 
       // Load blockchain functions and fetch financial stats
       const blockchain = await loadBlockchainFunctions()
-      const { getFinancialStats, getHistoricalFinancialData } = blockchain
+      const { getFinancialStats } = blockchain
 
-      const [summaryRes, analyticsRes, adminsRes, issuesRes, financialStats, historicalData] = await Promise.all([
+      const [summaryRes, analyticsRes, adminsRes, issuesRes, financialStats] = await Promise.all([
         superAdminDashboardSummary(),
         superAdminAnalyticsTime(range),
         superAdminListAdmins({ page: 1, limit: 200 }),
@@ -58,10 +58,6 @@ export default function SuperAdminDashboard() {
           .catch(() => ({ success: false })),
         getFinancialStats().catch((e: any) => {
           console.error('Failed to fetch blockchain financial stats:', e)
-          return null
-        }),
-        getHistoricalFinancialData(range).catch((e: any) => {
-          console.error('Failed to fetch blockchain historical data:', e)
           return null
         }),
       ])
@@ -82,12 +78,6 @@ export default function SuperAdminDashboard() {
         dataKycSubmissions: analyticsData?.data?.kycSubmissions,
         fullData: JSON.stringify(analyticsData, null, 2).substring(0, 500)
       })
-      
-      // Merge blockchain historical data with API analytics data
-      if (historicalData) {
-        analyticsData.amountCollected = historicalData.amountCollected || analyticsData.amountCollected
-        analyticsData.kycSubmissions = historicalData.kycSubmissions || analyticsData.kycSubmissions
-      }
       
       setAnalytics(analyticsData)
 

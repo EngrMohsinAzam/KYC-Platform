@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { getSuperAdminInfo, getSuperAdminToken } from '@/lib/api/super-admin-api'
 import { LoadingDots } from '@/components/ui/LoadingDots'
@@ -18,6 +18,7 @@ const loadBlockchainFunctions = async () => {
 
 export default function SuperAdminProfilePage() {
   const router = useRouter()
+  const pathname = usePathname()
   const { address, isConnected } = useAccount()
   const { connect, connectors, isPending: isConnecting } = useConnect()
   const { disconnect } = useDisconnect()
@@ -32,6 +33,9 @@ export default function SuperAdminProfilePage() {
 
   const token = getSuperAdminToken()
   const info = getSuperAdminInfo()
+
+  // Check if we're actually on the profile page
+  const isOnProfilePage = pathname === '/super-admin/profile'
 
   useEffect(() => {
     if (!token) router.replace('/super-admin')
@@ -48,41 +52,38 @@ export default function SuperAdminProfilePage() {
     }
   }, [isConnected, address])
 
-  // Verify owner when wallet connects - disconnect if not owner
+  // Verify owner when wallet connects - ONLY on profile page
+  // This prevents disconnecting users on other pages (like review page)
   useEffect(() => {
-    const verifyAndDisconnectIfNotOwner = async () => {
-      if (isConnected && address) {
-        try {
-          const blockchain = await loadBlockchainFunctions()
-          const { verifyOwner } = blockchain
-          const isOwner = await verifyOwner(address)
-          
-          if (!isOwner) {
-            // Disconnect non-owner wallet
-            disconnect()
-            alert('🔒 Access Denied\nOnly owner wallets can connect to this page.')
-            setError('Only owner wallets can connect to this page.')
-          }
-        } catch (error: any) {
-          console.error('Error verifying owner on connect:', error)
-        }
-      }
+    // CRITICAL: Use window.location as source of truth to prevent running on other pages
+    // This ensures the effect doesn't run even if component is mounted in background
+    if (typeof window === 'undefined') {
+      return
+    }
+    
+    const currentPath = window.location.pathname
+    const isActuallyOnProfilePage = currentPath === '/super-admin/profile'
+    
+    // Early return if not on profile page - don't run any verification
+    if (!isActuallyOnProfilePage) {
+      return
     }
 
-    verifyAndDisconnectIfNotOwner()
-  }, [isConnected, address, disconnect])
-
-  // Verify owner when wallet connects - disconnect if not owner
-  useEffect(() => {
     const verifyAndDisconnectIfNotOwner = async () => {
+      // Check again before any async operations
+      if (typeof window === 'undefined' || window.location.pathname !== '/super-admin/profile') {
+        return
+      }
+      
       if (isConnected && address) {
         try {
           const blockchain = await loadBlockchainFunctions()
           const { verifyOwner } = blockchain
           const isOwner = await verifyOwner(address)
           
-          if (!isOwner) {
-            // Disconnect non-owner wallet
+          // Final check before disconnecting - ensure still on profile page
+          if (!isOwner && typeof window !== 'undefined' && window.location.pathname === '/super-admin/profile') {
+            // Disconnect non-owner wallet ONLY on profile page
             disconnect()
             alert('🔒 Access Denied\nOnly owner wallets can connect to this page.')
             setError('Only owner wallets can connect to this page.')

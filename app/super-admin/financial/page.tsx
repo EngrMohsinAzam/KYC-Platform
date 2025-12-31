@@ -16,8 +16,6 @@ const loadBlockchainFunctions = async () => {
   return blockchainFunctions
 }
 
-type TimeRange = 'week' | 'month' | 'year'
-
 type Point = { label: string; value: number }
 
 function normalizeSeries(raw: any): Point[] {
@@ -67,7 +65,6 @@ function normalizeSeries(raw: any): Point[] {
 
 export default function SuperAdminFinancialPage() {
   const router = useRouter()
-  const [range, setRange] = useState<TimeRange>('month')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [analytics, setAnalytics] = useState<any>(null)
@@ -88,13 +85,10 @@ export default function SuperAdminFinancialPage() {
       setError(null)
       
       const blockchain = await loadBlockchainFunctions()
-      const { getFinancialStats, getHistoricalFinancialData } = blockchain
+      const { getFinancialStats } = blockchain
       
-      // Fetch summary stats and historical data in parallel
-      const [stats, historicalData] = await Promise.all([
-        getFinancialStats(),
-        getHistoricalFinancialData(range),
-      ])
+      // Fetch summary stats from contract
+      const stats = await getFinancialStats()
 
       // Set summary (convert BNB to number for display)
       setSummary({
@@ -103,11 +97,31 @@ export default function SuperAdminFinancialPage() {
         currentBalance: stats.currentBalance,
       })
 
-      // Set analytics for chart
-      setAnalytics({
-        amountCollected: historicalData.amountCollected,
-        kycSubmissions: historicalData.kycSubmissions,
-      })
+      // Create chart data with actual contract values
+      const totalCollectedNum = parseFloat(stats.totalCollected) || 0
+      const totalWithdrawnNum = parseFloat(stats.totalWithdrawn) || 0
+      const currentBalanceNum = parseFloat(stats.currentBalance) || 0
+      
+      // Set analytics for chart - show actual contract values with colors
+      const chartData = [
+        {
+          label: 'Total Collected',
+          value: totalCollectedNum,
+          color: '#3b82f6', // Blue
+        },
+        {
+          label: 'Total Withdrawn',
+          value: totalWithdrawnNum,
+          color: '#f59e0b', // Orange
+        },
+        {
+          label: 'Current Balance',
+          value: currentBalanceNum,
+          color: '#10b981', // Green
+        },
+      ]
+      
+      setAnalytics(chartData)
     } catch (e: any) {
       setError(e?.message || 'Failed to load financial record from blockchain')
     } finally {
@@ -118,25 +132,19 @@ export default function SuperAdminFinancialPage() {
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [range])
+  }, [])
 
   const chartData = useMemo(() => {
-    if (!analytics) return []
+    if (!analytics || !Array.isArray(analytics)) {
+      return []
+    }
     
-    const amountSeries = analytics.amountCollected || []
-    const kycSeries = analytics.kycSubmissions || []
-
-    const length = Math.max(amountSeries.length, kycSeries.length)
-    return Array.from({ length }).map((_, idx) => {
-      const a = amountSeries[idx]
-      const k = kycSeries[idx]
-      const label = a?.label || k?.label || `#${idx + 1}`
-      return {
-        label,
-        amount: a?.value ?? 0,
-        submissions: k?.value ?? 0,
-      }
-    })
+    // Analytics is now an array of { label, value, color } objects
+    return analytics.map((item: any) => ({
+      label: item.label || '',
+      value: item.value || 0,
+      color: item.color || '#3b82f6',
+    }))
   }, [analytics])
 
   const totalAmountCollected = useMemo(() => {
@@ -146,14 +154,14 @@ export default function SuperAdminFinancialPage() {
 
   // Lazy load recharts
   const LazyResponsiveContainer = nextDynamic(() => import('recharts').then((m) => m.ResponsiveContainer), { ssr: false })
-  const LazyComposedChart = nextDynamic(() => import('recharts').then((m) => m.ComposedChart), { ssr: false })
+  const LazyBarChart = nextDynamic(() => import('recharts').then((m) => m.BarChart), { ssr: false })
   const LazyCartesianGrid = nextDynamic(() => import('recharts').then((m) => m.CartesianGrid), { ssr: false })
   const LazyXAxis = nextDynamic(() => import('recharts').then((m) => m.XAxis), { ssr: false })
   const LazyYAxis = nextDynamic(() => import('recharts').then((m) => m.YAxis), { ssr: false })
   const LazyTooltip = nextDynamic(() => import('recharts').then((m) => m.Tooltip), { ssr: false })
   const LazyLegend = nextDynamic(() => import('recharts').then((m) => m.Legend), { ssr: false })
-  const LazyArea = nextDynamic(() => import('recharts').then((m) => m.Area), { ssr: false })
-  const LazyLine = nextDynamic(() => import('recharts').then((m) => m.Line), { ssr: false })
+  const LazyBar = nextDynamic(() => import('recharts').then((m) => m.Bar), { ssr: false })
+  const LazyCell = nextDynamic(() => import('recharts').then((m) => m.Cell), { ssr: false })
 
   return (
     <main className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-10">
@@ -163,15 +171,6 @@ export default function SuperAdminFinancialPage() {
           <p className="text-sm text-gray-600 mt-1">Analytics + wallet management (Super Admin only).</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value as TimeRange)}
-            className="px-3 py-2 rounded-xl border border-gray-300 bg-white text-sm"
-          >
-            <option value="week">Week</option>
-            <option value="month">Month</option>
-            <option value="year">Year</option>
-          </select>
           <button
             onClick={load}
             className="px-4 py-2 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-sm font-medium"
@@ -246,50 +245,64 @@ export default function SuperAdminFinancialPage() {
         </div>
       )}
 
-      {/* Chart full width */}
-      {loading ? (
-        <ShimmerChart />
-      ) : (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-900">Amount collected ({range})</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Total: {totalAmountCollected.toFixed(4)} BNB</p>
-            </div>
-          </div>
-
-          <div className="h-[360px]">
-            {chartData.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-sm text-gray-600">
-                No analytics data returned for <span className="font-medium mx-1">{range}</span>.
-              </div>
-            ) : (
-              <Suspense fallback={<div className="h-full flex items-center justify-center"><LoadingDots /></div>}>
-                <LazyResponsiveContainer width="100%" height="100%">
-                  <LazyComposedChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
-                    <defs>
-                      <linearGradient id="amountFillFin" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#111827" stopOpacity={0.18} />
-                        <stop offset="95%" stopColor="#111827" stopOpacity={0.02} />
-                      </linearGradient>
-                    </defs>
-                    <LazyCartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" vertical={false} />
-                    <LazyXAxis dataKey="label" stroke="#6b7280" tickLine={false} axisLine={false} />
-                    <LazyYAxis stroke="#6b7280" tickLine={false} axisLine={false} />
-                    <LazyTooltip
-                      contentStyle={{ borderRadius: 12, borderColor: '#e5e7eb' }}
-                      labelStyle={{ color: '#111827', fontWeight: 600 }}
-                    />
-                    <LazyLegend />
-                    <LazyArea type="monotone" dataKey="amount" stroke="#111827" fill="url(#amountFillFin)" strokeWidth={2} name="Amount collected" />
-                    <LazyLine type="monotone" dataKey="submissions" stroke="#6b7280" strokeWidth={2} dot={false} name="KYC submissions" />
-                  </LazyComposedChart>
-                </LazyResponsiveContainer>
-              </Suspense>
-            )}
+      {/* Financial Overview Chart */}
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-900">Financial Overview</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Data from smart contract • Total collected: {totalAmountCollected.toFixed(4)} BNB</p>
           </div>
         </div>
-      )}
+
+        <div className="h-[360px]">
+          {loading ? (
+            <div className="h-full flex items-center justify-center">
+              <LoadingDots />
+            </div>
+          ) : chartData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-sm text-gray-600">
+              No financial data available.
+            </div>
+          ) : (
+            <Suspense fallback={<div className="h-full flex items-center justify-center"><LoadingDots /></div>}>
+              <LazyResponsiveContainer width="100%" height="100%">
+                <LazyBarChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 80 }}>
+                  <LazyCartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                  <LazyXAxis 
+                    dataKey="label" 
+                    stroke="#6b7280"
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                  />
+                  <LazyYAxis 
+                    domain={[0, 'auto']} 
+                    stroke="#6b7280"
+                    tickFormatter={(value) => `${parseFloat(String(value)).toFixed(4)}`}
+                  />
+                  <LazyTooltip 
+                    formatter={(value: any) => {
+                      if (value === null || value === undefined) return ''
+                      const numValue = typeof value === 'number' ? value : parseFloat(String(value)) || 0
+                      return `${numValue.toFixed(8)} BNB`
+                    }}
+                    labelFormatter={(label) => `${label}`}
+                  />
+                  <LazyBar 
+                    dataKey="value" 
+                    name="Amount (BNB)" 
+                    radius={[4, 4, 0, 0]}
+                  >
+                    {chartData.map((entry: any, index: number) => (
+                      <LazyCell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </LazyBar>
+                </LazyBarChart>
+              </LazyResponsiveContainer>
+            </Suspense>
+          )}
+        </div>
+      </div>
 
     </main>
   )

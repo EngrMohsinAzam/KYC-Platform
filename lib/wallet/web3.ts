@@ -1166,6 +1166,35 @@ export async function getTotalWithdrawals(): Promise<string> {
   }
 }
 
+// Get KYC fee from contract
+// Uses public RPC only - no wallet connection required
+export async function getKycFee(): Promise<string> {
+  try {
+    // Always use public RPC - never try to connect wallet
+    const rpcUrl = 'https://bsc-dataseed.binance.org/'
+    const provider = new ethers.JsonRpcProvider(rpcUrl)
+    
+    const kycContract = new ethers.Contract(CONTRACT_ADDRESSES.KYC, KYC_ABI, provider)
+    
+    // Try getCurrentFee first, then fallback to kycFee
+    try {
+      const fee = await kycContract.getCurrentFee()
+      return ethers.formatEther(fee)
+    } catch {
+      try {
+        const fee = await kycContract.kycFee()
+        return ethers.formatEther(fee)
+      } catch {
+        // Default fallback if contract doesn't have fee function
+        return '0.0033' // Default estimate
+      }
+    }
+  } catch (error: any) {
+    console.warn('Error getting KYC fee, using default:', error)
+    return '0.0033' // Default estimate
+  }
+}
+
 // Get all financial stats at once (more efficient)
 // Uses public RPC only - no wallet connection required
 export async function getFinancialStats(): Promise<{
@@ -1173,6 +1202,7 @@ export async function getFinancialStats(): Promise<{
   totalWithdrawn: string // BNB
   currentBalance: string // BNB
   totalSubmissions: number
+  kycFee: string // BNB
 }> {
   try {
     // Always use public RPC - never try to connect wallet
@@ -1183,7 +1213,10 @@ export async function getFinancialStats(): Promise<{
     
     // Use getStats for efficiency - gets all stats in one call
     try {
-      const stats = await kycContract.getStats()
+      const [stats, kycFee] = await Promise.all([
+        kycContract.getStats(),
+        getKycFee(),
+      ])
       // stats returns: [submissions, totalCollectionBNB, totalWithdrawnBNB, balance]
       const submissions = Number(stats[0])
       const totalCollectionBNB = ethers.formatEther(stats[1])
@@ -1195,15 +1228,17 @@ export async function getFinancialStats(): Promise<{
         totalWithdrawn: totalWithdrawnBNB,
         currentBalance: balance,
         totalSubmissions: submissions,
+        kycFee,
       }
     } catch (statsError: any) {
       // Fallback to individual calls if getStats fails
       console.log('⚠️ getStats failed, using individual calls:', statsError?.message || statsError)
-      const [totalCollected, totalWithdrawn, balance, submissions] = await Promise.all([
+      const [totalCollected, totalWithdrawn, balance, submissions, kycFee] = await Promise.all([
         kycContract.totalCollection().then((v: bigint) => ethers.formatEther(v)),
         kycContract.totalWithdrawn().then((v: bigint) => ethers.formatEther(v)),
         kycContract.getContractBalance().then((v: bigint) => ethers.formatEther(v)),
         kycContract.totalSubmissions().then((v: bigint) => Number(v)),
+        getKycFee(),
       ])
       
       return {
@@ -1211,6 +1246,7 @@ export async function getFinancialStats(): Promise<{
         totalWithdrawn,
         currentBalance: balance,
         totalSubmissions: submissions,
+        kycFee,
       }
     }
   } catch (error: any) {
@@ -1219,12 +1255,123 @@ export async function getFinancialStats(): Promise<{
   }
 }
 
+// Helper function to check if error is a rate limit error
+function isRateLimitError(error: any): boolean {
+  if (!error) return false
+  const errorMessage = String(error?.message || error || '')
+  const errorCode = error?.code || error?.error?.code
+  return (
+    errorMessage.includes('rate limit') ||
+    errorMessage.includes('rate_limit') ||
+    errorCode === -32005 ||
+    error?.error?.code === -32005
+  )
+}
+
+// Helper function to sleep/delay
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+// Helper function to query events in chunks with retry logic
+async function queryEventsInChunks(
+  contract: ethers.Contract,
+  filter: ethers.ContractEventName,
+  fromBlock: number,
+  toBlock: number | string,
+  chunkSize: number = 50000, // Query 50k blocks at a time
+  maxRetries: number = 3
+): Promise<ethers.Log[]> {
+  const allEvents: ethers.Log[] = []
+  
+  // If toBlock is 'latest', get the current block number
+  let currentToBlock: number
+  if (toBlock === 'latest') {
+    const provider = contract.runner?.provider || contract.provider
+    if (!provider) throw new Error('Provider not available')
+    // Type assertion: provider is ethers.Provider which has getBlockNumber
+    const ethersProvider = provider as ethers.Provider
+    currentToBlock = await ethersProvider.getBlockNumber()
+  } else {
+    currentToBlock = typeof toBlock === 'string' ? parseInt(toBlock, 16) : toBlock
+  }
+  
+  // Process in chunks
+  let currentFromBlock = fromBlock
+  
+  while (currentFromBlock < currentToBlock) {
+    const chunkToBlock = Math.min(currentFromBlock + chunkSize, currentToBlock)
+    let retries = 0
+    let success = false
+    
+    while (retries < maxRetries && !success) {
+      try {
+        // Add delay between requests to avoid rate limiting
+        if (retries > 0 || allEvents.length > 0) {
+          await sleep(1000 * (retries + 1)) // Exponential backoff: 1s, 2s, 3s
+        }
+        
+        const events = await contract.queryFilter(filter, currentFromBlock, chunkToBlock)
+        allEvents.push(...events)
+        success = true
+        currentFromBlock = chunkToBlock + 1
+        
+        // Small delay between successful chunks
+        if (currentFromBlock < currentToBlock) {
+          await sleep(500) // 500ms delay between chunks
+        }
+      } catch (error: any) {
+        retries++
+        if (isRateLimitError(error)) {
+          if (retries >= maxRetries) {
+            console.warn(`Rate limit hit for blocks ${currentFromBlock}-${chunkToBlock}, reducing chunk size and retrying...`)
+            // Reduce chunk size and retry
+            const reducedChunkSize = Math.floor(chunkSize / 2)
+            if (reducedChunkSize < 1000) {
+              // If chunk size is too small, skip this chunk and continue
+              console.warn(`Chunk size too small, skipping blocks ${currentFromBlock}-${chunkToBlock}`)
+              currentFromBlock = chunkToBlock + 1
+              success = true
+              break
+            }
+            chunkSize = reducedChunkSize
+            retries = 0 // Reset retries with new chunk size
+            await sleep(2000) // Wait 2 seconds before retrying with smaller chunk
+          } else {
+            const backoffDelay = 2000 * Math.pow(2, retries) // Exponential backoff: 2s, 4s, 8s
+            console.warn(`Rate limit error, retrying in ${backoffDelay}ms... (attempt ${retries}/${maxRetries})`)
+            await sleep(backoffDelay)
+          }
+        } else {
+          // Non-rate-limit error, throw immediately
+          throw error
+        }
+      }
+    }
+    
+    if (!success) {
+      console.warn(`Failed to fetch events for blocks ${currentFromBlock}-${chunkToBlock} after ${maxRetries} retries, skipping...`)
+      currentFromBlock = chunkToBlock + 1
+    }
+  }
+  
+  return allEvents
+}
+
 // Get historical events for chart data
+// DISABLED: This function causes rate limit errors. Use getFinancialStats() instead for current contract values.
 // Uses public RPC only - no wallet connection required
 export async function getHistoricalFinancialData(range: 'week' | 'month' | 'year'): Promise<{
   amountCollected: Array<{ label: string; value: number }>
   kycSubmissions: Array<{ label: string; value: number }>
+  withdrawals: Array<{ label: string; value: number }>
 }> {
+  // DISABLED: Return empty data immediately to prevent rate limit errors
+  // Historical data fetching via eth_getLogs triggers rate limits on public RPC endpoints
+  console.warn('getHistoricalFinancialData is disabled to prevent rate limit errors. Use getFinancialStats() for current contract values.')
+  return { amountCollected: [], kycSubmissions: [], withdrawals: [] }
+  
+  /* DISABLED CODE - Causes rate limit errors
   try {
     // Always use public RPC - never try to connect wallet
     const rpcUrl = 'https://bsc-dataseed.binance.org/'
@@ -1246,17 +1393,21 @@ export async function getHistoricalFinancialData(range: 'week' | 'month' | 'year
     const currentBlock = await provider.getBlockNumber()
     fromBlock = Math.max(0, currentBlock - estimatedBlocks)
     
-    // Fetch events using queryFilter (more reliable)
+    // Fetch events using chunked queries with retry logic
     const kycSubmittedFilter = kycContract.filters.KYCSubmitted()
     const bnbWithdrawnFilter = kycContract.filters.BNBWithdrawn()
     
+    // Use smaller chunk size for larger ranges to avoid rate limits
+    const chunkSize = range === 'week' ? 100000 : range === 'month' ? 50000 : 25000
+    
+    // Query events in chunks with delays and retries
     const [kycSubmittedEvents, bnbWithdrawnEvents] = await Promise.all([
-      kycContract.queryFilter(kycSubmittedFilter, fromBlock, toBlock),
-      kycContract.queryFilter(bnbWithdrawnFilter, fromBlock, toBlock),
+      queryEventsInChunks(kycContract, kycSubmittedFilter, fromBlock, toBlock, chunkSize),
+      queryEventsInChunks(kycContract, bnbWithdrawnFilter, fromBlock, toBlock, chunkSize),
     ])
     
-    // Group by time period
-    const timeMap = new Map<string, { collected: number; submissions: number }>()
+    // Group by time period - track collected and withdrawals separately
+    const timeMap = new Map<string, { collected: number; withdrawals: number; submissions: number }>()
     
     // Get unique block numbers and fetch them in batch
     const uniqueBlockNumbers = new Set<number>()
@@ -1307,7 +1458,7 @@ export async function getHistoricalFinancialData(range: 'week' | 'month' | 'year
         key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}` // Monthly
       }
       
-      const existing = timeMap.get(key) || { collected: 0, submissions: 0 }
+      const existing = timeMap.get(key) || { collected: 0, withdrawals: 0, submissions: 0 }
       existing.collected += parseFloat(feePaid)
       existing.submissions += 1
       timeMap.set(key, existing)
@@ -1330,8 +1481,8 @@ export async function getHistoricalFinancialData(range: 'week' | 'month' | 'year
         key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
       }
       
-      const existing = timeMap.get(key) || { collected: 0, submissions: 0 }
-      existing.collected -= parseFloat(amount) // Subtract withdrawals
+      const existing = timeMap.get(key) || { collected: 0, withdrawals: 0, submissions: 0 }
+      existing.withdrawals += parseFloat(amount) // Track withdrawals separately
       timeMap.set(key, existing)
     }
     
@@ -1339,7 +1490,12 @@ export async function getHistoricalFinancialData(range: 'week' | 'month' | 'year
     const sortedKeys = Array.from(timeMap.keys()).sort()
     const amountCollected = sortedKeys.map(key => ({
       label: key,
-      value: Math.max(0, timeMap.get(key)!.collected), // Ensure non-negative
+      value: Math.max(0, timeMap.get(key)!.collected), // Revenue (collected)
+    }))
+    
+    const withdrawals = sortedKeys.map(key => ({
+      label: key,
+      value: Math.max(0, timeMap.get(key)!.withdrawals), // Withdrawals
     }))
     
     const kycSubmissions = sortedKeys.map(key => ({
@@ -1347,12 +1503,18 @@ export async function getHistoricalFinancialData(range: 'week' | 'month' | 'year
       value: timeMap.get(key)!.submissions,
     }))
     
-    return { amountCollected, kycSubmissions }
+    return { amountCollected, kycSubmissions, withdrawals }
   } catch (error: any) {
-    console.error('Error getting historical financial data:', error)
+    // Log rate limit errors as warnings, other errors as errors
+    if (isRateLimitError(error)) {
+      console.warn('Rate limit encountered while getting historical financial data, returning empty data:', error?.message || error)
+    } else {
+      console.error('Error getting historical financial data:', error)
+    }
     // Return empty arrays on error
-    return { amountCollected: [], kycSubmissions: [] }
+    return { amountCollected: [], kycSubmissions: [], withdrawals: [] }
   }
+  */
 }
 
 export async function withdrawContractFunds(amount: string): Promise<string> {

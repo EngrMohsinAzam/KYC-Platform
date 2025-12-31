@@ -51,6 +51,25 @@ function isWalletConnectExtensionError(error: any): boolean {
   )
 }
 
+// Function to check if an error is a rate limit error
+function isRateLimitError(error: any): boolean {
+  if (!error) return false
+  
+  const errorString = String(error)
+  const errorMessage = error?.message || ''
+  const errorCode = error?.code || error?.error?.code
+  
+  return (
+    errorString.includes('rate limit') ||
+    errorString.includes('rate_limit') ||
+    errorMessage.includes('rate limit') ||
+    errorMessage.includes('rate_limit') ||
+    errorMessage.includes('method eth_getLogs in batch triggered rate limit') ||
+    errorCode === -32005 ||
+    error?.error?.code === -32005
+  )
+}
+
 // Set up error suppression immediately (before component mount)
 if (typeof window !== 'undefined') {
   const originalError = window.console.error
@@ -68,7 +87,17 @@ if (typeof window !== 'undefined') {
       return false
     }) || isWalletConnectExtensionError(combinedString)
     
-    if (hasWalletConnectError) {
+    const hasRateLimitError = args.some(arg => {
+      if (typeof arg === 'string') {
+        return isRateLimitError(arg)
+      }
+      if (arg && typeof arg === 'object') {
+        return isRateLimitError(arg)
+      }
+      return false
+    }) || isRateLimitError(combinedString)
+    
+    if (hasWalletConnectError || hasRateLimitError) {
       return // Suppress silently
     }
     originalError.apply(window.console, args)
@@ -98,14 +127,15 @@ if (typeof window !== 'undefined') {
 
   // Handle unhandled promise rejections
   window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
-    if (isWalletConnectExtensionError(event.reason)) {
+    if (isWalletConnectExtensionError(event.reason) || isRateLimitError(event.reason)) {
       event.preventDefault()
     }
   })
 
   // Handle uncaught errors
   window.addEventListener('error', (event: ErrorEvent) => {
-    if (isWalletConnectExtensionError(event.error) || isWalletConnectExtensionError(event.message)) {
+    if (isWalletConnectExtensionError(event.error) || isWalletConnectExtensionError(event.message) ||
+        isRateLimitError(event.error) || isRateLimitError(event.message)) {
       event.preventDefault()
     }
   })
