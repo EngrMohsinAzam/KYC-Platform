@@ -7,8 +7,11 @@
 
 // API Base URL - uses environment variable with fallback
 // Remove trailing slash if present to ensure consistent URL building
+// For local development, use: http://localhost:3902
+// For production, use HTTPS URL
 const getApiBaseUrl = (): string => {
-  const url = process.env.NEXT_PUBLIC_API_URL || 'https://xzfjrnv9-3902.asse.devtunnels.ms/'
+  // Default to localhost for local development
+  const url = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3902'
   // Remove trailing slash for consistency
   return url.replace(/\/$/, '')
 }

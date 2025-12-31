@@ -609,17 +609,16 @@ export const checkStatusByWallet = async (walletAddress: string): Promise<{ succ
 // Public: Check if KYC is paused
 export const getKycPausedStatus = async (): Promise<{ success: boolean; data?: any; message?: string }> => {
   try {
-    // Call backend API directly (not through Next.js proxy)
-    const backendUrl = `${API_BASE_URL}/api/kyc/paused-status`
+    // Use Next.js API proxy route to avoid mixed content issues (HTTPS -> HTTP)
+    // The proxy route handles the backend call server-side, avoiding browser security restrictions
     console.log('📡 [getKycPausedStatus] ==========================================')
-    console.log('📡 [getKycPausedStatus] 🚀 CALLING BACKEND API DIRECTLY')
-    console.log('📡 [getKycPausedStatus] API_BASE_URL:', API_BASE_URL)
-    console.log('📡 [getKycPausedStatus] Backend URL:', backendUrl)
+    console.log('📡 [getKycPausedStatus] 🚀 CALLING NEXT.JS API PROXY')
+    console.log('📡 [getKycPausedStatus] Using proxy route: /api/kyc/paused-status')
     console.log('📡 [getKycPausedStatus] Method: GET')
     console.log('📡 [getKycPausedStatus] ==========================================')
     
-    // Call backend directly (no Next.js proxy)
-    const response = await fetch(backendUrl, { 
+    // Use Next.js API proxy route (runs on same HTTPS domain, no mixed content issues)
+    const response = await fetch('/api/kyc/paused-status', { 
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -627,12 +626,12 @@ export const getKycPausedStatus = async (): Promise<{ success: boolean; data?: a
       cache: 'no-store' // Always fetch fresh data
     })
     
-    console.log('📡 [getKycPausedStatus] ✅ Backend API Response received')
+    console.log('📡 [getKycPausedStatus] ✅ API Response received')
     console.log('📡 [getKycPausedStatus] Response status:', response.status)
     console.log('📡 [getKycPausedStatus] Response OK:', response.ok)
     
     if (!response.ok) {
-      throw new Error(`Backend API returned status ${response.status}`)
+      throw new Error(`API returned status ${response.status}`)
     }
     
     const data = await response.json().catch((err) => {
@@ -640,12 +639,12 @@ export const getKycPausedStatus = async (): Promise<{ success: boolean; data?: a
       return {}
     })
     
-    console.log('📡 [getKycPausedStatus] Parsed data from backend:', JSON.stringify(data, null, 2))
+    console.log('📡 [getKycPausedStatus] Parsed data:', JSON.stringify(data, null, 2))
     console.log('📡 [getKycPausedStatus] ==========================================')
     return data
   } catch (error: any) {
     console.error('❌ [getKycPausedStatus] ==========================================')
-    console.error('❌ [getKycPausedStatus] ERROR calling backend API:', error)
+    console.error('❌ [getKycPausedStatus] ERROR calling API:', error)
     console.error('❌ [getKycPausedStatus] Error message:', error?.message)
     console.error('❌ [getKycPausedStatus] Error stack:', error?.stack)
     console.error('❌ [getKycPausedStatus] ==========================================')
