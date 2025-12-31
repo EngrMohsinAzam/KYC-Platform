@@ -8,7 +8,7 @@
 // API Base URL - uses environment variable with fallback
 // Remove trailing slash if present to ensure consistent URL building
 const getApiBaseUrl = (): string => {
-  const url = process.env.NEXT_PUBLIC_API_URL || 'http://13.51.122.58:3902/'
+  const url = process.env.NEXT_PUBLIC_API_URL || 'https://xzfjrnv9-3902.asse.devtunnels.ms/'
   // Remove trailing slash for consistency
   return url.replace(/\/$/, '')
 }
