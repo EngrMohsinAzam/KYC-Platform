@@ -16,6 +16,7 @@ export default function VerifyIdentity() {
   const searchParams = useSearchParams()
   const { state, dispatch } = useAppContext()
   const [isUpdating, setIsUpdating] = useState(false)
+  const [loading, setLoading] = useState(false)
   const hasClearedRef = useRef(false)
   
   // Check if we're in update mode (from blur rejection)
@@ -140,6 +141,7 @@ export default function VerifyIdentity() {
       }
     } else {
       // Normal flow - go to personal-info
+      setLoading(true)
       router.push('/verify/personal-info')
     }
   }
@@ -370,14 +372,21 @@ export default function VerifyIdentity() {
 
               <Button 
                 onClick={handleContinue} 
-                disabled={!canContinue || isUpdating} 
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                disabled={!canContinue || isUpdating || loading} 
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isUpdateMode && isUpdating 
-                  ? 'Updating...' 
-                  : isUpdateMode 
-                  ? 'Update Documents' 
-                  : 'Continue'}
+                {loading ? (
+                  <>
+                    <LoadingDots size="sm" color="#ffffff" />
+                    <span></span>
+                  </>
+                ) : isUpdateMode && isUpdating ? (
+                  'Updating...'
+                ) : isUpdateMode ? (
+                  'Update Documents'
+                ) : (
+                  'Continue'
+                )}
               </Button>
             </div>
           </div>
@@ -388,14 +397,21 @@ export default function VerifyIdentity() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
         <Button 
           onClick={handleContinue} 
-          disabled={!canContinue || isUpdating} 
-          className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+          disabled={!canContinue || isUpdating || loading} 
+          className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          {isUpdateMode && isUpdating 
-            ? 'Updating...' 
-            : isUpdateMode 
-            ? 'Update Documents' 
-            : 'Continue'}
+          {loading ? (
+            <>
+              <LoadingDots size="sm" color="#ffffff" />
+              <span></span>
+            </>
+          ) : isUpdateMode && isUpdating ? (
+            'Updating...'
+          ) : isUpdateMode ? (
+            'Update Documents'
+          ) : (
+            'Continue'
+          )}
         </Button>
       </div>
     </div>

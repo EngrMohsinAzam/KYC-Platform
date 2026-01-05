@@ -39,6 +39,8 @@ export default function SelectIdType() {
   const [idType, setIdType] = useState('')
   const [countrySearch, setCountrySearch] = useState('')
   const [showCountryDropdown, setShowCountryDropdown] = useState(false)
+  const [citySearch, setCitySearch] = useState('')
+  const [showCityDropdown, setShowCityDropdown] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [pausedMessage, setPausedMessage] = useState<string | null>(null)
 
@@ -51,12 +53,19 @@ export default function SelectIdType() {
     ? allIdTypes.filter(type => type.value !== 'national-id')
     : allIdTypes
   
-  // Filter countries based on search (for mobile)
+  // Filter countries based on search - show all when empty, filter when typing
   const filteredCountries = countrySearch
     ? countryOptions.filter(option =>
         option.label.toLowerCase().includes(countrySearch.toLowerCase())
       )
     : countryOptions
+
+  // Filter cities based on search - show all when empty, filter when typing
+  const filteredCities = citySearch
+    ? cityOptions.filter(option =>
+        option.label.toLowerCase().includes(citySearch.toLowerCase())
+      )
+    : cityOptions
 
   // Detect mobile device
   useEffect(() => {
@@ -85,28 +94,41 @@ export default function SelectIdType() {
     checkPaused()
   }, [])
 
-  // Close dropdown when clicking outside (mobile)
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showCountryDropdown && !(event.target as HTMLElement).closest('.country-selector')) {
+      const target = event.target as HTMLElement
+      if (showCountryDropdown && !target.closest('.country-selector')) {
         setShowCountryDropdown(false)
       }
+      if (showCityDropdown && !target.closest('.city-selector')) {
+        setShowCityDropdown(false)
+      }
     }
-    if (showCountryDropdown) {
+    if (showCountryDropdown || showCityDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showCountryDropdown])
+  }, [showCountryDropdown, showCityDropdown])
 
   // Reset city when country changes (only when country changes, not when idType changes)
   useEffect(() => {
     if (country) {
       setCity('')
+      setCitySearch('') // Clear city search when country changes
       dispatch({ type: 'SET_COUNTRY', payload: country })
       setCountrySearch('') // Clear search when country is selected
-      setShowCountryDropdown(false) // Close dropdown on mobile
+      setShowCountryDropdown(false) // Close dropdown
+      setShowCityDropdown(false) // Close city dropdown
     }
   }, [country, dispatch])
+
+  // Update city in context when it changes
+  useEffect(() => {
+    if (city) {
+      dispatch({ type: 'SET_CITY', payload: city })
+    }
+  }, [city, dispatch])
 
   // Clear ID type if it's no longer valid for the selected country
   useEffect(() => {
@@ -204,9 +226,8 @@ export default function SelectIdType() {
                     }}
                     onFocus={() => {
                       setShowCountryDropdown(true)
-                      if (!country) {
-                        setCountrySearch('')
-                      }
+                      // Clear search on focus to show all countries for easy searching/changing
+                      setCountrySearch('')
                     }}
                     placeholder="Type to search country..."
                     className="w-full px-4 py-3 rounded-button border border-gray-300 bg-surface-light text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
@@ -241,7 +262,7 @@ export default function SelectIdType() {
                         className="fixed inset-0 z-10"
                         onClick={() => setShowCountryDropdown(false)}
                       />
-                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
                         {filteredCountries.length > 0 ? (
                           filteredCountries.map((option) => (
                             <button
@@ -267,20 +288,91 @@ export default function SelectIdType() {
                 </div>
               </div>
 
-               {/* City/Region - Shows when country is selected */}
+               {/* City/Region - Shows when country is selected - Mobile with search */}
               {country && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="animate-in fade-in slide-in-from-top-2 duration-300 city-selector">
                   <label className="block text-sm font-normal text-gray-700 mb-2">
                     City
                   </label>
-                  <Select
-                    placeholder="Select city"
-                    options={cityOptions}
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    disabled={!country}
-                    className="w-full"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={(() => {
+                        if (citySearch) return citySearch
+                        if (city) {
+                          const selectedCity = cityOptions.find(c => c.value === city)
+                          return selectedCity?.label || ''
+                        }
+                        return ''
+                      })()}
+                      onChange={(e) => {
+                        setCitySearch(e.target.value)
+                        setShowCityDropdown(true)
+                        if (!e.target.value) {
+                          setCity('')
+                        }
+                      }}
+                      onFocus={() => {
+                        setShowCityDropdown(true)
+                        // Clear search on focus to show all cities for easy searching/changing
+                        setCitySearch('')
+                      }}
+                      placeholder="Type to search city..."
+                      className="w-full px-4 py-3 rounded-button border border-gray-300 bg-surface-light text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
+                    />
+                    {city && (
+                      <button
+                        onClick={() => {
+                          setCity('')
+                          setCitySearch('')
+                        }}
+                        className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                    <svg
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    
+                    {/* City Dropdown list */}
+                    {showCityDropdown && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowCityDropdown(false)}
+                        />
+                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                          {filteredCities.length > 0 ? (
+                            filteredCities.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => {
+                                  setCity(option.value)
+                                  setCitySearch(option.label)
+                                  setShowCityDropdown(false)
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
+                              >
+                                {option.label}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-3 text-gray-500 text-center">
+                              No cities found
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -325,30 +417,179 @@ export default function SelectIdType() {
               </div>
 
               <div className="space-y-6 mb-8">
-                <div>
+                {/* Country/region of residence - Desktop with search */}
+                <div className="country-selector">
                   <label className="block text-sm font-medium text-gray-900 mb-2">
                     Country/region of residence
                   </label>
-                  <Select
-                    placeholder="Select country/region"
-                    options={countryOptions}
-                    value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={(() => {
+                        if (countrySearch) return countrySearch
+                        if (country) {
+                          const selectedCountry = countryOptions.find(c => c.value === country)
+                          return selectedCountry?.label || ''
+                        }
+                        return ''
+                      })()}
+                      onChange={(e) => {
+                        setCountrySearch(e.target.value)
+                        setShowCountryDropdown(true)
+                        if (!e.target.value) {
+                          setCountry('')
+                        }
+                      }}
+                      onFocus={() => {
+                        setShowCountryDropdown(true)
+                        // Clear search on focus to show all countries for easy searching/changing
+                        setCountrySearch('')
+                      }}
+                      placeholder="Type to search country..."
+                      className="w-full px-4 py-3 rounded-button border border-gray-300 bg-surface-light text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
+                    />
+                    {country && (
+                      <button
+                        onClick={() => {
+                          setCountry('')
+                          setCountrySearch('')
+                          setCity('')
+                          setCitySearch('')
+                        }}
+                        className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                    <svg
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                    
+                    {/* Country Dropdown list */}
+                    {showCountryDropdown && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowCountryDropdown(false)}
+                        />
+                        <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                          {filteredCountries.length > 0 ? (
+                            filteredCountries.map((option) => (
+                              <button
+                                key={option.value}
+                                onClick={() => {
+                                  setCountry(option.value)
+                                  setCountrySearch(option.label)
+                                  setShowCountryDropdown(false)
+                                }}
+                                className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
+                              >
+                                {option.label}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-3 text-gray-500 text-center">
+                              No countries found
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
+                 {/* City - Desktop with search - Shows when country is selected */}
                  {country && (
-                  <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="animate-in fade-in slide-in-from-top-2 duration-300 city-selector">
                     <label className="block text-sm font-medium text-gray-900 mb-2">
                       City
                     </label>
-                    <Select
-                      placeholder="Select city"
-                      options={cityOptions}
-                      value={city}
-                      onChange={(e) => setCity(e.target.value)}
-                      disabled={!country}
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={(() => {
+                          if (citySearch) return citySearch
+                          if (city) {
+                            const selectedCity = cityOptions.find(c => c.value === city)
+                            return selectedCity?.label || ''
+                          }
+                          return ''
+                        })()}
+                        onChange={(e) => {
+                          setCitySearch(e.target.value)
+                          setShowCityDropdown(true)
+                          if (!e.target.value) {
+                            setCity('')
+                          }
+                        }}
+                        onFocus={() => {
+                          setShowCityDropdown(true)
+                          // Clear search on focus to show all cities for easy searching/changing
+                          setCitySearch('')
+                        }}
+                        placeholder="Type to search city..."
+                        className="w-full px-4 py-3 rounded-button border border-gray-300 bg-surface-light text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
+                      />
+                      {city && (
+                        <button
+                          onClick={() => {
+                            setCity('')
+                            setCitySearch('')
+                          }}
+                          className="absolute right-10 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      )}
+                      <svg
+                        className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                      
+                      {/* City Dropdown list */}
+                      {showCityDropdown && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setShowCityDropdown(false)}
+                          />
+                          <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                            {filteredCities.length > 0 ? (
+                              filteredCities.map((option) => (
+                                <button
+                                  key={option.value}
+                                  onClick={() => {
+                                    setCity(option.value)
+                                    setCitySearch(option.label)
+                                    setShowCityDropdown(false)
+                                  }}
+                                  className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
+                                >
+                                  {option.label}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-gray-500 text-center">
+                                No cities found
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
 

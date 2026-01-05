@@ -10,6 +10,7 @@ import { Footer } from '@/components/layout/Footer'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { getCountryByValue, getCountryOptions } from '@/lib/utils/countries'
+import { LoadingDots } from '@/components/ui/LoadingDots'
 
 export default function PersonalInfo() {
   const router = useRouter()
@@ -30,6 +31,7 @@ export default function PersonalInfo() {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [searchingAddress, setSearchingAddress] = useState(false)
   const [addressInitialized, setAddressInitialized] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // Debug: Log selected country and ID type on mount
   useEffect(() => {
@@ -211,447 +213,105 @@ export default function PersonalInfo() {
     setAddressSuggestions([])
   }
 
-  // Get ID number format based on country and document type
-  // Format structure: { maxLength, pattern, letterCount, numberCount, letterPosition, minLength }
-  // letterPosition: 'start' | 'end' | 'none' | 'flexible'
-  // Based on industry-accepted standards (ICAO, KYC compliance)
-  const getIdNumberFormat = (country: string, idType: string) => {
-    const formats: Record<string, Record<string, { 
-      maxLength: number
-      minLength?: number
-      pattern: RegExp
-      letterCount: number | [number, number] // [min, max] for flexible ranges
-      numberCount: number | [number, number] // [min, max] for flexible ranges
-      letterPosition: 'start' | 'end' | 'none' | 'flexible'
-      format?: (value: string) => string
-      flexible?: boolean // For formats that allow multiple patterns
-    }>> = {
+  // Get ID number length requirements based on country and document type
+  // Simple structure: { minLength, maxLength } - allows alphanumeric input
+  const getIdNumberLength = (country: string, idType: string) => {
+    // Length mapping: country -> idType -> { minLength, maxLength }
+    const lengthMap: Record<string, Record<string, { minLength: number; maxLength: number }>> = {
       'pk': { // Pakistan
-        'national-id': {
-          maxLength: 13,
-          minLength: 13,
-          pattern: /^\d{13}$/,
-          letterCount: 0,
-          numberCount: 13,
-          letterPosition: 'none',
-          format: (value: string) => {
-            const digits = value.replace(/\D/g, '').slice(0, 13)
-            if (digits.length === 13) {
-              return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`
-            }
-            return digits
-          }
-        },
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true, // Allows 1-2 letters + 6-8 digits OR 9 digits
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'national-id': { minLength: 13, maxLength: 13 },
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'in': { // India
-        'national-id': {
-          maxLength: 12,
-          minLength: 12,
-          pattern: /^\d{12}$/,
-          letterCount: 0,
-          numberCount: 12,
-          letterPosition: 'none',
-        },
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'national-id': { minLength: 12, maxLength: 12 },
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
-      'us': { // United States (No National ID - uses DL for KYC)
-        'passport': {
-          maxLength: 9,
-          minLength: 9,
-          pattern: /^\d{9}$/,
-          letterCount: 0,
-          numberCount: 9,
-          letterPosition: 'none',
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+      'us': { // United States
+        'passport': { minLength: 9, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'uk': { // United Kingdom
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 16,
-          pattern: /^[A-Z0-9]{16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 16, maxLength: 16 },
       },
       'ca': { // Canada
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'au': { // Australia
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'nz': { // New Zealand
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'jp': { // Japan
-        'national-id': {
-          maxLength: 12,
-          minLength: 12,
-          pattern: /^\d{12}$/,
-          letterCount: 0,
-          numberCount: 12,
-          letterPosition: 'none',
-        },
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'national-id': { minLength: 12, maxLength: 12 },
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'cn': { // China
-        'national-id': {
-          maxLength: 18,
-          minLength: 18,
-          pattern: /^\d{18}$/,
-          letterCount: 0,
-          numberCount: 18,
-          letterPosition: 'none',
-        },
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'national-id': { minLength: 18, maxLength: 18 },
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'ae': { // UAE
-        'national-id': {
-          maxLength: 15,
-          minLength: 15,
-          pattern: /^784\d{12}$/,
-          letterCount: 0,
-          numberCount: 15,
-          letterPosition: 'none',
-        },
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'national-id': { minLength: 15, maxLength: 15 },
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
-      // EU countries (sample - can be expanded)
       'de': { // Germany
-        'national-id': {
-          maxLength: 12,
-          minLength: 8,
-          pattern: /^[A-Z0-9]{8,12}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
+        'national-id': { minLength: 8, maxLength: 12 },
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
       },
       'fr': { // France
-        'national-id': {
-          maxLength: 12,
-          minLength: 8,
-          pattern: /^[A-Z0-9]{8,12}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'passport': {
-          maxLength: 9,
-          minLength: 8,
-          pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-          letterCount: [1, 2],
-          numberCount: [6, 8],
-          letterPosition: 'flexible',
-          flexible: true,
-        },
-        'drivers-license': {
-          maxLength: 16,
-          minLength: 5,
-          pattern: /^[A-Z0-9]{5,16}$/,
-          letterCount: 0,
-          numberCount: 0,
-          letterPosition: 'flexible',
-          flexible: true,
-        }
-      }
+        'national-id': { minLength: 8, maxLength: 12 },
+        'passport': { minLength: 8, maxLength: 9 },
+        'drivers-license': { minLength: 5, maxLength: 16 },
+      },
     }
     
-    // Default formats for countries not in the list (Industry-accepted standards)
-    const defaultFormats: Record<string, { 
-      maxLength: number
-      minLength?: number
-      pattern: RegExp
-      letterCount: number | [number, number]
-      numberCount: number | [number, number]
-      letterPosition: 'start' | 'end' | 'none' | 'flexible'
-      flexible?: boolean
-    }> = {
-      'national-id': { 
-        maxLength: 18, 
-        minLength: 8,
-        pattern: /^[A-Z0-9]{8,18}$/,
-        letterCount: 0,
-        numberCount: 0,
-        letterPosition: 'flexible',
-        flexible: true, // 8-18 digits OR alphanumeric
-      },
-      'passport': { 
-        maxLength: 9, 
-        minLength: 8,
-        pattern: /^([A-Z]{1,2}\d{6,8}|\d{9})$/,
-        letterCount: [1, 2],
-        numberCount: [6, 8],
-        letterPosition: 'flexible',
-        flexible: true, // 1-2 letters + 6-8 digits OR 9 digits (ICAO standard)
-      },
-      'drivers-license': { 
-        maxLength: 16, 
-        minLength: 5,
-        pattern: /^[A-Z0-9]{5,16}$/,
-        letterCount: 0,
-        numberCount: 0,
-        letterPosition: 'flexible',
-        flexible: true, // 5-16 characters alphanumeric
-      }
+    // Default lengths for countries not in the list
+    const defaultLengths: Record<string, { minLength: number; maxLength: number }> = {
+      'national-id': { minLength: 8, maxLength: 18 },
+      'passport': { minLength: 8, maxLength: 9 },
+      'drivers-license': { minLength: 5, maxLength: 16 },
     }
     
-    return formats[country]?.[idType] || defaultFormats[idType] || { 
-      maxLength: 20, 
-      minLength: 5,
-      pattern: /^.+$/, 
+    return lengthMap[country]?.[idType] || defaultLengths[idType] || { minLength: 5, maxLength: 20 }
+  }
+
+  // Legacy function for backward compatibility - now just returns length info
+  const getIdNumberFormat = (country: string, idType: string) => {
+    const length = getIdNumberLength(country, idType)
+    return {
+      maxLength: length.maxLength,
+      minLength: length.minLength,
+      pattern: /^[A-Z0-9]+$/, // Allow alphanumeric
       letterCount: 0,
       numberCount: 0,
-      letterPosition: 'flexible',
-      flexible: true
+      letterPosition: 'flexible' as const,
+      flexible: true,
     }
   }
 
   const handleIdNumberChange = (value: string) => {
     const country = state.selectedCountry || ''
     const idType = state.selectedIdType || ''
-    const format = getIdNumberFormat(country, idType)
+    const length = getIdNumberLength(country, idType)
     
     // Remove all non-alphanumeric characters and convert to uppercase
+    // Allow both letters and numbers (alphanumeric)
     let cleaned = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase()
     
-    // Handle flexible formats (industry-accepted standards)
-    if (format.flexible) {
-      // For flexible formats, allow alphanumeric within length constraints
-      const minLength = format.minLength || 5
-      const maxLength = format.maxLength
-      const limited = cleaned.slice(0, maxLength)
-      handleChange('idNumber', limited)
-      return
-    }
+    // Limit to max length
+    const limited = cleaned.slice(0, length.maxLength)
     
-    // Handle specific letter/number count requirements
-    const letterCount = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-    const numberCount = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-    
-    if (letterCount > 0 && numberCount > 0) {
-      // Extract letters and numbers separately
-      const letters = cleaned.match(/[A-Z]/g) || []
-      const numbers = cleaned.match(/\d/g) || []
-      
-      let result = ''
-      
-      if (format.letterPosition === 'start') {
-        // Letter(s) at the start, then numbers
-        const maxLetters = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-        const maxNumbers = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-        const allowedLetters = letters.slice(0, maxLetters)
-        const allowedNumbers = numbers.slice(0, maxNumbers)
-        
-        // Build result: letters first, then numbers
-        result = allowedLetters.join('') + allowedNumbers.join('')
-        
-        // Limit total length
-        result = result.slice(0, format.maxLength)
-      } else if (format.letterPosition === 'end') {
-        // Numbers first, then letter(s) at the end
-        const maxNumbers = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-        const maxLetters = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-        const allowedNumbers = numbers.slice(0, maxNumbers)
-        const allowedLetters = letters.slice(0, maxLetters)
-        
-        // Build result: numbers first, then letters
-        result = allowedNumbers.join('') + allowedLetters.join('')
-        
-        // Limit total length
-        result = result.slice(0, format.maxLength)
-      } else {
-        // No specific position requirement, allow alphanumeric
-        result = cleaned.slice(0, format.maxLength)
-      }
-      
-      handleChange('idNumber', result)
-    } else if (format.letterCount === 0 && numberCount > 0) {
-      // Only numbers allowed
-      const digitsOnly = cleaned.replace(/\D/g, '')
-      const limitedDigits = digitsOnly.slice(0, format.maxLength)
-      handleChange('idNumber', limitedDigits)
-    } else {
-      // Default: Allow alphanumeric (for flexible formats)
-      const limited = cleaned.slice(0, format.maxLength)
-      handleChange('idNumber', limited)
-    }
+    handleChange('idNumber', limited)
   }
 
   const handleSubmit = () => {
@@ -659,120 +319,29 @@ export default function PersonalInfo() {
 
     // Validate required fields
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required'
+      newErrors.firstName = 'Prefix name is required'
     }
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required'
+      newErrors.lastName = 'First name is required'
     }
     if (!formData.fatherName.trim()) {
-      newErrors.fatherName = 'Father\'s name is required'
+      newErrors.fatherName = 'Surname is required'
     }
     if (!formData.idNumber.trim()) {
       newErrors.idNumber = 'ID number is required'
     } else {
-      // Validate ID number format based on country and type
+      // Validate ID number length based on country and type
       const country = state.selectedCountry || ''
       const idType = state.selectedIdType || ''
-      const format = getIdNumberFormat(country, idType)
+      const length = getIdNumberLength(country, idType)
       
-      if (idType === 'national-id') {
-        const minLength = format.minLength || 8
-        const maxLength = format.maxLength
-        
-        if (country === 'pk') {
-          // Pakistan CNIC: 13 digits
-          const cnicRegex = /^\d{13}$/
-          if (!cnicRegex.test(formData.idNumber)) {
-            newErrors.idNumber = 'Please enter a valid CNIC number (13 digits)'
-          }
-        } else if (country === 'in') {
-          // India Aadhaar: 12 digits
-          const aadhaarRegex = /^\d{12}$/
-          if (!aadhaarRegex.test(formData.idNumber)) {
-            newErrors.idNumber = 'Please enter a valid Aadhaar number (12 digits)'
-          }
-        } else if (country === 'cn') {
-          // China ID: 18 digits
-          const chinaIdRegex = /^\d{18}$/
-          if (!chinaIdRegex.test(formData.idNumber)) {
-            newErrors.idNumber = 'Please enter a valid China ID number (18 digits)'
-          }
-        } else if (country === 'ae') {
-          // UAE Emirates ID: 15 digits, starts with 784
-          const uaeIdRegex = /^784\d{12}$/
-          if (!uaeIdRegex.test(formData.idNumber)) {
-            newErrors.idNumber = 'Please enter a valid UAE Emirates ID (15 digits starting with 784)'
-          }
-        } else if (country === 'jp') {
-          // Japan My Number: 12 digits
-          const jpIdRegex = /^\d{12}$/
-          if (!jpIdRegex.test(formData.idNumber)) {
-            newErrors.idNumber = 'Please enter a valid My Number (12 digits)'
-          }
-        } else {
-          // Other countries: Validate based on format (8-18 digits OR alphanumeric)
-          if (formData.idNumber.length < minLength) {
-            newErrors.idNumber = `Please enter a valid ID number (minimum ${minLength} characters)`
-          } else if (formData.idNumber.length > maxLength) {
-            newErrors.idNumber = `Please enter a valid ID number (maximum ${maxLength} characters)`
-          } else if (!format.pattern.test(formData.idNumber)) {
-            if (format.flexible) {
-              newErrors.idNumber = `Please enter a valid ID number (${minLength}-${maxLength} alphanumeric characters)`
-            } else {
-              newErrors.idNumber = `Please enter a valid ID number format`
-            }
-          }
-        }
-      } else if (idType === 'passport' || idType === 'drivers-license') {
-        // Validate based on format requirements (Industry-accepted standards)
-        const minLength = format.minLength || 5
-        const maxLength = format.maxLength
-        
-        // Check length constraints
-        if (formData.idNumber.length < minLength) {
-          newErrors.idNumber = `Please enter a valid ${idType === 'passport' ? 'passport' : 'license'} number (minimum ${minLength} characters)`
-        } else if (formData.idNumber.length > maxLength) {
-          newErrors.idNumber = `Please enter a valid ${idType === 'passport' ? 'passport' : 'license'} number (maximum ${maxLength} characters)`
-        } else if (!/^[A-Z0-9]+$/.test(formData.idNumber)) {
-          newErrors.idNumber = `${idType === 'passport' ? 'Passport' : 'License'} number can only contain letters and numbers`
-        } else if (!format.pattern.test(formData.idNumber)) {
-          // Pattern validation failed
-          if (format.flexible) {
-            // For flexible formats, provide general guidance
-            if (idType === 'passport') {
-              newErrors.idNumber = `Please enter a valid passport number. Format: 1-2 letters + 6-8 digits OR 9 digits (ICAO standard)`
-            } else {
-              newErrors.idNumber = `Please enter a valid license number (${minLength}-${maxLength} alphanumeric characters)`
-            }
-          } else {
-            // For specific formats, check letter/number counts
-            const letterCount = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-            const numberCount = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-            
-            if (letterCount > 0 && numberCount > 0) {
-              const letters = (formData.idNumber.match(/[A-Z]/g) || []).length
-              const numbers = (formData.idNumber.match(/\d/g) || []).length
-              
-              if (format.letterPosition === 'start') {
-                const minLetters = Array.isArray(format.letterCount) ? format.letterCount[0] : format.letterCount
-                const maxLetters = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-                const minNumbers = Array.isArray(format.numberCount) ? format.numberCount[0] : format.numberCount
-                const maxNumbers = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-                
-                if (letters < minLetters || letters > maxLetters || numbers < minNumbers || numbers > maxNumbers) {
-                  newErrors.idNumber = `Please enter ${minLetters}-${maxLetters} letter(s) followed by ${minNumbers}-${maxNumbers} number(s)`
-                }
-              } else {
-                newErrors.idNumber = `Please enter a valid ${idType === 'passport' ? 'passport' : 'license'} number format`
-              }
-            } else if (format.letterCount === 0 && numberCount > 0) {
-              // Only numbers required
-              if (formData.idNumber.length !== numberCount) {
-                newErrors.idNumber = `Please enter exactly ${numberCount} digits`
-              }
-            }
-          }
-        }
+      // Check if input contains only alphanumeric characters
+      if (!/^[A-Z0-9]+$/.test(formData.idNumber)) {
+        newErrors.idNumber = 'ID number can only contain letters and numbers'
+      } else if (formData.idNumber.length < length.minLength) {
+        newErrors.idNumber = `Please enter a valid ${idType === 'national-id' ? 'ID' : idType === 'passport' ? 'passport' : 'license'} number (minimum ${length.minLength} characters)`
+      } else if (formData.idNumber.length > length.maxLength) {
+        newErrors.idNumber = `Please enter a valid ${idType === 'national-id' ? 'ID' : idType === 'passport' ? 'passport' : 'license'} number (maximum ${length.maxLength} characters)`
       }
     }
     // Email is read-only, but still validate it exists
@@ -801,6 +370,9 @@ export default function PersonalInfo() {
       return
     }
 
+    // Set loading state
+    setLoading(true)
+
     // Format phone number with country code for storage
     // Phone is already stored as digits only, just add country code
     const phoneDigits = formData.phone.replace(/\D/g, '')
@@ -822,6 +394,7 @@ export default function PersonalInfo() {
       },
     })
     
+    // Navigate to next page
     router.push('/verify/otp-verification')
   }
 
@@ -1080,11 +653,12 @@ export default function PersonalInfo() {
                       </p>
                     </div>
           <div className="space-y-4 mb-6">
-            <div className="grid grid-cols-2 gap-3 md:gap-4">
+            {/* Row 1: Prefix name full width */}
+            <div className="w-full">
               <Input
                 label={
                   <>
-                    First Name <span className="text-red-500">*</span>
+                    Prefix name <span className="text-red-500">*</span>
                   </>
                 }
                 value={formData.firstName}
@@ -1101,13 +675,17 @@ export default function PersonalInfo() {
                   }
                 }}
                 error={errors.firstName}
-                placeholder="First name "
+                placeholder="Prefix name"
                 required
               />
+            </div>
+
+            {/* Row 2: First Name and Surname side by side */}
+            <div className="grid grid-cols-2 gap-3 md:gap-4">
               <Input
                 label={
                   <>
-                    Last Name <span className="text-red-500">*</span>
+                    First Name <span className="text-red-500">*</span>
                   </>
                 }
                 value={formData.lastName}
@@ -1124,30 +702,33 @@ export default function PersonalInfo() {
                   }
                 }}
                 error={errors.lastName}
-                placeholder="Last name"
+                placeholder="First name"
+                required
+              />
+              <Input
+                label={
+                  <>
+                    Surname <span className="text-red-500">*</span>
+                  </>
+                }
+                value={formData.fatherName}
+                onChange={(e) => handleNameChange('fatherName', e.target.value)}
+                onKeyDown={(e) => {
+                  // Allow only letters, spaces, hyphens, apostrophes, and navigation keys
+                  const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End']
+                  const isAllowedKey = allowedKeys.includes(e.key)
+                  const isModifier = e.ctrlKey || e.metaKey || e.altKey
+                  const isLetter = /[a-zA-Z\s\-']/.test(e.key)
+                  
+                  if (!isAllowedKey && !isModifier && !isLetter) {
+                    e.preventDefault()
+                  }
+                }}
+                error={errors.fatherName}
+                placeholder="Surname"
                 required
               />
             </div>
-
-            <Input
-              label="Father's Name"
-              value={formData.fatherName}
-              onChange={(e) => handleNameChange('fatherName', e.target.value)}
-              onKeyDown={(e) => {
-                // Allow only letters, spaces, hyphens, apostrophes, and navigation keys
-                const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End']
-                const isAllowedKey = allowedKeys.includes(e.key)
-                const isModifier = e.ctrlKey || e.metaKey || e.altKey
-                const isLetter = /[a-zA-Z\s\-']/.test(e.key)
-                
-                if (!isAllowedKey && !isModifier && !isLetter) {
-                  e.preventDefault()
-                }
-              }}
-              error={errors.fatherName}
-              placeholder="Father's name"
-              required
-            />
 
             <div className="w-full">
               <label className="block text-sm font-medium text-text-primary mb-2">
@@ -1159,24 +740,12 @@ export default function PersonalInfo() {
               </label>
               <input
                 type="text"
-                inputMode={(() => {
-                  const country = state.selectedCountry || ''
-                  const idType = state.selectedIdType || ''
-                  if (idType === 'passport') return 'text'
-                  if (idType === 'drivers-license' && (country === 'pk' || country === 'in' || country === 'uk')) return 'text'
-                  return 'numeric'
-                })()}
-                pattern={(() => {
-                  const country = state.selectedCountry || ''
-                  const idType = state.selectedIdType || ''
-                  if (idType === 'passport') return '[a-zA-Z0-9]*'
-                  if (idType === 'drivers-license' && (country === 'pk' || country === 'in' || country === 'uk')) return '[a-zA-Z0-9]*'
-                  return '[0-9]*'
-                })()}
+                inputMode="text"
+                pattern="[a-zA-Z0-9]*"
                 value={formData.idNumber}
                 onChange={(e) => handleIdNumberChange(e.target.value)}
                 onKeyDown={(e) => {
-                  // Prevent invalid keys (except backspace, delete, arrow keys, tab)
+                  // Allow navigation and modifier keys
                   const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab', 'Home', 'End']
                   const isAllowedKey = allowedKeys.includes(e.key)
                   const isModifier = e.ctrlKey || e.metaKey || e.altKey
@@ -1185,123 +754,21 @@ export default function PersonalInfo() {
                     return // Allow navigation and modifier keys
                   }
                   
-                  const country = state.selectedCountry || ''
-                  const idType = state.selectedIdType || ''
-                  const format = getIdNumberFormat(country, idType)
-                  const currentValue = formData.idNumber
+                  // Allow alphanumeric characters (letters and numbers)
+                  const isAlphanumeric = /[a-zA-Z0-9]/.test(e.key)
                   
-                  // Handle flexible formats (industry-accepted standards)
-                  if (format.flexible) {
-                    // For flexible formats, just check alphanumeric and length
-                    const isAlphanumeric = /[a-zA-Z0-9]/.test(e.key)
-                    if (!isAlphanumeric) {
-                      e.preventDefault()
-                    } else if (currentValue.length >= format.maxLength) {
-                      e.preventDefault()
-                    }
+                  if (!isAlphanumeric) {
+                    e.preventDefault()
                     return
                   }
                   
-                  // Get current letter and number counts
-                  const currentLetters = (currentValue.match(/[A-Z]/g) || []).length
-                  const currentNumbers = (currentValue.match(/\d/g) || []).length
+                  // Check length limit
+                  const country = state.selectedCountry || ''
+                  const idType = state.selectedIdType || ''
+                  const length = getIdNumberLength(country, idType)
                   
-                  // Handle specific letter/number count requirements
-                  const letterCount = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-                  const numberCount = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-                  
-                  // Check if format has letter/number requirements (not flexible)
-                  const hasLetterRequirement = Array.isArray(format.letterCount) ? format.letterCount[1] > 0 : format.letterCount > 0
-                  const hasNumberRequirement = Array.isArray(format.numberCount) ? format.numberCount[1] > 0 : format.numberCount > 0
-                  
-                  if (hasLetterRequirement && hasNumberRequirement) {
-                    // Format requires specific letter and number count
-                    const isLetter = /[a-zA-Z]/.test(e.key)
-                    const isNumber = /[0-9]/.test(e.key)
-                    
-                    if (!isLetter && !isNumber) {
-                      e.preventDefault()
-                      return
-                    }
-                    
-                    // Enforce position and count restrictions
-                    if (format.letterPosition === 'start') {
-                      // Letters must come first
-                      const letterPosition = currentValue.search(/[A-Z]/)
-                      const numberPosition = currentValue.search(/\d/)
-                      
-                      if (isLetter) {
-                        // Check if we've reached max letters
-                        const maxLetters = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-                        if (currentLetters >= maxLetters) {
-                          e.preventDefault()
-                          return
-                        }
-                        // Check if we're trying to add a letter after numbers
-                        if (numberPosition !== -1 && letterPosition === -1) {
-                          e.preventDefault()
-                          return
-                        }
-                      } else if (isNumber) {
-                        // Check if we've reached max numbers
-                        const maxNumbers = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-                        if (currentNumbers >= maxNumbers) {
-                          e.preventDefault()
-                          return
-                        }
-                        // Numbers can only be added after required letters
-                        const minLetters = Array.isArray(format.letterCount) ? format.letterCount[0] : format.letterCount
-                        if (currentLetters < minLetters) {
-                          e.preventDefault()
-                          return
-                        }
-                      }
-                    } else if (format.letterPosition === 'end') {
-                      // Numbers must come first, then letters
-                      if (isLetter) {
-                        // Check if we've reached max letters
-                        const maxLetters = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-                        if (currentLetters >= maxLetters) {
-                          e.preventDefault()
-                          return
-                        }
-                        // Letters can only be added after required numbers
-                        const minNumbers = Array.isArray(format.numberCount) ? format.numberCount[0] : format.numberCount
-                        if (currentNumbers < minNumbers) {
-                          e.preventDefault()
-                          return
-                        }
-                      } else if (isNumber) {
-                        // Check if we've reached max numbers
-                        const maxNumbers = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-                        if (currentNumbers >= maxNumbers) {
-                          e.preventDefault()
-                          return
-                        }
-                        // Check if we're trying to add a number after letters
-                        const letterPosition = currentValue.search(/[A-Z]/)
-                        if (letterPosition !== -1) {
-                          e.preventDefault()
-                          return
-                        }
-                      }
-                    }
-                  } else if (format.letterCount === 0 && numberCount > 0) {
-                    // Only numbers allowed
-                    const isNumber = /[0-9]/.test(e.key)
-                    if (!isNumber) {
-                      e.preventDefault()
-                    } else if (currentNumbers >= numberCount) {
-                      e.preventDefault()
-                    }
-                  } else {
-                    // Flexible format - allow alphanumeric
-                    const isAlphanumeric = /[a-zA-Z0-9]/.test(e.key)
-                    if (!isAlphanumeric) {
-                      e.preventDefault()
-                    } else if (currentValue.length >= format.maxLength) {
-                      e.preventDefault()
-                    }
+                  if (formData.idNumber.length >= length.maxLength) {
+                    e.preventDefault()
                   }
                 }}
                 onPaste={(e) => {
@@ -1314,67 +781,16 @@ export default function PersonalInfo() {
                   (() => {
                     const country = state.selectedCountry || ''
                     const idType = state.selectedIdType || ''
-                    const format = getIdNumberFormat(country, idType)
+                    const length = getIdNumberLength(country, idType)
                     
-                    // Handle flexible formats (industry-accepted standards)
-                    if (format.flexible) {
-                      if (idType === 'passport') {
-                        return 'AB1234567 or 123456789 (ICAO standard)'
-                      } else if (idType === 'drivers-license') {
-                        const minLen = format.minLength || 5
-                        const maxLen = format.maxLength
-                        return `${minLen}-${maxLen} alphanumeric characters`
-                      } else if (idType === 'national-id') {
-                        const minLen = format.minLength || 8
-                        const maxLen = format.maxLength
-                        return `${minLen}-${maxLen} alphanumeric characters`
-                      }
+                    if (length.minLength === length.maxLength) {
+                      return `Enter ${length.minLength} characters (letters and/or numbers)`
+                    } else {
+                      return `Enter ${length.minLength}-${length.maxLength} characters (letters and/or numbers)`
                     }
-                    
-                    // Handle specific formats
-                    const letterCountVal = Array.isArray(format.letterCount) ? format.letterCount[1] : format.letterCount
-                    const numberCountVal = Array.isArray(format.numberCount) ? format.numberCount[1] : format.numberCount
-                    
-                    if (letterCountVal > 0 && numberCountVal > 0) {
-                      const letterCount = letterCountVal
-                      const numberCount = numberCountVal
-                      
-                      if (format.letterPosition === 'start') {
-                        // Letter(s) at start
-                        const letterPlaceholder = 'A'.repeat(letterCount)
-                        const numberPlaceholder = '1'.repeat(numberCount)
-                        return `${letterPlaceholder}${numberPlaceholder}`
-                      } else if (format.letterPosition === 'end') {
-                        // Letter(s) at end
-                        const numberPlaceholder = '1'.repeat(numberCount)
-                        const letterPlaceholder = 'A'.repeat(letterCount)
-                        return `${numberPlaceholder}${letterPlaceholder}`
-                      }
-                    } else if (letterCountVal === 0 && numberCountVal > 0) {
-                      // Only numbers
-                      return '1'.repeat(Math.min(numberCountVal, 18))
-                    }
-                    
-                    // Country-specific placeholders
-                    if (country === 'pk' && idType === 'national-id') {
-                      return '1234512345671 (13 digits)'
-                    } else if (country === 'in' && idType === 'national-id') {
-                      return '123456789012 (12 digits)'
-                    } else if (country === 'cn' && idType === 'national-id') {
-                      return '123456789012345678 (18 digits)'
-                    } else if (country === 'ae' && idType === 'national-id') {
-                      return '784123456789012 (15 digits, starts with 784)'
-                    } else if (country === 'jp' && idType === 'national-id') {
-                      return '123456789012 (12 digits)'
-                    } else if (idType === 'passport') {
-                      return 'AB1234567 or 123456789'
-                    } else if (idType === 'drivers-license') {
-                      return 'Enter license number'
-                    }
-                    return 'Enter ID number'
                   })()
                 }
-                maxLength={getIdNumberFormat(state.selectedCountry || '', state.selectedIdType || '').maxLength}
+                maxLength={getIdNumberLength(state.selectedCountry || '', state.selectedIdType || '').maxLength}
                 className={`w-full px-4 py-3 rounded-lg border ${
                   errors.idNumber ? 'border-red-500' : 'border-gray-300'
                 } bg-white md:bg-surface-light text-text-primary placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300`}
@@ -1601,8 +1017,19 @@ export default function PersonalInfo() {
             </div>
           </div>
 
-          <Button onClick={handleSubmit} className="w-full">
-            Continue
+          <Button 
+            onClick={handleSubmit} 
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-2"
+          >
+            {loading ? (
+              <>
+                <LoadingDots size="sm" color="#ffffff" />
+                <span></span>
+              </>
+            ) : (
+              'Continue'
+            )}
           </Button>
         </div>
       </main>

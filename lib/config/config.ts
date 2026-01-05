@@ -11,6 +11,12 @@
  * For local development:
  * - Create .env.local file with: NEXT_PUBLIC_API_URL=http://localhost:3902
  * - Or use the default production URL
+ * 
+ * GeoDB Cities API Configuration:
+ * - API Key: Set NEXT_PUBLIC_GEODB_API_KEY in .env.local
+ * - Get your free API key from: https://rapidapi.com/wirefreethought/api/geodb-cities
+ * - Example: NEXT_PUBLIC_GEODB_API_KEY=your_api_key_here
+ * - The component will fallback to countries.ts if API key is not configured or API fails
  */
 
 // API Base URL - uses environment variable with fallback
