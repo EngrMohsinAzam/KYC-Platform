@@ -49,6 +49,9 @@ export default function SuperAdminAdminsPage() {
     canSendEmails: false,
   })
 
+  // Create modal state
+  const [showCreateModal, setShowCreateModal] = useState(false)
+
   // Edit modal state
   const [editingAdmin, setEditingAdmin] = useState<any | null>(null)
   const [editEmail, setEditEmail] = useState('')
@@ -97,6 +100,23 @@ export default function SuperAdminAdminsPage() {
     return email.trim().length > 3 && password.trim().length >= 6
   }, [email, password])
 
+  const closeCreateModal = () => {
+    setShowCreateModal(false)
+    setEmail('')
+    setPassword('')
+    setUsername('')
+    setError('')
+    // Reset permissions to all unchecked
+    setPermissions({
+      canApproveRejectKYC: false,
+      canViewAllUsers: false,
+      canViewFinancialGraph: false,
+      canViewSupportIssues: false,
+      canViewWallets: false,
+      canSendEmails: false,
+    })
+  }
+
   const onCreate = async () => {
     if (!canCreate) return
     try {
@@ -112,18 +132,8 @@ export default function SuperAdminAdminsPage() {
         setError(result.message || 'Failed to create admin')
         return
       }
-      setEmail('')
-      setPassword('')
-      setUsername('')
-      // Reset permissions to all unchecked
-      setPermissions({
-        canApproveRejectKYC: false,
-        canViewAllUsers: false,
-        canViewFinancialGraph: false,
-        canViewSupportIssues: false,
-        canViewWallets: false,
-        canSendEmails: false,
-      })
+      // Close modal and reset form
+      closeCreateModal()
       await load()
     } catch (e: any) {
       setError(e.message || 'Failed to create admin')
@@ -217,92 +227,29 @@ export default function SuperAdminAdminsPage() {
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Admin record</h1>
           <p className="text-sm text-gray-600 mt-1">Create admins with permission-based access.</p>
         </div>
-        <button
-          onClick={load}
-          className="px-4 py-2 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-sm font-medium"
-        >
-          Refresh
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="px-4 py-2 rounded-xl bg-black hover:bg-black/80 text-white text-sm font-medium"
+          >
+            Create Admin
+          </button>
+          <button
+            onClick={load}
+            className="px-4 py-2 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-sm font-medium"
+          >
+            Refresh
+          </button>
+        </div>
       </div>
 
-      {error && (
+      {error && !showCreateModal && !editingAdmin && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl">
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 lg:col-span-1">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">Create Admin</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs font-medium text-gray-700">Email <span className="text-red-500">*</span></label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                placeholder="admin2@example.com"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-700">Password <span className="text-red-500">*</span></label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                placeholder="Min 6 characters"
-                minLength={6}
-                required
-              />
-              <p className="mt-1 text-xs text-gray-500">Minimum 6 characters required</p>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-700">Username (optional)</label>
-              <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="mt-1 w-full px-3 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-                placeholder="admin2 (auto-generated if empty)"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-700">Permissions</label>
-              <div className="mt-2 space-y-2">
-                {PERMISSIONS.map((p) => (
-                  <label key={p.key} className="flex items-center gap-2 text-sm text-gray-800">
-                    <input
-                      type="checkbox"
-                      checked={permissions[p.key]}
-                      onChange={(e) => setPermissions((prev) => ({ ...prev, [p.key]: e.target.checked }))}
-                      className="h-4 w-4"
-                    />
-                    {p.label}
-                  </label>
-                ))}
-              </div>
-            </div>
-            <button
-              onClick={onCreate}
-              disabled={!canCreate || saving}
-              className="w-full bg-black hover:bg-black/80 text-white rounded-xl py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {saving ? (
-                <>
-                  <LoadingDots size="sm" color="#ffffff" />
-                  Creating...
-                </>
-              ) : (
-                'Create'
-              )}
-            </button>
-          
-          </div>
-        </div>
-
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 lg:col-span-2">
+      <div className="bg-white border border-gray-200 rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-semibold text-gray-900">Admins</h2>
             {loading && <LoadingDots size="sm" />}
@@ -358,8 +305,109 @@ export default function SuperAdminAdminsPage() {
               </table>
             </div>
           )}
-        </div>
       </div>
+
+      {/* Create Admin Modal */}
+      <Modal isOpen={showCreateModal} onClose={closeCreateModal} className="max-w-4xl">
+        <div className="p-6 md:p-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-6">Create Admin</h2>
+
+          {error && (
+            <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          <div className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                  placeholder="admin2@example.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-2">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                  placeholder="Min 6 characters"
+                  minLength={6}
+                  required
+                />
+                <p className="mt-1.5 text-xs text-gray-500">Minimum 6 characters required</p>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-2">
+                Username (optional)
+              </label>
+              <input
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-black focus:border-black outline-none text-sm"
+                placeholder="admin2 (auto-generated if empty)"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-3">
+                Permissions
+              </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {PERMISSIONS.map((p) => (
+                  <label key={p.key} className="flex items-center gap-2.5 text-sm text-gray-800 cursor-pointer hover:bg-gray-50 p-2 rounded-lg transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={permissions[p.key]}
+                      onChange={(e) => setPermissions((prev) => ({ ...prev, [p.key]: e.target.checked }))}
+                      className="h-4 w-4 text-black focus:ring-2 focus:ring-black border-gray-300 rounded"
+                    />
+                    <span>{p.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-4 border-t border-gray-200">
+              <button
+                onClick={closeCreateModal}
+                disabled={saving}
+                className="flex-1 px-5 py-2.5 rounded-xl border border-gray-300 hover:bg-gray-50 text-sm font-medium disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={onCreate}
+                disabled={!canCreate || saving}
+                className="flex-1 bg-black hover:bg-black/80 text-white rounded-xl py-2.5 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+              >
+                {saving ? (
+                  <>
+                    <LoadingDots size="sm" color="#ffffff" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
 
       {/* Edit Admin Modal */}
       <Modal isOpen={!!editingAdmin} onClose={closeEditModal} className="max-w-2xl">
