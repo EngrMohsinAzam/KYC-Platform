@@ -127,9 +127,15 @@ export default function Dashboard() {
       registrationNumber: company.registrationNumber
     }
 
-    // Store in localStorage to be picked up by companies page
-    const existingCompanies = JSON.parse(localStorage.getItem('approvedCompanies') || '[]')
-    localStorage.setItem('approvedCompanies', JSON.stringify([...existingCompanies, newCompany]))
+    // Store in localStorage to be picked up by companies page (client-side only)
+    if (typeof window !== 'undefined') {
+      try {
+        const existingCompanies = JSON.parse(localStorage.getItem('approvedCompanies') || '[]')
+        localStorage.setItem('approvedCompanies', JSON.stringify([...existingCompanies, newCompany]))
+      } catch (error) {
+        console.error('Error saving company to localStorage:', error)
+      }
+    }
 
     // Remove from pending requests
     setPendingRequests(prev => prev.filter(req => req.id !== company.id))
@@ -176,28 +182,28 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Approved Companies</p>
-              <p className="text-3xl font-bold text-gray-900 mb-3">{mockStats.approvedCompanies.toLocaleString()}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">{mockStats.approvedCompanies.toLocaleString()}</p>
             </div>
-            <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-50 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
+        <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 hover:shadow-lg transition-all duration-200 hover:border-gray-300">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pending Companies</p>
-              <p className="text-3xl font-bold text-gray-900 mb-3">{mockStats.pendingCompanies.toLocaleString()}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 sm:mb-3">{mockStats.pendingCompanies.toLocaleString()}</p>
             </div>
-            <div className="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center">
-              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-50 rounded-xl flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -213,18 +219,18 @@ export default function Dashboard() {
               <h3 className="text-lg font-semibold text-gray-900">Pending Company Requests</h3>
               <p className="text-sm text-gray-600 mt-1">New company applications awaiting review</p>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-48">
                 <input
                   type="text"
                   placeholder="Search requests..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 w-48"
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 w-full"
                 />
                 <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <button className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+              <button className="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors whitespace-nowrap">
                 View All
               </button>
             </div>
@@ -265,20 +271,26 @@ export default function Dashboard() {
                       <span className="text-xs text-gray-600">{request.applicationDate}</span>
                     </div>
                   </div>
-                  <div className="flex gap-2 pt-2">
+                  <div className="grid grid-cols-3 gap-2 pt-2">
                     <button 
                       onClick={() => {
                         setSelectedPendingCompany(request)
                         setShowPendingModal(true)
                       }}
-                      className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition-colors"
+                      className="px-2 py-2 border border-gray-300 text-gray-700 rounded text-xs font-medium hover:bg-gray-50 transition-colors text-center"
                     >
                       View
                     </button>
-                    <button className="flex-1 px-3 py-2 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors">
+                    <button 
+                      onClick={() => handleApproveCompany(request)}
+                      className="px-2 py-2 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors text-center"
+                    >
                       Approve
                     </button>
-                    <button className="flex-1 px-3 py-2 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 transition-colors">
+                    <button 
+                      onClick={() => handleRejectCompany(request.id)}
+                      className="px-2 py-2 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 transition-colors text-center"
+                    >
                       Reject
                     </button>
                   </div>
@@ -362,20 +374,20 @@ export default function Dashboard() {
               <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
             </div>
 
-            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
-              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full w-full max-h-[90vh]">
+              <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 max-h-[70vh] overflow-y-auto">
                 <div className="sm:flex sm:items-start">
                   <div className="w-full">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg leading-6 font-medium text-gray-900">
+                    <div className="flex items-start justify-between mb-4">
+                      <h3 className="text-lg leading-6 font-medium text-gray-900 pr-2">
                         {selectedPendingCompany.companyName}
                       </h3>
-                      <span className="inline-flex px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">
+                      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 whitespace-nowrap">
                         Pending Review
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2">
                       <div>
                         <h4 className="text-sm font-medium text-gray-700 mb-3">Company Information</h4>
                         <div className="space-y-2">
@@ -396,7 +408,7 @@ export default function Dashboard() {
                           <p><span className="text-xs text-gray-500">Email:</span> {selectedPendingCompany.email}</p>
                           <p><span className="text-xs text-gray-500">Phone:</span> {selectedPendingCompany.phone}</p>
                           <p><span className="text-xs text-gray-500">Website:</span> 
-                            <a href={selectedPendingCompany.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                            <a href={selectedPendingCompany.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1 break-all">
                               {selectedPendingCompany.website}
                             </a>
                           </p>
