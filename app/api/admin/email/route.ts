@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { API_BASE_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/app/(public)/forgot-password/config'
 
 // Force dynamic rendering since we use request.headers
 export const dynamic = 'force-dynamic'

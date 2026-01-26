@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { API_BASE_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/app/(public)/forgot-password/config'
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
