@@ -3,7 +3,7 @@
 import { useReducer, ReactNode, useEffect, useRef } from 'react'
 import { AppContext, initialState, AppState, Action } from './AppContext'
 // Document caching disabled - imports kept for clear functions only
-import { clearExpiredCaches, clearKYCCache } from '@/lib/utils/kyc-cache'
+import { clearExpiredCaches, clearKYCCache } from '@/app/(public)/utils/kyc-cache'
 
 const STORAGE_KEY = 'kyc_app_state'
 const CLEAR_FLAG_KEY = 'kyc_data_cleared'

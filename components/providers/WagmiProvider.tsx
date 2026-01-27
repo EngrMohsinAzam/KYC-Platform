@@ -2,7 +2,7 @@
 
 import { WagmiProvider as WagmiProviderBase } from 'wagmi'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { wagmiConfig } from '@/lib/wallet/wagmi-config'
+import { wagmiConfig } from '@/app/(public)/wallet/wagmi-config'
 import { ReactNode, useState, useMemo } from 'react'
 
 // Optimized QueryClient configuration for mobile performance
