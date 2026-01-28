@@ -19,15 +19,16 @@
  * - The component will fallback to countries.ts if API key is not configured or API fails
  */
 
-// API Base URL - uses environment variable with fallback
-// Remove trailing slash if present to ensure consistent URL building
+// API Base URL - DigiPortID KYC Backend
+// Production: https://api.digiportid.com | Development: http://localhost:3099
+// Override with NEXT_PUBLIC_API_URL
 const getApiBaseUrl = (): string => {
-  // Default to production backend API (works for Vercel deployment)
-  // Override with NEXT_PUBLIC_API_URL environment variable if needed
-  const url = process.env.NEXT_PUBLIC_API_URL || 'https://xzfjrnv9-3902.asse.devtunnels.ms/'
-  // Remove trailing slash for consistency
+  const url = process.env.NEXT_PUBLIC_API_URL ||'https://hmt4c7sf-3902.asse.devtunnels.ms'
   return url.replace(/\/$/, '')
 }
 
 export const API_BASE_URL = getApiBaseUrl()
+
+// App base URL for KYC links, embeds, etc. (e.g. https://www.digiportid.com)
+export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || ''
 

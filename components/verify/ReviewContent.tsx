@@ -12,6 +12,7 @@ import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/app/(public)/wallet/web3'
 import { submitKYCData } from '@/app/api/api'
 import { formatWalletAddress } from '@/app/(public)/utils/utils'
+import { getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
 import { ethers } from 'ethers'
 import { switchToBSCMainnet } from '@/app/(public)/wallet/network-switch'
 import { setMetaMaskProvider } from '@/app/(public)/wallet/wagmi-config'
@@ -997,11 +998,7 @@ export default function ReviewContent() {
       
       let txHash: string
       try {
-        console.log('⏳ Calling submitKYCVerification...')
-        console.log('⏳ IMPORTANT: Check your MetaMask wallet!')
-        console.log('⏳ You will need to:')
-        console.log('   1. Confirm the KYC submission transaction (BNB fee will be paid)')
-        console.log('⏳ This may take a moment. Please wait...')
+      
         
         // Add timeout protection (longer for mobile to account for app switching)
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -1011,7 +1008,7 @@ export default function ReviewContent() {
           setTimeout(() => reject(new Error(
             isMobile 
               ? 'Transaction timeout: The transaction is taking longer than expected. Please check your MetaMask mobile app - if you already confirmed, the transaction may still be processing. Check BSCScan for the transaction status.'
-              : 'Transaction timeout: The transaction is taking too long. Please check your wallet and try again. If you already confirmed, check BSCScan for the transaction status.'
+              : 'Transaction timeout: The transaction is taking too long. Please check  your wallet and try again. If you already confirmed, check BSCScan for the transaction status.'
           )), timeoutDuration)
         })
         
@@ -1121,6 +1118,7 @@ export default function ReviewContent() {
         throw new Error('ID type is required.')
       }
       
+      const company = getCompanyContext()
       const submissionData = {
         userId: personalInfo.email.trim(),
         blockchainAddressId: address.trim(),
@@ -1141,6 +1139,7 @@ export default function ReviewContent() {
         cnic: personalInfo.idNumber?.trim() || '',
         transactionHash: txHash,
         feeUnit: 2,
+        ...(company && { companyId: company.companyId, companySlug: company.companySlug }),
       }
 
       // Validate required data before submitting

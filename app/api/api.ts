@@ -48,6 +48,8 @@ export const submitKYCData = async (data: {
   identityDocumentBack: string // base64
   liveInImage: string // base64
   cnic?: string // CNIC number
+  companyId?: string
+  companySlug?: string
   transactionHash?: string
   blockNumber?: string
   fromAddress?: string
@@ -156,6 +158,13 @@ export const submitKYCData = async (data: {
     formData.append('idType', data.idType.trim())
     formData.append('usaResidence', data.usaResidence.trim())
     formData.append('feeUnit', String(data.feeUnit || 2))
+
+    if (data.companyId?.trim()) {
+      formData.append('companyId', data.companyId.trim())
+    }
+    if (data.companySlug?.trim()) {
+      formData.append('companySlug', data.companySlug.trim())
+    }
     
     // Add CNIC if provided (backend expects 'cnicNumber')
     if (data.cnic && data.cnic.trim()) {
@@ -216,8 +225,7 @@ export const submitKYCData = async (data: {
     console.log('📤 SUBMITTING TO BACKEND API')
     console.log('========================================')
     console.log('🌐 API Configuration:')
-    console.log('  - API Base URL:', API_BASE_URL)
-    console.log('  - Full Endpoint:', `${API_BASE_URL}/api/kyc/submit`)
+    console.log('  - Endpoint: /api/kyc/submit (proxy)')
     console.log('  - Request Method: POST')
     console.log('  - Content Type: multipart/form-data (FormData)')
     
@@ -301,22 +309,12 @@ export const submitKYCData = async (data: {
     }
     
     console.log('\n🚀 Making POST API Request...')
-    const fullEndpoint = `${API_BASE_URL}/api/kyc/submit`
+    const fullEndpoint = '/api/kyc/submit'
     console.log('  - Endpoint:', fullEndpoint)
     console.log('  - Method: POST')
     console.log('  - Content-Type: multipart/form-data (auto-set by browser)')
     
-    // Test backend connection first
-    console.log('\n🔍 Testing backend connection...')
-    try {
-      const healthCheckUrl = `${API_BASE_URL}/api/health` // Try health endpoint if available
-      const healthResponse = await fetch(healthCheckUrl, { method: 'GET', signal: AbortSignal.timeout(5000) })
-      console.log('  - Backend health check:', healthResponse.status)
-    } catch (healthError) {
-      console.warn('  - Health check failed (this is OK if endpoint doesn\'t exist):', healthError)
-    }
-    
-    // Make the actual request with timeout
+    // Make the actual request with timeout (via Next.js proxy)
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
     
@@ -373,7 +371,7 @@ export const submitKYCData = async (data: {
       if (response.status === 0 || response.status >= 500) {
         return {
           success: false,
-          message: `Backend server error (${response.status}). The backend server may be down or unreachable. Please check if the backend is running at ${API_BASE_URL}`,
+          message: `Backend server error (${response.status}). The backend server may be down or unreachable.`,
           errors: [],
           isBackendIssue: true
         }
@@ -463,110 +461,56 @@ export const submitKYCData = async (data: {
   }
 }
 
-// Get KYC status
-export const getKYCStatus = async (userId?: string, email?: string): Promise<{ success: boolean; data?: any; message?: string }> => {
-  console.log('🔍 getKYCStatus FUNCTION CALLED!')
-  console.log('  - userId:', userId || 'not provided')
-  console.log('  - email:', email || 'not provided')
-  
+// Get KYC status (companyId required per API doc; email or userId required)
+export const getKYCStatus = async (opts: { companyId: string; email?: string; userId?: string }): Promise<{ success: boolean; data?: any; message?: string }> => {
+  const { companyId, email, userId } = opts
   try {
     const params = new URLSearchParams()
-    if (userId) params.append('userId', userId)
+    if (companyId) params.append('companyId', companyId)
     if (email) params.append('email', email)
-    
-    const url = `${API_BASE_URL}/api/kyc/status?${params.toString()}`
-    console.log('  - API URL:', url)
-    console.log('  - Making GET request...')
-    
+    if (userId) params.append('userId', userId)
+    const url = `/api/kyc/status?${params.toString()}`
     const response = await fetch(url)
-    console.log('  - Response status:', response.status)
-    
     const result = await response.json()
-    console.log('  - Response data:', result)
     return result
   } catch (error: any) {
-    console.error('❌ Error getting KYC status:', error)
-    return { 
-      success: false, 
-      message: error.message || 'Failed to get KYC status. Please try again.' 
-    }
+    return { success: false, message: error.message || 'Failed to get KYC status.' }
   }
 }
 
-// Check KYC status by Email
-export const checkStatusByEmail = async (email: string): Promise<{ success: boolean; data?: any; message?: string }> => {
-  console.log('🔍 checkStatusByEmail FUNCTION CALLED!')
-  console.log('  - Email:', email)
-  
+// Check KYC status by Email (companyId optional per API doc)
+export const checkStatusByEmail = async (email: string, companyId?: string): Promise<{ success: boolean; data?: any; message?: string }> => {
   try {
-    // Call backend API directly
-    const url = `${API_BASE_URL}/api/kyc/check-status-by-email`
-    const requestBody = { email }
-    
-    console.log('  - API URL:', url)
-    console.log('  - Request body:', requestBody)
-    console.log('  - Making POST request...')
-    
-    const response = await fetch(url, {
+    const body: { email: string; companyId?: string } = { email }
+    if (companyId) body.companyId = companyId
+    const response = await fetch('/api/kyc/check-status-by-email', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     })
-    
-    console.log('  - Response status:', response.status)
-    console.log('  - Response statusText:', response.statusText)
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
     const result = await response.json()
-    console.log('  - Response data:', result)
+    if (!response.ok) throw new Error(result?.message || `HTTP ${response.status}`)
     return result
   } catch (error: any) {
-    console.error('❌ Error checking status by email:', error)
-    return { 
-      success: false, 
-      message: error.message || 'Failed to check status. Please try again.' 
-    }
+    return { success: false, message: error.message || 'Failed to check status by email.' }
   }
 }
 
-// Check KYC status by CNIC (kept for backward compatibility)
-export const checkStatusByCNIC = async (cnic: string): Promise<{ success: boolean; data?: any; message?: string }> => {
-  console.log('🔍 checkStatusByCNIC FUNCTION CALLED!')
-  console.log('  - CNIC:', cnic)
-  
+// Check KYC status by CNIC (companyId required per API doc)
+export const checkStatusByCNIC = async (cnic: string, companyId?: string): Promise<{ success: boolean; data?: any; message?: string }> => {
   try {
-    const url = `${API_BASE_URL}/api/kyc/check-status-by-cnic`
-    const requestBody = { cnic }
-    
-    console.log('  - API URL:', url)
-    console.log('  - Request body:', requestBody)
-    console.log('  - Making POST request...')
-    
-    const response = await fetch(url, {
+    const body: { cnic: string; companyId?: string } = { cnic }
+    if (companyId) body.companyId = companyId
+    const response = await fetch('/api/kyc/check-status-by-cnic', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
     })
-    
-    console.log('  - Response status:', response.status)
-    console.log('  - Response statusText:', response.statusText)
-    
     const result = await response.json()
-    console.log('  - Response data:', result)
+    if (!response.ok) throw new Error(result?.message || `HTTP ${response.status}`)
     return result
   } catch (error: any) {
-    console.error('❌ Error checking status by CNIC:', error)
-    return { 
-      success: false, 
-      message: error.message || 'Failed to check status. Please try again.' 
-    }
+    return { success: false, message: error.message || 'Failed to check status by CNIC.' }
   }
 }
 
@@ -655,38 +599,20 @@ export const getKycPausedStatus = async (): Promise<{ success: boolean; data?: a
 // Update KYC documents (for blur rejection)
 export const updateKYCDocuments = async (data: {
   email: string
+  companyId?: string
   idType?: string
   identityDocumentFront?: string // base64
   identityDocumentBack?: string // base64
   liveInImage?: string // base64 - selfie
   newEmail?: string
 }): Promise<{ success: boolean; message?: string; data?: any }> => {
-  console.log('🔄 updateKYCDocuments FUNCTION CALLED!')
-  console.log('📥 Received data:', {
-    email: data.email,
-    hasFrontImage: !!data.identityDocumentFront,
-    hasBackImage: !!data.identityDocumentBack,
-    hasSelfie: !!data.liveInImage,
-    idType: data.idType,
-    newEmail: data.newEmail
-  })
-  
   try {
     const formData = new FormData()
-    
-    // Required field
     formData.append('email', data.email)
-    
-    // Set status to pending when documents are updated (for resubmission after rejection)
     formData.append('status', 'pending')
-    
-    // Optional fields
-    if (data.idType) {
-      formData.append('idType', data.idType)
-    }
-    if (data.newEmail) {
-      formData.append('newEmail', data.newEmail)
-    }
+    if (data.companyId) formData.append('companyId', data.companyId)
+    if (data.idType) formData.append('idType', data.idType)
+    if (data.newEmail) formData.append('newEmail', data.newEmail)
     
     // Convert base64 images to File objects if provided
     if (data.identityDocumentFront) {
@@ -707,11 +633,7 @@ export const updateKYCDocuments = async (data: {
       console.log('  ✅ Added selfie image')
     }
     
-    const url = `${API_BASE_URL}/api/kyc/update-documents`
-    console.log('  - API URL:', url)
-    console.log('  - Method: PUT')
-    
-    const response = await fetch(url, {
+    const response = await fetch('/api/kyc/update-documents', {
       method: 'PUT',
       body: formData,
     })

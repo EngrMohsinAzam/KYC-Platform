@@ -4,7 +4,7 @@ import { API_BASE_URL } from '@/app/(public)/config'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { email } = body
+    const { email, companyId } = body
 
     if (!email) {
       return NextResponse.json(
@@ -13,12 +13,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const payload: { email: string; companyId?: string } = { email }
+    if (companyId) payload.companyId = companyId
+
     const response = await fetch(`${API_BASE_URL}/api/kyc/check-status-by-email`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     })
 
     const data = await response.json()
