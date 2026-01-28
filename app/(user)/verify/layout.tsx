@@ -1,6 +1,7 @@
 'use client'
 
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { CompanyBanner } from '@/components/verify/CompanyBanner'
 
 export default function VerifyLayout({
   children,
@@ -9,6 +10,7 @@ export default function VerifyLayout({
 }) {
   return (
     <div className="min-h-screen bg-gray-50">
+      <CompanyBanner />
       {children}
       <PoweredBy />
       {/* Spacer so "Powered by" stays visible above fixed mobile CTAs */}
