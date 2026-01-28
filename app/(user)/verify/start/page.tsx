@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { getKycPausedStatus } from '@/app/api/api'
-import { clearCompanyContext, setCompanyContext } from '@/app/(public)/utils/kyc-company-context'
+import { clearCompanyContext, setCompanyContext, getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
 
 function StartContent() {
   const router = useRouter()
@@ -38,7 +38,7 @@ function StartContent() {
         if (data?.success && data?.data?.valid) {
           const name = data.data.companyName || 'Company'
           setCompanyContext({ companyId: id!, companySlug: slug!, companyName: name })
-          router.replace('/verify/select-id-type')
+          router.replace('/verify/enter-email')
           redirected = true
           return
         }
@@ -53,7 +53,6 @@ function StartContent() {
   }, [hasCompanyLink, slug, id, router])
 
   useEffect(() => {
-    if (hasCompanyLink) return
     const check = async () => {
       try {
         const res = await getKycPausedStatus()
@@ -65,39 +64,41 @@ function StartContent() {
       }
     }
     check()
-  }, [hasCompanyLink])
+  }, [])
 
   const handleStart = () => {
-    router.push('/verify/select-id-type')
+    if (getCompanyContext()) {
+      router.push('/verify/enter-email')
+    } else {
+      router.push('/verify/select-id-type')
+    }
   }
 
-  if (hasCompanyLink) {
-    if (loading) {
-      return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          <Header showBack onBack={() => router.push('/')} title="Start verification" />
-          <main className="flex-1 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
-          </main>
-          <Footer />
-        </div>
-      )
-    }
-    if (error) {
-      return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          <Header showBack onBack={() => router.push('/')} title="Start verification" />
-          <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-            <div className="text-center max-w-md">
-              <p className="text-red-600 mb-4">{error}</p>
-              <Link href="/" className="text-sm text-gray-600 hover:underline">Back to home</Link>
-            </div>
-          </main>
-          <Footer />
-        </div>
-      )
-    }
-    return null
+  if (hasCompanyLink && loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header showBack onBack={() => router.push('/')} title="Start verification" />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
+        </main>
+        <Footer />
+      </div>
+    )
+  }
+
+  if (hasCompanyLink && error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Header showBack onBack={() => router.push('/')} title="Start verification" />
+        <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
+          <div className="text-center max-w-md">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Link href="/" className="text-sm text-gray-600 hover:underline">Back to home</Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    )
   }
 
   return (

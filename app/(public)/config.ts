@@ -29,6 +29,8 @@ const getApiBaseUrl = (): string => {
 
 export const API_BASE_URL = getApiBaseUrl()
 
-// App base URL for KYC links, embeds, etc. (e.g. https://www.digiportid.com)
+// App base URL for KYC links, embeds, etc. Used when window.location.origin isn't available (e.g. SSR).
+// Set NEXT_PUBLIC_APP_URL to your deployed app URL (e.g. https://www.digiportid.com or https://your-app.vercel.app).
+// For "This site can't be reached" on digiportid.com: point that domain to your deployment via DNS (see DEPLOYMENT_AND_VERIFY_URL.md).
 export const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || ''
 
