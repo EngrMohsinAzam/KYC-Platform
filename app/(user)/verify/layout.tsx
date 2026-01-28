@@ -8,11 +8,11 @@ export default function VerifyLayout({
   children: React.ReactNode
 }) {
   return (
-    <>
+    <div className="min-h-screen bg-gray-50">
       {children}
       <PoweredBy />
       {/* Spacer so "Powered by" stays visible above fixed mobile CTAs */}
       <div className="h-16 md:hidden" aria-hidden="true" />
-    </>
+    </div>
   )
 }
