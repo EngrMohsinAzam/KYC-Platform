@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { API_BASE_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/app/(public)/config'
 
 export async function GET(_request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function GET(_request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      cache: 'no-store' // Always fetch fresh data
+      cache: 'no-store' 
     })
     
     console.log('🔍 [KYC Pause Check] ✅ Backend Response received')

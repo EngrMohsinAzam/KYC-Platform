@@ -34,12 +34,12 @@ export function SuperAdminSidebar({ isOpen = false, onClose }: SuperAdminSidebar
       ),
     },
     {
-      label: 'Admin record',
-      href: '/super-admin/admins',
+      label: 'Companies',
+      href: '/super-admin/companies',
       icon: (
         <NavIcon>
           <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="currentColor">
-            <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857M14 7a4 4 0 11-8 0 4 4 0 018 0zm6 4a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
         </NavIcon>
       ),

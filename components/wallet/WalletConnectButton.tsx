@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useAccount, useDisconnect, useSignMessage } from 'wagmi'
 import { useConnect } from 'wagmi'
 import { Button } from '@/components/ui/Button'
-import { API_BASE_URL } from '@/lib/config'
+import { API_BASE_URL } from '@/app/(public)/config'
 
 interface WalletConnectButtonProps {
   onConnect?: (address: string) => void
