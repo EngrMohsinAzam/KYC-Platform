@@ -23,7 +23,7 @@
 // Production: https://api.digiportid.com | Development: http://localhost:3099
 // Override with NEXT_PUBLIC_API_URL
 const getApiBaseUrl = (): string => {
-  const url = process.env.NEXT_PUBLIC_API_URL ||'https://hmt4c7sf-3902.asse.devtunnels.ms'
+  const url = process.env.NEXT_PUBLIC_API_URL ||'https://xzfjrnv9-3902.asse.devtunnels.ms/'
   return url.replace(/\/$/, '')
 }
 
