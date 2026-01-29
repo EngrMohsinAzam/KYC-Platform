@@ -93,7 +93,7 @@ export default function CompanySupportPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Support</h1>
-          <p className="text-sm text-gray-600 mt-1">Your support issues and tickets</p>
+          <p className="text-sm text-gray-600 mt-1">Issues your company has raised with us</p>
         </div>
         <button
           type="button"
@@ -195,7 +195,7 @@ export default function CompanySupportPage() {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900">Your issues</h2>
-          <p className="text-sm text-gray-600 mt-0.5">Issues you’ve raised with us</p>
+          <p className="text-sm text-gray-600 mt-0.5">All issues your company has raised</p>
         </div>
         {issues.length === 0 ? (
           <div className="px-4 sm:px-6 py-12 text-center text-gray-500">

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { companyProfile, companyDashboardStats } from '@/app/api/company-api'
+import { companyProfile, companyDashboardStats, companyKycList } from '@/app/api/company-api'
+import { Modal } from '@/components/ui/Modal'
 
 type Profile = {
   companyName?: string
@@ -18,35 +19,35 @@ type Profile = {
   plan?: string
 }
 
+type KycUser = {
+  userId?: string
+  fullName?: string
+  email?: string
+  kycStatus?: string
+  submittedAt?: string
+}
+
 type Stats = {
-  kyc?: {
-    total?: number
-    pending?: number
-    submitted?: number
-    under_review?: number
-    approved?: number
-    rejected?: number
-  }
+  kyc?: { total?: number; pending?: number; submitted?: number; under_review?: number; approved?: number; rejected?: number }
   support?: { total?: number; open?: number; pending?: number; resolved?: number; closed?: number }
-  recentKyc?: Array<{
-    userId?: string
-    fullName?: string
-    email?: string
-    kycStatus?: string
-    submittedAt?: string
-  }>
+  recentKyc?: KycUser[]
+  data?: { users?: KycUser[]; recentKyc?: KycUser[] }
 }
 
 export default function CompanyDashboardPage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [stats, setStats] = useState<Stats | null>(null)
+  const [recentKycFromList, setRecentKycFromList] = useState<KycUser[]>([])
+  const [kycTotalsFromList, setKycTotalsFromList] = useState<{ total?: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [kycUrlModalOpen, setKycUrlModalOpen] = useState(false)
 
   const load = useCallback(async () => {
     setError('')
     setLoading(true)
+    setRecentKycFromList([])
     try {
       const [p, s] = await Promise.all([companyProfile(), companyDashboardStats()])
       if (!p?.success) {
@@ -59,6 +60,20 @@ export default function CompanyDashboardPage() {
       }
       setProfile(p?.data ?? null)
       setStats(s?.data ?? null)
+      const statsData = s?.data
+      const recentKyc = statsData?.recentKyc ?? statsData?.data?.recentKyc ?? []
+      if (recentKyc.length === 0) {
+        const kycRes = await companyKycList({ limit: 20, page: 1 })
+        if (kycRes?.success && kycRes?.data) {
+          const data = kycRes.data as { users?: KycUser[]; pagination?: { totalItems?: number } }
+          const users = data?.users ?? []
+          const totalItems = data?.pagination?.totalItems ?? users.length
+          setRecentKycFromList(users.map((u: KycUser) => ({ userId: u.userId, fullName: u.fullName, email: u.email, kycStatus: u.kycStatus, submittedAt: u.submittedAt })))
+          setKycTotalsFromList({ total: totalItems })
+        }
+      } else {
+        setKycTotalsFromList(null)
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -71,13 +86,13 @@ export default function CompanyDashboardPage() {
   }, [load])
 
   const kyc = stats?.kyc ?? {}
-  const total = kyc.total ?? profile?.totalKycSubmissions ?? 0
+  const total = kyc.total ?? profile?.totalKycSubmissions ?? kycTotalsFromList?.total ?? 0
   const approved = kyc.approved ?? profile?.approvedKycCount ?? 0
   const pending = kyc.pending ?? profile?.pendingKycCount ?? 0
   const rejected = kyc.rejected ?? profile?.rejectedKycCount ?? 0
   const kycUrl = profile?.kycUrl ?? ''
-  const pkg = profile?.package || profile?.plan || 'Standard'
-  const recentKyc = stats?.recentKyc ?? []
+  const recentFromStats = stats?.recentKyc ?? (stats as Stats)?.data?.recentKyc ?? []
+  const recentKyc = recentFromStats.length > 0 ? recentFromStats : recentKycFromList
 
   const copyUrl = () => {
     if (!kycUrl) return
@@ -99,9 +114,7 @@ export default function CompanyDashboardPage() {
     return (
       <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-red-700">
         {error}
-        <button onClick={load} className="ml-3 text-sm font-medium underline">
-          Retry
-        </button>
+        <button onClick={load} className="ml-3 text-sm font-medium underline">Retry</button>
       </div>
     )
   }
@@ -109,11 +122,39 @@ export default function CompanyDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+        <div className="flex flex-wrap items-center justify-between  gap-2 sm:gap-3">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+           {kycUrl && (
+            <button
+              type="button"
+              onClick={() => setKycUrlModalOpen(true)}
+              className="p-2 rounded-lg text-gray-900 hover:bg-gray-100"
+              title="View KYC URL"
+              aria-label="View KYC URL"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+            </button>
+          )}
+           <Link
+            href="/dashboard/help"
+            className="p-2 rounded-lg text-gray-900 hover:bg-gray-100"
+            title="Help"
+            aria-label="Help"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </Link>
+         </div>
+         
+         
+        </div>
         <p className="text-sm text-gray-600 mt-1">KYC activity for your company</p>
       </div>
 
-      {/* KYC Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <div className="flex items-start justify-between">
@@ -170,38 +211,6 @@ export default function CompanyDashboardPage() {
         </div>
       </div>
 
-      {/* Package & KYC URL */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Package</h3>
-          <p className="text-lg font-medium text-gray-700">{pkg}</p>
-          <p className="text-xs text-gray-500 mt-1">Your current plan</p>
-        </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Your KYC URL</h3>
-          {kycUrl ? (
-            <div className="flex gap-2">
-              <input
-                readOnly
-                value={kycUrl}
-                className="flex-1 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-mono truncate"
-              />
-              <button
-                type="button"
-                onClick={copyUrl}
-                className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 whitespace-nowrap"
-              >
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">No KYC URL available.</p>
-          )}
-          <p className="text-xs text-gray-500 mt-2">Share this link with users to complete KYC for your company.</p>
-        </div>
-      </div>
-
-      {/* Recent KYC */}
       {recentKyc.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
@@ -209,28 +218,25 @@ export default function CompanyDashboardPage() {
             <p className="text-sm text-gray-600 mt-0.5">Latest verifications via your form</p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[500px]">
+            <table className="w-full min-w-[640px]">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Email</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {recentKyc.slice(0, 10).map((r, i) => (
+                {recentKyc.slice(0, 20).map((r, i) => (
                   <tr key={r.userId || i} className="hover:bg-gray-50">
                     <td className="px-4 py-3 text-sm font-medium text-gray-900">{r.fullName || '—'}</td>
                     <td className="px-4 py-3 text-sm text-gray-600">{r.email || '—'}</td>
                     <td className="px-4 py-3">
                       <span
                         className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full ${
-                          r.kycStatus === 'approved'
-                            ? 'bg-green-100 text-green-800'
-                            : r.kycStatus === 'rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                          r.kycStatus === 'approved' ? 'bg-green-100 text-green-800' : r.kycStatus === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
                         }`}
                       >
                         {r.kycStatus || '—'}
@@ -238,6 +244,18 @@ export default function CompanyDashboardPage() {
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500">
                       {r.submittedAt ? new Date(r.submittedAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.userId ? (
+                        <Link
+                          href={`/dashboard/users/${r.userId}`}
+                          className="text-xs font-medium text-gray-900 hover:underline"
+                        >
+                          View
+                        </Link>
+                      ) : (
+                        <span className="text-xs text-gray-400">—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -247,22 +265,29 @@ export default function CompanyDashboardPage() {
         </div>
       )}
 
-      {/* Support CTA */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">Need help?</h3>
-          <p className="text-sm text-gray-600 mt-1">Open a support ticket or view your existing issues.</p>
+      <Modal isOpen={kycUrlModalOpen} onClose={() => setKycUrlModalOpen(false)}>
+        <div className="p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-3">Your KYC URL</h3>
+          {kycUrl ? (
+            <>
+              <input
+                readOnly
+                value={kycUrl}
+                className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-mono mb-3"
+              />
+              <button
+                type="button"
+                onClick={copyUrl}
+                className="w-full px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800"
+              >
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500">No KYC URL available.</p>
+          )}
         </div>
-        <Link
-          href="/dashboard/support"
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          Support
-        </Link>
-      </div>
+      </Modal>
     </div>
   )
 }

@@ -60,7 +60,29 @@ export const companyKycList = (params: { status?: string; page?: number; limit?:
   return withAuth(`/api/company/kyc?${qp.toString()}`)
 }
 
-export const companyKycByUserId = (userId: string) => withAuth(`/api/company/kyc/${encodeURIComponent(userId)}`)
+function safeDecodeUserId(id: string): string {
+  try {
+    return decodeURIComponent(id)
+  } catch {
+    return id
+  }
+}
+
+export const companyKycByUserId = (userId: string) =>
+  withAuth(`/api/company/kyc/${encodeURIComponent(safeDecodeUserId(userId))}`)
+
+export const companyKycUserStatus = async (userId: string, body: { status: string; reason?: string; allowResubmit?: boolean }) => {
+  const token = getCompanyToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const raw = safeDecodeUserId(userId)
+  const res = await fetch(`/api/company/kyc/${encodeURIComponent(raw)}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
 
 export const companySupportStats = () => withAuth('/api/company/support/stats')
 export const companySupportUserIssues = (params: { status?: string; page?: number; limit?: number } = {}) => {

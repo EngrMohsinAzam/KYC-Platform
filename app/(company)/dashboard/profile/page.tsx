@@ -13,12 +13,7 @@ type Profile = {
   address?: string
   website?: string
   description?: string
-  kycUrl?: string
   status?: string
-  totalKycSubmissions?: number
-  approvedKycCount?: number
-  pendingKycCount?: number
-  rejectedKycCount?: number
   createdAt?: string
   approvedAt?: string
   package?: string
@@ -29,7 +24,6 @@ export default function CompanyProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [copied, setCopied] = useState(false)
 
   const load = useCallback(async () => {
     setError('')
@@ -51,14 +45,6 @@ export default function CompanyProfilePage() {
   useEffect(() => {
     load()
   }, [load])
-
-  const copyUrl = () => {
-    if (!profile?.kycUrl) return
-    navigator.clipboard.writeText(profile.kycUrl).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
 
   if (loading) {
     return (
@@ -134,60 +120,6 @@ export default function CompanyProfilePage() {
                 <p className="text-sm text-gray-700">{p.description}</p>
               </div>
             )}
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">KYC URL</h2>
-          <p className="text-sm text-gray-600">Share this link with users to complete verification</p>
-        </div>
-        <div className="px-4 sm:px-6 py-5">
-          {p.kycUrl ? (
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                readOnly
-                value={p.kycUrl}
-                className="flex-1 px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-mono"
-              />
-              <button
-                type="button"
-                onClick={copyUrl}
-                className="px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium hover:bg-gray-800 whitespace-nowrap"
-              >
-                {copied ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">No KYC URL available.</p>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">KYC summary</h2>
-          <p className="text-sm text-gray-600">Verifications via your form</p>
-        </div>
-        <div className="px-4 sm:px-6 py-5">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Total</p>
-              <p className="text-xl font-bold text-gray-900 mt-1">{Number(p.totalKycSubmissions ?? 0).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Approved</p>
-              <p className="text-xl font-bold text-green-700 mt-1">{Number(p.approvedKycCount ?? 0).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Pending</p>
-              <p className="text-xl font-bold text-yellow-700 mt-1">{Number(p.pendingKycCount ?? 0).toLocaleString()}</p>
-            </div>
-            <div>
-              <p className="text-xs font-medium text-gray-500 uppercase">Rejected</p>
-              <p className="text-xl font-bold text-red-700 mt-1">{Number(p.rejectedKycCount ?? 0).toLocaleString()}</p>
-            </div>
           </div>
         </div>
       </div>
