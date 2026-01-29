@@ -81,6 +81,74 @@ export const superAdminLogin = async (
   }
 }
 
+// --- Companies (Super Admin) ---
+export const superAdminCompaniesStats = async () => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch('/api/super-admin/companies/stats', {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return data
+}
+
+export const superAdminCompaniesList = async (params: {
+  status?: string
+  search?: string
+  page?: number
+  limit?: number
+  sortBy?: string
+  sortOrder?: string
+} = {}) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const qp = new URLSearchParams()
+  if (params.status) qp.append('status', params.status)
+  if (params.search) qp.append('search', params.search)
+  if (params.page) qp.append('page', String(params.page))
+  if (params.limit) qp.append('limit', String(params.limit))
+  if (params.sortBy) qp.append('sortBy', params.sortBy)
+  if (params.sortOrder) qp.append('sortOrder', params.sortOrder)
+  const res = await fetch(`/api/super-admin/companies?${qp.toString()}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return data
+}
+
+export const superAdminCompanyById = async (id: string) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch(`/api/super-admin/companies/${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return data
+}
+
+export const superAdminApproveCompany = async (id: string) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch(`/api/super-admin/companies/${encodeURIComponent(id)}/approve`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
+export const superAdminRejectCompany = async (id: string, body: { reason?: string } = {}) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch(`/api/super-admin/companies/${encodeURIComponent(id)}/reject`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
 export type AdminPermissions = {
   canApproveRejectKYC: boolean
   canViewAllUsers: boolean
@@ -302,18 +370,130 @@ export const superAdminRemoveWallet = async (id: string) => {
   return response.ok ? data : { success: false, message: data?.message || `HTTP ${response.status}` }
 }
 
-export const superAdminReplySupportIssue = async (issueId: string, body: { to: string; subject: string; message: string }) => {
+export const superAdminReplySupportIssue = async (issueId: string, body: { to?: string; subject: string; message: string }) => {
   const token = getSuperAdminToken()
   if (!token) return { success: false, message: 'Not authenticated' }
-
   const response = await fetch(`/api/super-admin/support/issues/${encodeURIComponent(issueId)}/reply`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-
   const data = await response.json().catch(() => ({}))
   return response.ok ? data : { success: false, message: data?.message || `HTTP ${response.status}` }
 }
 
+export const superAdminSupportStats = async (params?: { companyId?: string; issueType?: string }) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const qp = new URLSearchParams()
+  if (params?.companyId) qp.append('companyId', params.companyId)
+  if (params?.issueType) qp.append('issueType', params.issueType)
+  const res = await fetch(`/api/super-admin/support/stats?${qp.toString()}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
 
+export const superAdminSupportIssues = async (params?: {
+  issueType?: string
+  companyId?: string
+  status?: string
+  search?: string
+  page?: number
+  limit?: number
+}) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const qp = new URLSearchParams()
+  if (params?.issueType) qp.append('issueType', params.issueType)
+  if (params?.companyId) qp.append('companyId', params.companyId)
+  if (params?.status) qp.append('status', params.status)
+  if (params?.search) qp.append('search', params.search)
+  if (params?.page) qp.append('page', String(params.page))
+  if (params?.limit) qp.append('limit', String(params.limit))
+  const res = await fetch(`/api/super-admin/support/issues?${qp.toString()}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
+export const superAdminSupportIssueStatus = async (issueId: string, status: string) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch(`/api/super-admin/support/issues/${encodeURIComponent(issueId)}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
+export const superAdminKycStats = async (companyId?: string) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const qp = companyId ? `?companyId=${encodeURIComponent(companyId)}` : ''
+  const res = await fetch(`/api/super-admin/kyc/stats${qp}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
+export const superAdminUsersList = async (params?: {
+  companyId?: string
+  status?: string
+  search?: string
+  page?: number
+  limit?: number
+}) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const qp = new URLSearchParams()
+  if (params?.companyId) qp.append('companyId', params.companyId)
+  if (params?.status) qp.append('status', params.status)
+  if (params?.search) qp.append('search', params.search)
+  if (params?.page) qp.append('page', String(params.page))
+  if (params?.limit) qp.append('limit', String(params.limit))
+  const res = await fetch(`/api/super-admin/users?${qp.toString()}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
+export const superAdminUserById = async (userId: string) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch(`/api/super-admin/users/${encodeURIComponent(userId)}`, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
+export const superAdminUserStatus = async (userId: string, body: { status: string; reason?: string }) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch(`/api/super-admin/users/${encodeURIComponent(userId)}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
+export const superAdminSendEmail = async (body: { to: string; subject: string; message: string }) => {
+  const token = getSuperAdminToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch('/api/super-admin/email', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}

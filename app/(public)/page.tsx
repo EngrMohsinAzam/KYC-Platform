@@ -1,13 +1,17 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Footer } from '@/components/layout/Footer'
+import { getSignupEmailCookie } from '@/app/(public)/utils/signup-cookie'
+import { getCompanyToken } from '@/app/api/company-api'
 
 export default function LandingPage() {
   const router = useRouter()
+  const [signedIn, setSignedIn] = useState(false)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<'unilink' | 'sdk' | 'api'>('unilink')
   const [selectedVerificationType, setSelectedVerificationType] = useState<string>('ID Verification')
@@ -17,6 +21,10 @@ export default function LandingPage() {
   const [showDemoModal, setShowDemoModal] = useState(false)
   const [demoForm, setDemoForm] = useState({ name: '', email: '', company: '', phone: '' })
   
+  useEffect(() => {
+    setSignedIn(!!getSignupEmailCookie() || !!getCompanyToken())
+  }, [])
+
   // Refs for smooth scrolling
   const featuresRef = useRef<HTMLElement>(null)
   const solutionsRef = useRef<HTMLElement>(null)
@@ -100,20 +108,37 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection(resourcesRef)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Resources</button>
               <button onClick={() => scrollToSection(companyRef)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Company</button>
               <button onClick={() => scrollToSection(pricingRef)} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Pricing</button>
+              <button onClick={() => router.push('/company/register')} className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Company registration</button>
             </nav>
             <div className="flex items-center gap-2 md:space-x-4">
-              <button 
-                onClick={() => router.push('/signin')}
-                className="text-sm text-gray-900 hover:text-gray-700 transition-colors"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => router.push('/verify/start')}
-                className="bg-gray-900 hover:bg-gray-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-colors"
-              >
-                Get started
-            </button>
+              {signedIn ? (
+                <>
+                  <Link href="/account-status" className="text-sm text-gray-900 hover:text-gray-700 font-medium">
+                    Account
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    className="bg-gray-900 hover:bg-gray-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-colors"
+                  >
+                    Dashboard
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => router.push('/signin')}
+                    className="text-sm text-gray-900 hover:text-gray-700 transition-colors"
+                  >
+                    Sign In
+                  </button>
+                  <button
+                    onClick={() => router.push('/verify/start')}
+                    className="bg-gray-900 hover:bg-gray-800 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-colors"
+                  >
+                    Get started
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -134,10 +159,10 @@ export default function LandingPage() {
               {/* Buttons - Mobile: appears before image, Desktop: stays in text section */}
               <div className="flex flex-row gap-2 sm:gap-3 items-center mb-6 md:mb-0">
                 <button
-                  onClick={() => router.push('/verify/start')}
+                  onClick={() => router.push(signedIn ? '/dashboard' : '/verify/start')}
                   className="bg-gray-900 hover:bg-gray-800 text-white px-3 md:px-6 py-3 md:py-2.5 rounded-full text-xs md:text-sm font-semibold flex items-center justify-center gap-1 md:gap-2 transition-colors border-2 border-transparent flex-1 sm:flex-initial"
                 >
-                  Get started
+                  {signedIn ? 'Dashboard' : 'Get started'}
                   <svg className="w-2.5 h-2.5 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>

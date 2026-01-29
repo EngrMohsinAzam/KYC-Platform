@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import nextDynamic from 'next/dynamic'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { ShimmerCard, ShimmerChart, ShimmerNotification } from '@/components/ui/Shimmer'
@@ -9,7 +10,7 @@ import {
   getSuperAdminToken,
   superAdminDashboardSummary,
   superAdminAnalyticsTime,
-  superAdminListAdmins,
+  superAdminCompaniesList,
   type TimeRange,
 } from '@/app/api/super-admin-api'
 
@@ -28,8 +29,8 @@ export default function SuperAdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [range, setRange] = useState<TimeRange>('month')
   const [analytics, setAnalytics] = useState<any>(null)
-  const [adminCount, setAdminCount] = useState<number>(0)
   const [summary, setSummary] = useState<any>(null)
+  const [recentCompanies, setRecentCompanies] = useState<any[]>([])
   const [issues, setIssues] = useState<any[]>([])
   const [blockchainAmount, setBlockchainAmount] = useState<string | null>(null)
 
@@ -49,13 +50,13 @@ export default function SuperAdminDashboard() {
       const blockchain = await loadBlockchainFunctions()
       const { getFinancialStats } = blockchain
 
-      const [summaryRes, analyticsRes, adminsRes, issuesRes, financialStats] = await Promise.all([
+      const [summaryRes, analyticsRes, issuesRes, companiesRes, financialStats] = await Promise.all([
         superAdminDashboardSummary(),
         superAdminAnalyticsTime(range),
-        superAdminListAdmins({ page: 1, limit: 200 }),
-        fetch('/api/support/issues?page=1&limit=5&status=all', { headers: { Authorization: `Bearer ${token}` } })
+        fetch('/api/super-admin/support/issues?page=1&limit=5&status=all', { headers: { Authorization: `Bearer ${token}` } })
           .then((r) => r.json())
           .catch(() => ({ success: false })),
+        superAdminCompaniesList({ limit: 5, sortBy: 'createdAt', sortOrder: 'desc' }),
         getFinancialStats().catch((e: any) => {
           console.error('Failed to fetch blockchain financial stats:', e)
           return null
@@ -81,21 +82,15 @@ export default function SuperAdminDashboard() {
       
       setAnalytics(analyticsData)
 
-      // Set blockchain amount collected
       if (financialStats) {
         setBlockchainAmount(financialStats.totalCollected)
       }
 
-      if (adminsRes?.success) {
-        const list = adminsRes.data?.admins || adminsRes.data?.data?.admins || adminsRes.data?.items || adminsRes.data?.results || []
-        const totalFromPagination =
-          adminsRes.data?.pagination?.totalAdmins ??
-          adminsRes.data?.pagination?.total ??
-          adminsRes.data?.totalAdmins ??
-          adminsRes.totalAdmins
-        setAdminCount(typeof totalFromPagination === 'number' ? totalFromPagination : Array.isArray(list) ? list.length : 0)
+      if (companiesRes?.success) {
+        const list = companiesRes?.data?.companies ?? companiesRes?.data ?? []
+        setRecentCompanies(Array.isArray(list) ? list : [])
       } else {
-        setAdminCount(0)
+        setRecentCompanies([])
       }
 
       if (issuesRes?.success) {
@@ -151,17 +146,16 @@ export default function SuperAdminDashboard() {
     const sum = (arr: any[]) =>
       arr.reduce((acc, v) => acc + (typeof v?.value === 'number' ? v.value : typeof v === 'number' ? v : 0), 0)
 
-    // KPIs must come from /super-admin/dashboard/summary (source of truth)
-    const totalUsers = Number(s.totalUsers ?? 0) || 0
-    const totalAdmins = Number(s.totalAdmins ?? adminCount ?? 0) || 0
-    const totalApproved = Number(s.totalApprovedApplications ?? 0) || 0
+    // KPIs from /super-admin/dashboard/summary: prefer companies/users nested, fallback to flat
+    const companies = s.companies || {}
+    const users = s.users || {}
+    const totalCompanies = Number(companies.total ?? s.totalCompanies ?? 0) || 0
+    const totalUsers = Number(users.total ?? s.totalUsers ?? 0) || 0
+    const totalApproved = Number(users.approved ?? s.totalApprovedApplications ?? 0) || 0
     const totalCancelled = Number(s.totalCancelledApplications ?? 0) || 0
-    const totalRejected = Number(s.totalRejectedApplications ?? 0) || 0
-    // Amount collected will come from blockchain, not API
+    const totalRejected = Number(users.rejected ?? s.totalRejectedApplications ?? 0) || 0
     const totalAmountCollected = Number(s.totalAmountCollected ?? 0) || 0
-
-    // Pending isn't in summary response; compute pending as total - (approved + rejected + cancelled)
-    const totalPending = Math.max(0, totalUsers - (totalApproved + totalRejected + totalCancelled))
+    const totalPending = Number(users.pending ?? companies.pending ?? 0) || Math.max(0, totalUsers - (totalApproved + totalRejected + totalCancelled))
 
     // Merge chart buckets by label/index
     const length = Math.max(seriesUsers?.length || 0, seriesKyc?.length || 0, seriesAmount?.length || 0, 0)
@@ -179,7 +173,7 @@ export default function SuperAdminDashboard() {
     return {
       kpis: {
         totalUsers,
-        totalAdmins,
+        totalCompanies,
         totalApproved,
         totalPending,
         totalAmountCollected,
@@ -187,7 +181,7 @@ export default function SuperAdminDashboard() {
       },
       chartData: merged,
     }
-  }, [analytics, adminCount, summary])
+  }, [analytics, summary])
 
   // Calculate trends data from analytics - use same data structure as chartData
   const trendsData = useMemo(() => {
@@ -306,6 +300,12 @@ export default function SuperAdminDashboard() {
           <p className="text-sm text-gray-600 mt-1">Platform overview (Super Admin)</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/super-admin/companies"
+            className="px-4 py-2 rounded-xl bg-black text-white text-sm font-medium hover:bg-gray-800"
+          >
+            View companies
+          </Link>
           <select
             value={range}
             onChange={(e) => setRange(e.target.value as TimeRange)}
@@ -340,7 +340,7 @@ export default function SuperAdminDashboard() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <KpiCard title="Total users" value={kpis.totalUsers} icon="users" />
-          <KpiCard title="Total admins" value={kpis.totalAdmins} icon="admins" />
+          <KpiCard title="Total companies" value={kpis.totalCompanies} icon="companies" />
           <KpiCard title="Approved applications" value={kpis.totalApproved} icon="approved" />
           <KpiCard title="Pending applications" value={kpis.totalPending} icon="pending" />
           <KpiCard 
@@ -448,12 +448,12 @@ export default function SuperAdminDashboard() {
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
-                <button
-                  onClick={() => router.push('/super-admin/support')}
+                <Link
+                  href="/super-admin/support"
                   className="text-xs font-medium text-gray-700 hover:underline"
                 >
                   View all
-                </button>
+                </Link>
               </div>
 
               {issues.length === 0 ? (
@@ -475,6 +475,79 @@ export default function SuperAdminDashboard() {
           </>
         )}
       </div>
+
+      {/* Recent companies */}
+      {!loading && (
+        <div className="mt-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">Recent companies</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Company details — view, approve, or manage</p>
+            </div>
+            <Link
+              href="/super-admin/companies"
+              className="text-sm font-medium text-gray-900 hover:underline"
+            >
+              View all
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            {recentCompanies.length === 0 ? (
+              <div className="p-8 text-center text-sm text-gray-500">No companies yet.</div>
+            ) : (
+              <table className="w-full min-w-[640px]">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Industry</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Status</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {recentCompanies.map((c: any) => (
+                    <tr key={c._id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-semibold text-gray-900">{c.companyName}</div>
+                        <div className="text-xs text-gray-500">{c.companyId || String(c._id).slice(-8)}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{c.email || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{c.ownerName || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-700">{c.industry || '—'}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                            c.status === 'approved'
+                              ? 'bg-green-50 text-green-800 border border-green-200'
+                              : c.status === 'rejected'
+                                ? 'bg-red-50 text-red-800 border border-red-200'
+                                : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
+                          }`}
+                        >
+                          {c.status || 'pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/super-admin/companies/${encodeURIComponent(c._id)}`}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-black text-white text-sm font-medium hover:bg-gray-800"
+                        >
+                          View
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   )
 }
@@ -488,7 +561,7 @@ function KpiCard({
   title: string
   value: number | string
   suffix?: string
-  icon: 'users' | 'admins' | 'approved' | 'pending' | 'amount' | 'cancelled'
+  icon: 'users' | 'admins' | 'companies' | 'approved' | 'pending' | 'amount' | 'cancelled'
 }) {
   const iconWrap = 'w-11 h-11 rounded-2xl flex items-center justify-center border'
   const iconByType: Record<typeof icon, { wrap: string; svg: React.ReactNode }> = {
@@ -505,6 +578,14 @@ function KpiCard({
       svg: (
         <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      ),
+    },
+    companies: {
+      wrap: `${iconWrap} bg-blue-50 border-blue-200 text-blue-700`,
+      svg: (
+        <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
       ),
     },
