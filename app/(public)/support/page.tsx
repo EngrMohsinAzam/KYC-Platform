@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Header } from '@/components/layout/Header'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
+import { getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -17,10 +18,9 @@ export default function SupportPage() {
 
   const initialEmail = useMemo(() => state.personalInfo?.email || '', [state.personalInfo?.email])
   const initialName = useMemo(() => {
-    if (state.personalInfo?.firstName || state.personalInfo?.lastName) {
-      return ` `.trim()
-    }
-    return ''
+    const first = state.personalInfo?.firstName || ''
+    const last = state.personalInfo?.lastName || ''
+    return `${first} ${last}`.trim()
   }, [state.personalInfo?.firstName, state.personalInfo?.lastName])
 
   const [name, setName] = useState(initialName)
@@ -29,6 +29,14 @@ export default function SupportPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [companyContext, setCompanyContext] = useState<{ companyId: string; companySlug: string; companyName: string } | null>(null)
+
+  useEffect(() => {
+    const ctx = getCompanyContext()
+    if (ctx?.companyId && ctx?.companySlug && ctx?.companyName) {
+      setCompanyContext({ companyId: ctx.companyId, companySlug: ctx.companySlug, companyName: ctx.companyName })
+    }
+  }, [])
 
   const submit = async () => {
     setError(null)
@@ -53,14 +61,20 @@ export default function SupportPage() {
 
     try {
       setLoading(true)
+      const body: { name: string; email: string; description: string; companyId?: string; companySlug?: string; companyName?: string } = {
+        name: name.trim(),
+        email: email.trim(),
+        description: description.trim(),
+      }
+      if (companyContext) {
+        body.companyId = companyContext.companyId
+        body.companySlug = companyContext.companySlug
+        body.companyName = companyContext.companyName
+      }
       const response = await fetch('/api/support/issues', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: name.trim(),
-          email: email.trim(), 
-          description: description.trim() 
-        }),
+        body: JSON.stringify(body),
       })
       const data = await response.json().catch(() => ({}))
 
