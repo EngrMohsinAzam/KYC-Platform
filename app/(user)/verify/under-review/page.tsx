@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 
@@ -29,13 +30,18 @@ export default function UnderReview() {
             </p>
           </div>
 
-          <div className="md:block fixed md:relative bottom-0 left-0 right-0 p-4 bg-white md:bg-transparent border-t md:border-t-0 border-surface-light">
-            <Button 
+          <div className="md:block fixed md:relative bottom-0 left-0 right-0 p-4 bg-white md:bg-transparent border-t md:border-t-0 border-surface-light space-y-3">
+            <Button
               onClick={() => router.push('/')}
               className="w-full"
             >
               Go to Home
             </Button>
+            <Link href="/support" className="block w-full">
+              <Button variant="secondary" className="w-full">
+                Contact Support
+              </Button>
+            </Link>
           </div>
         </div>
       </main>

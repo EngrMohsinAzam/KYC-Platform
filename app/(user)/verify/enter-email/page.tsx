@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Header } from '@/components/layout/Header'
@@ -143,6 +144,12 @@ export default function EnterEmailPage() {
           >
             {loading ? 'Checking…' : 'Continue'}
           </Button>
+
+          <p className="mt-4 text-center">
+            <Link href="/support" className="text-sm text-gray-600 hover:underline">
+              Contact support
+            </Link>
+          </p>
         </div>
       </main>
     </div>

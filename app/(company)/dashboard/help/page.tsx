@@ -1,16 +1,45 @@
 'use client'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { companySupportCreateIssue } from '@/app/api/company-api'
+import { useState, useEffect, useCallback } from 'react'
+import { companySupportCreateIssue, companySupportMyIssuesList } from '@/app/api/company-api'
 
 const CATEGORIES = ['technical', 'billing', 'account', 'kyc', 'general', 'other'] as const
+
+type MyIssue = {
+  _id?: string
+  subject?: string
+  description?: string
+  category?: string
+  status?: string
+  adminReply?: string
+  repliedAt?: string
+  createdAt?: string
+}
 
 export default function CompanyHelpPage() {
   const [submitting, setSubmitting] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({ subject: '', description: '', category: 'general' as string })
+  const [issues, setIssues] = useState<MyIssue[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    try {
+      const res = await companySupportMyIssuesList()
+      if (res?.success && res?.data?.issues) {
+        setIssues(Array.isArray(res.data.issues) ? res.data.issues : [])
+      }
+    } catch {
+      setIssues([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -27,6 +56,7 @@ export default function CompanyHelpPage() {
         setForm({ subject: '', description: '', category: 'general' })
         setSent(true)
         setError('')
+        await load()
       } else {
         setError(r?.message || 'Failed to send')
       }
@@ -41,15 +71,14 @@ export default function CompanyHelpPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Help</h1>
-        <p className="text-sm text-gray-600 mt-1">Contact us for help or questions</p>
+        <p className="text-sm text-gray-600 mt-1">Issues you&apos;ve raised with Super Admin – contact us for help</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Contact us</h2>
           <p className="text-sm text-gray-600 mb-4">
-            Send a message and we&apos;ll get back to you. You can also track your requests in{' '}
-            <Link href="/dashboard/support" className="text-gray-900 font-medium hover:underline">Support</Link>.
+            Send a message to Super Admin. Track your requests below.
           </p>
           {sent && (
             <div className="mb-4 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
@@ -106,19 +135,40 @@ export default function CompanyHelpPage() {
           </form>
         </div>
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Support</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-2">Issues you&apos;ve raised</h2>
           <p className="text-sm text-gray-600 mb-4">
-            View and track all issues your company has raised with us.
+            Issues your company has raised with Super Admin.
           </p>
-          <Link
-            href="/dashboard/support"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-900 text-sm font-medium hover:bg-gray-200"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            Open Support
-          </Link>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-gray-300 border-t-gray-900" />
+            </div>
+          ) : issues.length === 0 ? (
+            <p className="text-sm text-gray-500">No issues yet.</p>
+          ) : (
+            <div className="space-y-3 max-h-[320px] overflow-y-auto">
+              {issues.map((issue) => (
+                <div key={issue._id!} className="p-3 rounded-lg border border-gray-100">
+                  <p className="font-medium text-gray-900 text-sm">{issue.subject || '—'}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {issue.category} · {issue.createdAt ? new Date(issue.createdAt).toLocaleString() : '—'}
+                  </p>
+                  <span className={`inline-block mt-2 px-2 py-0.5 text-xs font-medium rounded-full ${
+                    issue.status === 'resolved' || issue.status === 'closed' ? 'bg-green-100 text-green-800' :
+                    issue.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+                  }`}>
+                    {issue.status || 'open'}
+                  </span>
+                  {issue.adminReply && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded text-xs">
+                      <p className="font-medium text-gray-600">Reply:</p>
+                      <p className="text-gray-700 mt-0.5">{issue.adminReply}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
