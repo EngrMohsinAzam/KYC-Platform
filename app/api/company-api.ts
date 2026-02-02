@@ -51,6 +51,19 @@ export const companyLogin = async (body: { email: string; password: string }) =>
 export const companyProfile = () => withAuth('/api/company/profile')
 export const companyDashboardStats = () => withAuth('/api/company/dashboard/stats')
 
+export const companyPackageGet = () => withAuth('/api/company/package')
+export const companyPackageUpdate = async (body: { selectedPackage?: string; extraChargePerUser?: number }) => {
+  const token = getCompanyToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch('/api/company/package', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
 export const companyKycList = (params: { status?: string; page?: number; limit?: number; search?: string } = {}) => {
   const qp = new URLSearchParams()
   if (params.status) qp.append('status', params.status)

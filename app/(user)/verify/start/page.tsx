@@ -136,9 +136,8 @@ function StartContent() {
                   </svg>
                 </button>
               </div>
-              <p className="mt-4 text-xs text-gray-500 space-x-4">
+              <p className="mt-4 text-xs text-gray-500">
                 <Link href="/" className="text-gray-600 hover:underline">Back to home</Link>
-                <Link href="/support" className="text-gray-600 hover:underline">Contact support</Link>
               </p>
             </>
           )}

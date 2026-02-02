@@ -186,16 +186,64 @@ function AccountStatusContent() {
               <h1 className="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Account pending</h1>
               <p className="text-sm text-gray-600">Your application is under review. We&apos;ll notify you once it&apos;s approved.</p>
             </div>
+
+            <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="flex items-center w-full">
+                {[
+                  { n: 1, label: 'Submitted', status: 'completed' as const },
+                  { n: 2, label: 'Under review', status: 'active' as const },
+                  { n: 3, label: 'Review complete', status: 'pending' as const },
+                  { n: 4, label: 'Account active', status: 'locked' as const },
+                ].map((s, idx) => (
+                  <div key={s.n} className="flex items-center flex-1 min-w-0">
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <div
+                        className={`w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          s.status === 'completed'
+                            ? 'bg-black border-2 border-gray-900 text-white'
+                            : s.status === 'active'
+                            ? 'bg-gray-900 border-2 border-gray-900 text-white'
+                            : 'bg-gray-100 border border-gray-300 text-gray-500'
+                        }`}
+                      >
+                        {s.status === 'completed' ? (
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        ) : s.status === 'locked' ? (
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                          </svg>
+                        ) : (
+                          <span className="text-base font-semibold">{s.n}</span>
+                        )}
+                      </div>
+                      <span className={`text-xs mt-2 font-medium ${
+                        s.status === 'locked' ? 'text-gray-400' : 'text-gray-900'
+                      }`}>
+                        {s.label}
+                      </span>
+                    </div>
+                    {idx < 3 && (
+                      <div className={`flex-1 mx-1 min-w-[16px] ${
+                        s.status === 'completed' ? 'bg-gray-900 h-1' : 'bg-gray-200 h-0.5'
+                      }`} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
-              <div className="flex flex-col items-center justify-center py-8">
-                <div className="w-16 h-16 rounded-full border-2 border-gray-300 border-t-gray-900 animate-spin mb-6" />
-                <p className="text-sm text-gray-600 mb-2"><strong>{data.companyName || 'Your company'}</strong></p>
+              <div className="flex flex-col items-center justify-center py-4">
+                <p className="text-sm text-gray-600 mb-1"><strong>{data.companyName || 'Your company'}</strong></p>
                 <p className="text-xs text-gray-500">{data.email}</p>
                 {data.submittedAt && (
                   <p className="text-xs text-gray-500 mt-1">Submitted {new Date(data.submittedAt).toLocaleDateString()}</p>
                 )}
               </div>
             </div>
+
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <button onClick={() => fetchStatus()} disabled={fetching} className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50">
                 {fetching ? 'Checking…' : 'Check again'}

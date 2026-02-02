@@ -488,11 +488,19 @@ export const checkStatusByEmail = async (email: string, companyId?: string): Pro
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     })
-    const result = await response.json()
-    if (!response.ok) throw new Error(result?.message || `HTTP ${response.status}`)
-    return result
+    let result: { success?: boolean; data?: any; message?: string; error?: string }
+    try {
+      result = await response.json()
+    } catch {
+      return { success: false, message: `Server error (${response.status}). Please try again.` }
+    }
+    if (!response.ok) {
+      const msg = result?.message || result?.error || `Request failed (${response.status})`
+      return { success: false, message: msg }
+    }
+    return { success: result?.success !== false, ...result } as { success: boolean; data?: any; message?: string }
   } catch (error: any) {
-    return { success: false, message: error.message || 'Failed to check status by email.' }
+    return { success: false, message: error?.message || 'Failed to check status. Please try again.' }
   }
 }
 
