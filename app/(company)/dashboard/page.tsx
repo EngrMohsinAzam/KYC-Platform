@@ -5,6 +5,15 @@ import Link from 'next/link'
 import { companyProfile, companyDashboardStats, companyKycList } from '@/app/api/company-api'
 import { Modal } from '@/components/ui/Modal'
 
+type PackageInfo = {
+  selected?: string
+  name?: string
+  baseChargePerUser?: number
+  monthlyFee?: number
+  extraChargePerUser?: number
+  totalChargePerUser?: number
+}
+
 type Profile = {
   companyName?: string
   companyId?: string
@@ -15,7 +24,7 @@ type Profile = {
   approvedKycCount?: number
   pendingKycCount?: number
   rejectedKycCount?: number
-  package?: string
+  package?: PackageInfo | string
   plan?: string
 }
 
@@ -196,6 +205,31 @@ export default function CompanyDashboardPage() {
             </div>
           </div>
         </div>
+        {(() => {
+          const pkg = typeof profile?.package === 'object' ? profile.package : null
+          const pkgName = pkg?.name ?? (typeof profile?.package === 'string' ? profile.package : profile?.plan) ?? '—'
+          const hasPackage = pkg || profile?.package || profile?.plan
+          if (!hasPackage) return null
+          return (
+            <Link href="/dashboard/profile" className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:border-gray-300 transition-colors block">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Package</p>
+                  <p className="text-lg font-bold text-gray-900 mt-1">{pkgName}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {pkg ? `$${pkg.totalChargePerUser ?? pkg.baseChargePerUser ?? '—'}/user` : '—'}
+                    {pkg?.extraChargePerUser != null && pkg.extraChargePerUser > 0 && (
+                      <span> · +${pkg.extraChargePerUser} extra</span>
+                    )}
+                  </p>
+                </div>
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+          )
+        })()}
         <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
           <div className="flex items-start justify-between">
             <div>

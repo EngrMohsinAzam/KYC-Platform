@@ -68,7 +68,7 @@ export default function DashboardLayout({
 
   const handleLogout = () => {
     removeCompanyToken()
-    router.replace('/signin')
+    window.location.href = '/signin'
   }
 
   return (

@@ -22,13 +22,30 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(payload),
     })
 
-    const data = await response.json()
+    const text = await response.text()
+    let data: Record<string, unknown>
+    try {
+      data = text ? (JSON.parse(text) as Record<string, unknown>) : {}
+    } catch {
+      return NextResponse.json(
+        { success: false, message: text?.slice(0, 200) || `Backend returned ${response.status}` },
+        { status: response.status }
+      )
+    }
 
+    if (!response.ok) {
+      const message = (data?.message as string) || (data?.error as string) || `Request failed (${response.status})`
+      return NextResponse.json(
+        { success: false, message, ...(typeof data === 'object' ? data : {}) },
+        { status: response.status }
+      )
+    }
     return NextResponse.json(data, { status: response.status })
   } catch (error: any) {
     console.error('Error in check-status-by-email proxy:', error)
+    const msg = error?.message || (error?.cause?.message) || 'Failed to check status'
     return NextResponse.json(
-      { success: false, message: error.message || 'Failed to check status' },
+      { success: false, message: msg },
       { status: 500 }
     )
   }

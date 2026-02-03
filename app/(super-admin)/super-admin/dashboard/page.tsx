@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import nextDynamic from 'next/dynamic'
 import { LoadingDots } from '@/components/ui/LoadingDots'
-import { ShimmerCard, ShimmerChart, ShimmerNotification } from '@/components/ui/Shimmer'
+import { ShimmerCard, ShimmerChart, ShimmerNotification, ShimmerTable } from '@/components/ui/Shimmer'
 import {
   getSuperAdminToken,
   superAdminDashboardSummary,
   superAdminAnalyticsTime,
   superAdminCompaniesList,
+  superAdminCompaniesStats,
   type TimeRange,
 } from '@/app/api/super-admin-api'
 
@@ -31,6 +32,7 @@ export default function SuperAdminDashboard() {
   const [analytics, setAnalytics] = useState<any>(null)
   const [summary, setSummary] = useState<any>(null)
   const [recentCompanies, setRecentCompanies] = useState<any[]>([])
+  const [companiesStats, setCompaniesStats] = useState<any>(null)
   const [issues, setIssues] = useState<any[]>([])
   const [blockchainAmount, setBlockchainAmount] = useState<string | null>(null)
 
@@ -50,7 +52,8 @@ export default function SuperAdminDashboard() {
       const blockchain = await loadBlockchainFunctions()
       const { getFinancialStats } = blockchain
 
-      const [summaryRes, analyticsRes, issuesRes, companiesRes, financialStats] = await Promise.all([
+      const [companiesStatsRes, summaryRes, analyticsRes, issuesRes, companiesRes, financialStats] = await Promise.all([
+        superAdminCompaniesStats(),
         superAdminDashboardSummary(),
         superAdminAnalyticsTime(range),
         fetch('/api/super-admin/support/issues?page=1&limit=5&status=all', { headers: { Authorization: `Bearer ${token}` } })
@@ -62,6 +65,12 @@ export default function SuperAdminDashboard() {
           return null
         }),
       ])
+
+      if (companiesStatsRes?.success && companiesStatsRes?.data) {
+        setCompaniesStats(companiesStatsRes)
+      } else {
+        setCompaniesStats(null)
+      }
 
       if (!summaryRes?.success) {
         throw new Error(summaryRes?.message || 'Failed to load summary')
@@ -146,10 +155,11 @@ export default function SuperAdminDashboard() {
     const sum = (arr: any[]) =>
       arr.reduce((acc, v) => acc + (typeof v?.value === 'number' ? v.value : typeof v === 'number' ? v : 0), 0)
 
-    // KPIs from /super-admin/dashboard/summary: prefer companies/users nested, fallback to flat
+    // KPIs: prefer companies stats API for company counts, fallback to summary
+    const cs = companiesStats?.data?.companies || companiesStats?.data || {}
     const companies = s.companies || {}
     const users = s.users || {}
-    const totalCompanies = Number(companies.total ?? s.totalCompanies ?? 0) || 0
+    const totalCompanies = Number(cs.total ?? companies.total ?? s.totalCompanies ?? 0) || 0
     const totalUsers = Number(users.total ?? s.totalUsers ?? 0) || 0
     const totalApproved = Number(users.approved ?? s.totalApprovedApplications ?? 0) || 0
     const totalCancelled = Number(s.totalCancelledApplications ?? 0) || 0
@@ -181,7 +191,7 @@ export default function SuperAdminDashboard() {
       },
       chartData: merged,
     }
-  }, [analytics, summary])
+  }, [analytics, summary, companiesStats])
 
   // Calculate trends data from analytics - use same data structure as chartData
   const trendsData = useMemo(() => {
@@ -476,9 +486,12 @@ export default function SuperAdminDashboard() {
         )}
       </div>
 
-      {/* Recent companies */}
-      {!loading && (
-        <div className="mt-6 bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      {/* Recent companies - always show, shimmer when loading */}
+      <div className="mt-6">
+        {loading ? (
+          <ShimmerTable />
+        ) : (
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-gray-900">Recent companies</h2>
@@ -547,7 +560,8 @@ export default function SuperAdminDashboard() {
             )}
           </div>
         </div>
-      )}
+        )}
+      </div>
     </main>
   )
 }

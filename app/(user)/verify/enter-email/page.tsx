@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Header } from '@/components/layout/Header'
@@ -68,8 +67,9 @@ export default function EnterEmailPage() {
         router.push(`/verify/rejected?email=${encodeURIComponent(trimmed)}`)
         return
       }
-    } catch {
-      setError('Could not verify your email. Please try again.')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not verify your email. Please try again.'
+      setError(msg)
       setLoading(false)
       return
     }
@@ -144,12 +144,6 @@ export default function EnterEmailPage() {
           >
             {loading ? 'Checking…' : 'Continue'}
           </Button>
-
-          <p className="mt-4 text-center">
-            <Link href="/support" className="text-sm text-gray-600 hover:underline">
-              Contact support
-            </Link>
-          </p>
         </div>
       </main>
     </div>
