@@ -67,8 +67,9 @@ export default function EnterEmailPage() {
         router.push(`/verify/rejected?email=${encodeURIComponent(trimmed)}`)
         return
       }
-    } catch {
-      setError('Could not verify your email. Please try again.')
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Could not verify your email. Please try again.'
+      setError(msg)
       setLoading(false)
       return
     }

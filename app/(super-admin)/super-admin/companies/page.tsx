@@ -18,6 +18,13 @@ const INDUSTRIES = [
   'E-commerce', 'Marketplace', 'iGaming', 'SaaS', 'Telecommunications', 'Education', 'Other',
 ]
 
+const PACKAGES = [
+  { id: 'pay_as_you_go', name: 'Pay as you go' },
+  { id: 'basic', name: 'Basic' },
+  { id: 'standard', name: 'Standard' },
+  { id: 'premium', name: 'Premium' },
+]
+
 type CompanyRow = {
   _id: string
   companyName: string
@@ -32,6 +39,10 @@ type CompanyRow = {
   createdAt?: string
   companyId?: string
   companySlug?: string
+  selectedPackage?: string
+  packageDetails?: { packageName?: string; baseChargePerUser?: number; monthlyFee?: number; features?: string[] }
+  extraChargePerUser?: number
+  totalChargePerUser?: number
 }
 
 type Stats = { total?: number; pending?: number; approved?: number; rejected?: number }
@@ -56,8 +67,6 @@ export default function SuperAdminCompaniesPage() {
   const [pending, setPending] = useState<CompanyRow[]>([])
   const [approved, setApproved] = useState<CompanyRow[]>([])
   const [error, setError] = useState('')
-  const [selected, setSelected] = useState<CompanyRow | null>(null)
-  const [viewModal, setViewModal] = useState(false)
   const [addModal, setAddModal] = useState(false)
   const [credentialsModal, setCredentialsModal] = useState<{
     company: { companyName: string; companyId?: string; companySlug?: string; kycUrl?: string; email?: string }
@@ -68,6 +77,7 @@ export default function SuperAdminCompaniesPage() {
   const [acting, setActing] = useState(false)
   const [addForm, setAddForm] = useState({
     companyName: '', ownerName: '', email: '', phone: '', address: '', industry: '', website: '', description: '',
+    selectedPackage: 'basic', extraChargePerUser: '0',
   })
   const { copy, copied } = useCopy()
 
@@ -82,7 +92,13 @@ export default function SuperAdminCompaniesPage() {
       ])
       if (statsRes?.success && statsRes?.data) {
         const d = statsRes.data as { companies?: Stats } & Stats
-        setStats(d.companies || d)
+        const s = d.companies || d
+        setStats({
+          total: s.total ?? 0,
+          pending: s.pending ?? 0,
+          approved: s.approved ?? 0,
+          rejected: s.rejected ?? 0,
+        })
       }
       if (!listRes?.success) {
         setError(listRes?.message || 'Failed to load companies')
@@ -119,9 +135,6 @@ export default function SuperAdminCompaniesPage() {
       if (!res?.success) throw new Error(res?.message || 'Approve failed')
       const company = res?.data?.company ?? res?.data
       const credentials = res?.data?.credentials ?? {}
-      setViewModal(false)
-      setSelected(null)
-
       // Optimistic update: remove from pending, add to approved (so it no longer shows as pending)
       setPending((prev) => prev.filter((x) => x._id !== c._id))
       const approvedRow: CompanyRow = {
@@ -176,8 +189,6 @@ export default function SuperAdminCompaniesPage() {
       if (!res?.success) throw new Error(res?.message || 'Reject failed')
       setRejectModal(null)
       setRejectReason('')
-      setViewModal(false)
-      setSelected(null)
       await load()
     } catch (e: any) {
       setError(e?.message || 'Reject failed')
@@ -196,6 +207,7 @@ export default function SuperAdminCompaniesPage() {
     setActing(true)
     setError('')
     try {
+      const extra = parseFloat(String(addForm.extraChargePerUser || '0'))
       const res = await fetch('/api/company/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -206,6 +218,8 @@ export default function SuperAdminCompaniesPage() {
           phone: addForm.phone.trim(),
           address: addForm.address.trim(),
           industry: addForm.industry.trim(),
+          selectedPackage: addForm.selectedPackage || 'basic',
+          extraChargePerUser: Number.isNaN(extra) || extra < 0 ? 0 : extra,
           ...(addForm.website?.trim() && { website: addForm.website.trim() }),
           ...(addForm.description?.trim() && { description: addForm.description.trim() }),
         }),
@@ -213,7 +227,7 @@ export default function SuperAdminCompaniesPage() {
       const data = await res.json()
       if (!data.success) throw new Error(data.message || 'Registration failed')
       setAddModal(false)
-      setAddForm({ companyName: '', ownerName: '', email: '', phone: '', address: '', industry: '', website: '', description: '' })
+      setAddForm({ companyName: '', ownerName: '', email: '', phone: '', address: '', industry: '', website: '', description: '', selectedPackage: 'basic', extraChargePerUser: '0' })
       await load()
     } catch (e: any) {
       setError(e?.message || 'Failed to add company')
@@ -259,18 +273,37 @@ export default function SuperAdminCompaniesPage() {
         <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
       )}
 
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase">Total</p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{stats.total ?? pending.length + approved.length}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase">Pending</p>
+          <p className="text-2xl font-bold text-amber-600 mt-1">{stats.pending ?? pending.length}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase">Approved</p>
+          <p className="text-2xl font-bold text-green-600 mt-1">{stats.approved ?? approved.length}</p>
+        </div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <p className="text-xs font-semibold text-gray-500 uppercase">Rejected</p>
+          <p className="text-2xl font-bold text-red-600 mt-1">{stats.rejected ?? 0}</p>
+        </div>
+      </div>
+
       <div className="flex gap-2 mb-6 border-b border-gray-200">
         <button
           onClick={() => setTab('pending')}
           className={`px-4 py-2 text-sm font-medium rounded-t-xl border-b-2 transition-colors ${tab === 'pending' ? 'border-black text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          Pending ({pending.length})
+          Pending ({stats.pending ?? pending.length})
         </button>
         <button
           onClick={() => setTab('approved')}
           className={`px-4 py-2 text-sm font-medium rounded-t-xl border-b-2 transition-colors ${tab === 'approved' ? 'border-black text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
         >
-          Approved ({approved.length})
+          Approved ({stats.approved ?? approved.length})
         </button>
       </div>
 
@@ -288,6 +321,7 @@ export default function SuperAdminCompaniesPage() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Package</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Email</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Industry</th>
@@ -302,6 +336,12 @@ export default function SuperAdminCompaniesPage() {
                         <div className="text-sm font-semibold text-gray-900">{r.companyName}</div>
                         <div className="text-xs text-gray-500">{String(r._id).slice(-8)}</div>
                       </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {r.packageDetails?.packageName || r.selectedPackage || '—'}
+                        {r.extraChargePerUser != null && r.extraChargePerUser > 0 && (
+                          <span className="text-gray-500"> · +${r.extraChargePerUser}</span>
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-700">{r.email}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{r.ownerName || '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{r.industry || '—'}</td>
@@ -310,12 +350,12 @@ export default function SuperAdminCompaniesPage() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => { setSelected(r); setViewModal(true) }}
+                          <Link
+                            href={`/super-admin/companies/${encodeURIComponent(r._id)}`}
                             className="px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50"
                           >
-                            View
-                          </button>
+                            View details
+                          </Link>
                           <button
                             onClick={() => handleApprove(r)}
                             disabled={acting}
@@ -354,6 +394,7 @@ export default function SuperAdminCompaniesPage() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Company</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Package</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Industry</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Contact</th>
                     <th className="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Action</th>
@@ -365,6 +406,12 @@ export default function SuperAdminCompaniesPage() {
                       <td className="px-4 py-3">
                         <div className="text-sm font-semibold text-gray-900">{c.companyName}</div>
                         <div className="text-xs text-gray-500">{c.companyId || c._id}</div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-700">
+                        {c.packageDetails?.packageName || c.selectedPackage || '—'}
+                        {c.extraChargePerUser != null && c.extraChargePerUser > 0 && (
+                          <span className="text-gray-500"> · +${c.extraChargePerUser}</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-700">{c.industry || '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-700">{c.ownerName || '—'} · {c.email}</td>
@@ -382,49 +429,6 @@ export default function SuperAdminCompaniesPage() {
                 </tbody>
               </table>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* View modal */}
-      {viewModal && selected && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
-            <div className="fixed inset-0 bg-black/50" onClick={() => { setViewModal(false); setSelected(null) }} />
-            <div className="relative bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">{selected.companyName}</h3>
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Pending</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Company</h4>
-                    <p><span className="text-gray-500">Industry:</span> {selected.industry || '—'}</p>
-                    <p><span className="text-gray-500">Created:</span> {selected.createdAt ? new Date(selected.createdAt).toLocaleString() : '—'}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-gray-700 mb-2">Contact</h4>
-                    <p><span className="text-gray-500">Owner:</span> {selected.ownerName || '—'}</p>
-                    <p><span className="text-gray-500">Email:</span> {selected.email}</p>
-                    <p><span className="text-gray-500">Phone:</span> {selected.phone || '—'}</p>
-                    <p><span className="text-gray-500">Website:</span> {selected.website ? <a href={selected.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">{selected.website}</a> : '—'}</p>
-                    <p><span className="text-gray-500">Address:</span> {selected.address || '—'}</p>
-                  </div>
-                </div>
-                {selected.description && (
-                  <div className="mt-4">
-                    <h4 className="font-medium text-gray-700 mb-2">Description</h4>
-                    <p className="text-gray-600 bg-gray-50 p-3 rounded-xl">{selected.description}</p>
-                  </div>
-                )}
-              </div>
-              <div className="px-6 py-4 border-t border-gray-200 flex flex-wrap gap-2 justify-end">
-                <button onClick={() => { setViewModal(false); setSelected(null) }} className="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50">Close</button>
-                <button onClick={() => handleApprove(selected)} disabled={acting} className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50">Approve</button>
-                <button onClick={() => { setRejectModal(selected); setViewModal(false) }} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700">Reject</button>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -447,7 +451,9 @@ export default function SuperAdminCompaniesPage() {
               />
               <div className="flex gap-2 justify-end">
                 <button onClick={() => { setRejectModal(null); setRejectReason('') }} className="px-4 py-2 rounded-xl border border-gray-300 text-sm font-medium hover:bg-gray-50">Cancel</button>
-                <button onClick={handleReject} disabled={acting} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50">Reject</button>
+                <button onClick={handleReject} disabled={acting} className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm font-medium hover:bg-red-700 disabled:opacity-50">
+                  {acting ? 'Rejecting…' : 'Reject'}
+                </button>
               </div>
             </div>
           </div>
@@ -491,6 +497,31 @@ export default function SuperAdminCompaniesPage() {
                     <option value="">Select</option>
                     {INDUSTRIES.map((i) => <option key={i} value={i}>{i}</option>)}
                   </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Package / Plan *</label>
+                  <select
+                    value={addForm.selectedPackage}
+                    onChange={(e) => setAddForm((x) => ({ ...x, selectedPackage: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300"
+                    required
+                  >
+                    {PACKAGES.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Extra charge per user ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={addForm.extraChargePerUser}
+                    onChange={(e) => setAddForm((x) => ({ ...x, extraChargePerUser: e.target.value.replace(/[^0-9.]/g, '') }))}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-300"
+                    placeholder="0"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Website (optional)</label>

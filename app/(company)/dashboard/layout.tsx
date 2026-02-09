@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { getCompanyToken, removeCompanyToken, companyProfile } from '@/app/api/company-api'
+import { getCompanyToken, removeCompanyToken, companyProfile, companyPackageGet } from '@/app/api/company-api'
 
 const sidebarItems = [
   {
@@ -30,10 +30,28 @@ const sidebarItems = [
     href: '/dashboard/support',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
       </svg>
     )
-  }
+  },
+  {
+    name: 'Help',
+    href: '/dashboard/help',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
+  {
+    name: 'Financial',
+    href: '/dashboard/financial',
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    )
+  },
 ]
 
 export default function DashboardLayout({
@@ -44,7 +62,8 @@ export default function DashboardLayout({
   const router = useRouter()
   const pathname = usePathname()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [profile, setProfile] = useState<{ companyName?: string; email?: string } | null>(null)
+  const [profile, setProfile] = useState<{ companyName?: string; email?: string; package?: { name?: string; totalChargePerUser?: number; extraChargePerUser?: number }; plan?: string } | null>(null)
+  const [packageInfo, setPackageInfo] = useState<{ name?: string; totalChargePerUser?: number; extraChargePerUser?: number; selectedPackage?: string } | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -55,11 +74,24 @@ export default function DashboardLayout({
     companyProfile().then((r) => {
       if (r?.success && r?.data) setProfile(r.data)
     })
+    companyPackageGet().then((r) => {
+      if (r?.success && r?.data) {
+        const d = r.data as { name?: string; totalChargePerUser?: number; extraChargePerUser?: number; selectedPackage?: string; packageName?: string }
+        setPackageInfo({
+          name: d?.name ?? d?.packageName,
+          totalChargePerUser: d?.totalChargePerUser,
+          extraChargePerUser: d?.extraChargePerUser,
+          selectedPackage: d?.selectedPackage,
+        })
+      } else {
+        setPackageInfo(null)
+      }
+    })
   }, [router])
 
   const handleLogout = () => {
     removeCompanyToken()
-    router.replace('/signin')
+    window.location.href = '/signin'
   }
 
   return (
@@ -99,6 +131,38 @@ export default function DashboardLayout({
         </div>
 
         <nav className="flex-1 px-3 py-6 overflow-y-auto">
+          {/* Package in sidebar */}
+          {(packageInfo?.name || profile?.package || profile?.plan) && (
+            <Link
+              href="/dashboard/profile"
+              onClick={() => setSidebarOpen(false)}
+              className="mb-4 flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 transition-colors hover:border-slate-300 hover:bg-slate-100"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-200">
+                <svg className="h-4 w-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium text-slate-500">Plan</p>
+                <p className="truncate text-sm font-semibold text-slate-900">
+                  {packageInfo?.name ?? (typeof profile?.package === 'object' ? (profile.package as { name?: string })?.name : null) ?? (typeof profile?.package === 'string' ? profile.package : null) ?? profile?.plan ?? '—'}
+                </p>
+                {(packageInfo?.totalChargePerUser != null || (typeof profile?.package === 'object' && (profile.package as { totalChargePerUser?: number })?.totalChargePerUser != null)) && (
+                  <p className="text-xs text-slate-500">
+                    ${packageInfo?.totalChargePerUser ?? (profile?.package as { totalChargePerUser?: number })?.totalChargePerUser ?? '—'}/user
+                    {((packageInfo?.extraChargePerUser ?? 0) > 0 || ((profile?.package as { extraChargePerUser?: number })?.extraChargePerUser ?? 0) > 0) && (
+                      <span> · +${packageInfo?.extraChargePerUser ?? (profile?.package as { extraChargePerUser?: number })?.extraChargePerUser ?? 0} extra</span>
+                    )}
+                  </p>
+                )}
+              </div>
+              <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          )}
+
           <div className="space-y-1">
             {sidebarItems.map((item) => {
               const isActive = pathname === item.href

@@ -20,9 +20,17 @@ export default function LandingPage() {
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [showDemoModal, setShowDemoModal] = useState(false)
   const [demoForm, setDemoForm] = useState({ name: '', email: '', company: '', phone: '' })
+  const [scrolled, setScrolled] = useState(false)
   
   useEffect(() => {
     setSignedIn(!!getSignupEmailCookie() || !!getCompanyToken())
+  }, [])
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(typeof window !== 'undefined' && window.scrollY > 0)
+    window.addEventListener('scroll', handleScroll)
+    handleScroll()
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   // Refs for smooth scrolling
@@ -87,13 +95,22 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header/Navigation */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+     
+      <header
+        className={`
+          sticky top-0 z-50 border-b border-gray-200 transition-all duration-300
+          ${scrolled ? 'rounded-full bg-gray-200 shadow-xl mx-24 mt-8 mb-8' : 'bg-white py-2'}
+        `}
+        style={{
+          backdropFilter: scrolled ? 'blur(10px)' : undefined,
+          WebkitBackdropFilter: scrolled ? 'blur(10px)' : undefined,
+        }}
+      >
+        <div className="max-w-8xl mx-4 lg:mx-16 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 md:h-16">
             <div className="flex items-center gap-2 md:gap-3 flex-nowrap">
               <Image
-                src="/Logo.png"
+                src="/kyclogo.svg"
                 alt="MIRA KYC Logo"
                 width={120}
                 height={40}
@@ -146,7 +163,7 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="pt-8 md:pt-12 pb-12 md:pb-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-8xl mx-4 lg:mx-16">
           <div className="grid md:grid-cols-2 gap-6 md:gap-12 items-center">
             {/* Text Content - Mobile: appears first, Desktop: left side */}
             <div className="order-1 md:order-1">

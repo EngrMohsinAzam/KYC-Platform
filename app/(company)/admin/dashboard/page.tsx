@@ -401,7 +401,7 @@ export default function AdminDashboard() {
 
   const handleLogout = () => {
     removeAdminToken()
-    router.push('/admin')
+    window.location.href = '/admin'
   }
 
   const handleSearch = (e: React.FormEvent) => {

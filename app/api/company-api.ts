@@ -51,6 +51,19 @@ export const companyLogin = async (body: { email: string; password: string }) =>
 export const companyProfile = () => withAuth('/api/company/profile')
 export const companyDashboardStats = () => withAuth('/api/company/dashboard/stats')
 
+export const companyPackageGet = () => withAuth('/api/company/package')
+export const companyPackageUpdate = async (body: { selectedPackage?: string; extraChargePerUser?: number }) => {
+  const token = getCompanyToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const res = await fetch('/api/company/package', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
+
 export const companyKycList = (params: { status?: string; page?: number; limit?: number; search?: string } = {}) => {
   const qp = new URLSearchParams()
   if (params.status) qp.append('status', params.status)
@@ -60,7 +73,29 @@ export const companyKycList = (params: { status?: string; page?: number; limit?:
   return withAuth(`/api/company/kyc?${qp.toString()}`)
 }
 
-export const companyKycByUserId = (userId: string) => withAuth(`/api/company/kyc/${encodeURIComponent(userId)}`)
+function safeDecodeUserId(id: string): string {
+  try {
+    return decodeURIComponent(id)
+  } catch {
+    return id
+  }
+}
+
+export const companyKycByUserId = (userId: string) =>
+  withAuth(`/api/company/kyc/${encodeURIComponent(safeDecodeUserId(userId))}`)
+
+export const companyKycUserStatus = async (userId: string, body: { status: string; reason?: string; allowResubmit?: boolean }) => {
+  const token = getCompanyToken()
+  if (!token) return { success: false, message: 'Not authenticated' }
+  const raw = safeDecodeUserId(userId)
+  const res = await fetch(`/api/company/kyc/${encodeURIComponent(raw)}/status`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  return res.ok ? data : { success: false, message: data?.message || `HTTP ${res.status}` }
+}
 
 export const companySupportStats = () => withAuth('/api/company/support/stats')
 export const companySupportUserIssues = (params: { status?: string; page?: number; limit?: number } = {}) => {

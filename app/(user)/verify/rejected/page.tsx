@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -847,13 +848,20 @@ export default function Rejected() {
             </Button>
             )}
             {!canRetry && timeRemaining && (
-              <Button 
-                onClick={() => router.push('/')}
-                className="w-full"
-                variant="secondary"
-              >
-                Go to Home
-              </Button>
+              <>
+                <Button 
+                  onClick={() => router.push('/')}
+                  className="w-full"
+                  variant="secondary"
+                >
+                  Go to Home
+                </Button>
+                <Link href="/support" className="block w-full mt-3">
+                  <Button variant="secondary" className="w-full">
+                    Contact support
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
         </div>
