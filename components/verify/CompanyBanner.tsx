@@ -17,9 +17,7 @@ export function CompanyBanner() {
 
   return (
     <div className="py-2 px-4 text-center bg-gray-100 border-b border-gray-200">
-      <p className="text-sm text-gray-600">
-        Verifying for <span className="font-semibold text-gray-900">{company.companyName}</span>
-      </p>
+     
     </div>
   )
 }

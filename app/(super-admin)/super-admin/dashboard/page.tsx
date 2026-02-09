@@ -143,6 +143,28 @@ export default function SuperAdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [range])
 
+  // Refresh data when page becomes visible (e.g., when navigating back from companies page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        load()
+      }
+    }
+    
+    const handleFocus = () => {
+      load()
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('focus', handleFocus)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('focus', handleFocus)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const { kpis, chartData } = useMemo(() => {
     const data = analytics || {}
     const s = summary || {}

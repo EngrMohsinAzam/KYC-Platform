@@ -70,7 +70,7 @@ export default function CompanyHelpPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Help</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Contact Admin</h1>
         <p className="text-sm text-gray-600 mt-1">Issues you&apos;ve raised with Super Admin – contact us for help</p>
       </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -75,6 +75,8 @@ export default function SuperAdminCompaniesPage() {
   const [rejectModal, setRejectModal] = useState<CompanyRow | null>(null)
   const [rejectReason, setRejectReason] = useState('')
   const [acting, setActing] = useState(false)
+  const [recentlyApprovedIds, setRecentlyApprovedIds] = useState<Set<string>>(new Set())
+  const recentlyApprovedIdsRef = useRef<Set<string>>(new Set())
   const [addForm, setAddForm] = useState({
     companyName: '', ownerName: '', email: '', phone: '', address: '', industry: '', website: '', description: '',
     selectedPackage: 'basic', extraChargePerUser: '0',
@@ -109,8 +111,51 @@ export default function SuperAdminCompaniesPage() {
       const raw = listRes?.data?.companies ?? listRes?.data
       const list: CompanyRow[] = Array.isArray(raw) ? raw : []
       const byStatus = (s: string) => (c: CompanyRow) => (c.status || '').toLowerCase() === s.toLowerCase()
-      setPending(list.filter(byStatus('pending')))
-      setApproved(list.filter(byStatus('approved')))
+      
+      // Filter companies by status
+      let pendingList = list.filter(byStatus('pending'))
+      let approvedList = list.filter(byStatus('approved'))
+      
+      // Ensure recently approved companies stay in approved list even if API hasn't updated yet
+      const currentApprovedIds = recentlyApprovedIdsRef.current
+      if (currentApprovedIds.size > 0) {
+        // Find all companies that are recently approved (even if API still shows them as pending)
+        const recentlyApprovedFromList = list.filter((c) => currentApprovedIds.has(c._id))
+        
+        // Also check if any recently approved companies are missing from the list entirely
+        // (this can happen if API filters them out)
+        const missingApprovedIds = Array.from(currentApprovedIds).filter(
+          (id) => !list.some((c) => c._id === id)
+        )
+        
+        // Remove recently approved companies from pending list
+        pendingList = pendingList.filter((c) => !currentApprovedIds.has(c._id))
+        
+        // Add/update recently approved companies in approved list
+        recentlyApprovedFromList.forEach((c) => {
+          const exists = approvedList.some((a) => a._id === c._id)
+          if (!exists) {
+            // Add to approved with forced status
+            approvedList.push({ ...c, status: 'approved' })
+          } else {
+            // Update status to approved if it exists but status is wrong
+            const index = approvedList.findIndex((a) => a._id === c._id)
+            if (index >= 0 && approvedList[index].status?.toLowerCase() !== 'approved') {
+              approvedList[index] = { ...approvedList[index], status: 'approved' }
+            }
+          }
+        })
+        
+        // If any recently approved companies are missing from API response, keep them in approved list
+        // by checking current state (they should already be there from optimistic update)
+        if (missingApprovedIds.length > 0) {
+          // Don't remove them - they're already in approved list from optimistic update
+          // Just ensure they stay there
+        }
+      }
+      
+      setPending(pendingList)
+      setApproved(approvedList)
     } catch (e: any) {
       setError(e?.message || 'Failed to load')
     } finally {
@@ -135,7 +180,15 @@ export default function SuperAdminCompaniesPage() {
       if (!res?.success) throw new Error(res?.message || 'Approve failed')
       const company = res?.data?.company ?? res?.data
       const credentials = res?.data?.credentials ?? {}
-      // Optimistic update: remove from pending, add to approved (so it no longer shows as pending)
+      
+      // Track this company as recently approved (so load() keeps it in approved list)
+      setRecentlyApprovedIds((prev) => {
+        const next = new Set([...prev, c._id])
+        recentlyApprovedIdsRef.current = next
+        return next
+      })
+      
+      // Optimistic update: immediately remove from pending and add to approved
       setPending((prev) => prev.filter((x) => x._id !== c._id))
       const approvedRow: CompanyRow = {
         _id: c._id,
@@ -143,18 +196,40 @@ export default function SuperAdminCompaniesPage() {
         ownerName: c.ownerName,
         email: company?.email ?? credentials?.email ?? c.email,
         phone: c.phone,
+        address: c.address,
         industry: c.industry,
-        status: 'approved',
+        website: c.website,
+        description: c.description,
+        status: 'approved', // Force status to approved
+        createdAt: c.createdAt,
         companyId: company?.companyId ?? credentials?.companyId,
         companySlug: company?.companySlug ?? credentials?.companySlug,
+        selectedPackage: c.selectedPackage,
+        packageDetails: c.packageDetails,
+        extraChargePerUser: c.extraChargePerUser,
+        totalChargePerUser: c.totalChargePerUser,
       }
-      setApproved((prev) => [approvedRow, ...prev])
+      setApproved((prev) => {
+        // Avoid duplicates - check if already exists
+        const exists = prev.some((x) => x._id === c._id)
+        if (exists) {
+          // Update existing entry to ensure status is approved
+          return prev.map((x) => (x._id === c._id ? approvedRow : x))
+        }
+        return [approvedRow, ...prev]
+      })
+      
+      // Update stats optimistically
       setStats((s) => ({
         ...s,
         pending: Math.max(0, (s.pending ?? 0) - 1),
         approved: (s.approved ?? 0) + 1,
       }))
 
+      // Switch to approved tab so user can see the company was moved
+      setTab('approved')
+
+      // Show credentials modal
       setCredentialsModal({
         company: {
           companyName: company?.companyName ?? c.companyName,
@@ -171,9 +246,46 @@ export default function SuperAdminCompaniesPage() {
           email: credentials?.email ?? company?.email ?? c.email,
         },
       })
-      await load()
+      
+      // Refresh stats from server (but don't reload the full list immediately to preserve optimistic update)
+      try {
+        const statsRes = await superAdminCompaniesStats()
+        if (statsRes?.success && statsRes?.data) {
+          const d = statsRes.data as { companies?: Stats } & Stats
+          const s = d.companies || d
+          setStats({
+            total: s.total ?? 0,
+            pending: s.pending ?? 0,
+            approved: s.approved ?? 0,
+            rejected: s.rejected ?? 0,
+          })
+        }
+      } catch (e) {
+        // Ignore stats refresh errors
+      }
+      
+      // Refresh full list after a short delay to allow backend to update
+      // This ensures the UI shows correct state even if backend is slow
+      setTimeout(async () => {
+        await load()
+        // Clear the recently approved flag after refresh
+        setRecentlyApprovedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(c._id)
+          recentlyApprovedIdsRef.current = next
+          return next
+        })
+      }, 1000) // Wait 1 second before refreshing to allow backend to process
     } catch (e: any) {
       setError(e?.message || 'Approve failed')
+      // On error, remove from recently approved and reload to get correct state
+      setRecentlyApprovedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(c._id)
+        recentlyApprovedIdsRef.current = next
+        return next
+      })
+      await load()
     } finally {
       setActing(false)
     }

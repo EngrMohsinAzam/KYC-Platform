@@ -54,7 +54,7 @@ export default function CompanySupportPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Support</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">User Support Ticket</h1>
         <p className="text-sm text-gray-600 mt-1">Issues raised by your customers (users doing KYC with you)</p>
       </div>
 

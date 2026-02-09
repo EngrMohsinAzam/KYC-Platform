@@ -26,7 +26,7 @@ const sidebarItems = [
     )
   },
   {
-    name: 'Support',
+    name: 'User Support Ticket',
     href: '/dashboard/support',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,7 +35,7 @@ const sidebarItems = [
     )
   },
   {
-    name: 'Help',
+    name: 'Contact Admin',
     href: '/dashboard/help',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

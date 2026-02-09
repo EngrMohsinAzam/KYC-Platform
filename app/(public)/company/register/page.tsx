@@ -203,6 +203,7 @@ export default function CompanyRegisterPage() {
   const validateStep2 = () => {
     if (!form.address?.trim()) { setError('Address is required'); return false }
     if (!form.industry?.trim()) { setError('Industry is required'); return false }
+    if (!form.website?.trim()) { setError('Website URL is required'); return false }
     setError('')
     return true
   }
@@ -288,9 +289,9 @@ export default function CompanyRegisterPage() {
         phone: form.phone.trim(),
         address: form.address.trim(),
         industry: form.industry.trim(),
+        website: form.website.trim(),
         selectedPackage: selectedPackage ? toApiPackageId(selectedPackage.id) : undefined,
         extraChargePerUser: Number.isNaN(extra) || extra < 0 ? 0 : extra,
-        ...(form.website?.trim() && { website: form.website.trim() }),
         ...(form.description?.trim() && { description: form.description.trim() }),
       }
       const res = await fetch('/api/company/register', {
@@ -580,13 +581,14 @@ export default function CompanyRegisterPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Website (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Website *</label>
                 <input
                   type="url"
                   value={form.website}
                   onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
                   className="w-full px-3 py-2.5 rounded-xl border border-gray-300 focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                   placeholder="https://abccorp.com"
+                  required
                 />
               </div>
               <div>

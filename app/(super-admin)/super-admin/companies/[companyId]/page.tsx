@@ -55,9 +55,14 @@ export default function SuperAdminCompanyDetailPage() {
     try {
       const res = await superAdminApproveCompany(companyId)
       if (!res?.success) throw new Error(res?.message || 'Approve failed')
+      // Reload company data to show updated status
+      await load()
+      // Redirect back to companies list (not dashboard) so super-admin can see the updated list
       router.push('/super-admin/companies')
     } catch (e: any) {
       setError(e?.message || 'Approve failed')
+      // On error, reload to get correct state
+      await load()
     } finally {
       setActing(false)
     }
