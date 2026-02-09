@@ -1,9 +1,42 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import nextDynamic from 'next/dynamic'
 import { companyProfile, companyDashboardStats, companyKycList } from '@/app/api/company-api'
 import { Modal } from '@/components/ui/Modal'
+
+type TimeRange = 'day' | 'week' | 'month' | 'year'
+
+const LazyResponsiveContainer = nextDynamic(() => import('recharts').then((m) => m.ResponsiveContainer), { ssr: false })
+const LazyLineChart = nextDynamic(() => import('recharts').then((m) => m.LineChart), { ssr: false })
+const LazyCartesianGrid = nextDynamic(() => import('recharts').then((m) => m.CartesianGrid), { ssr: false })
+const LazyXAxis = nextDynamic(() => import('recharts').then((m) => m.XAxis), { ssr: false })
+const LazyYAxis = nextDynamic(() => import('recharts').then((m) => m.YAxis), { ssr: false })
+const LazyTooltip = nextDynamic(() => import('recharts').then((m) => m.Tooltip), { ssr: false })
+const LazyLegend = nextDynamic(() => import('recharts').then((m) => m.Legend), { ssr: false })
+const LazyLine = nextDynamic(() => import('recharts').then((m) => m.Line), { ssr: false })
+
+function ActivityChart({ data }: { data: { label: string; total: number; approved: number; pending: number; rejected: number }[] }) {
+  return (
+    <LazyResponsiveContainer width="100%" height="100%">
+      <LazyLineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
+        <LazyCartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+        <LazyXAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#94a3b8" tickLine={false} />
+        <LazyYAxis tick={{ fontSize: 11 }} stroke="#94a3b8" tickLine={false} axisLine={false} width={32} />
+        <LazyTooltip
+          contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }}
+          labelStyle={{ fontWeight: 600, color: '#0f172a' }}
+        />
+        <LazyLegend wrapperStyle={{ fontSize: 12 }} />
+        <LazyLine type="monotone" dataKey="total" stroke="#475569" strokeWidth={2} dot={{ fill: '#475569', r: 3 }} name="Total" />
+        <LazyLine type="monotone" dataKey="approved" stroke="#059669" strokeWidth={2} dot={{ fill: '#059669', r: 3 }} name="Approved" />
+        <LazyLine type="monotone" dataKey="pending" stroke="#d97706" strokeWidth={2} dot={{ fill: '#d97706', r: 3 }} name="Pending" />
+        <LazyLine type="monotone" dataKey="rejected" stroke="#dc2626" strokeWidth={2} dot={{ fill: '#dc2626', r: 3 }} name="Rejected" />
+      </LazyLineChart>
+    </LazyResponsiveContainer>
+  )
+}
 
 type PackageInfo = {
   selected?: string
@@ -53,10 +86,14 @@ export default function CompanyDashboardPage() {
   const [copied, setCopied] = useState(false)
   const [kycUrlModalOpen, setKycUrlModalOpen] = useState(false)
 
+  const [chartRange, setChartRange] = useState<TimeRange>('week')
+  const [kycForChart, setKycForChart] = useState<KycUser[]>([])
+
   const load = useCallback(async () => {
     setError('')
     setLoading(true)
     setRecentKycFromList([])
+    setKycForChart([])
     try {
       const [p, s] = await Promise.all([companyProfile(), companyDashboardStats()])
       if (!p?.success) {
@@ -83,6 +120,20 @@ export default function CompanyDashboardPage() {
       } else {
         setKycTotalsFromList(null)
       }
+      // Fetch more KYC for chart (up to 200 across pages)
+      const all: KycUser[] = []
+      let page = 1
+      let hasMore = true
+      while (hasMore && page <= 10) {
+        const res = await companyKycList({ limit: 50, page })
+        const d = res?.data as { users?: KycUser[]; pagination?: { totalPages?: number } }
+        const users = d?.users ?? []
+        all.push(...users.map((u: KycUser) => ({ userId: u.userId, fullName: u.fullName, email: u.email, kycStatus: u.kycStatus, submittedAt: u.submittedAt })))
+        hasMore = users.length === 50 && (d?.pagination?.totalPages ?? 1) > page
+        page++
+        if (all.length >= 200) break
+      }
+      setKycForChart(all)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Something went wrong')
     } finally {
@@ -110,6 +161,48 @@ export default function CompanyDashboardPage() {
       setTimeout(() => setCopied(false), 2000)
     })
   }
+
+  const chartData = useMemo(() => {
+    const list = kycForChart.filter((u) => u.submittedAt)
+    if (list.length === 0) return []
+    const now = new Date()
+    const buckets: Record<string, { total: number; approved: number; pending: number; rejected: number }> = {}
+
+    const getKey = (d: Date) => {
+      if (chartRange === 'day') return d.toISOString().slice(0, 10)
+      if (chartRange === 'week') {
+        const start = new Date(d)
+        start.setDate(start.getDate() - start.getDay())
+        return start.toISOString().slice(0, 10)
+      }
+      if (chartRange === 'month') return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      return `${d.getFullYear()}`
+    }
+
+    const rangeStart = (() => {
+      const x = new Date(now)
+      if (chartRange === 'day') x.setDate(x.getDate() - 7)
+      else if (chartRange === 'week') x.setDate(x.getDate() - 28)
+      else if (chartRange === 'month') x.setMonth(x.getMonth() - 6)
+      else x.setFullYear(x.getFullYear() - 2)
+      return x
+    })()
+
+    list.forEach((u) => {
+      const d = new Date(u.submittedAt!)
+      if (d < rangeStart) return
+      const key = getKey(d)
+      if (!buckets[key]) buckets[key] = { total: 0, approved: 0, pending: 0, rejected: 0 }
+      buckets[key].total++
+      if (u.kycStatus === 'approved') buckets[key].approved++
+      else if (u.kycStatus === 'rejected') buckets[key].rejected++
+      else buckets[key].pending++
+    })
+
+    return Object.entries(buckets)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([label, v]) => ({ label, ...v }))
+  }, [kycForChart, chartRange])
 
   if (loading) {
     return (
@@ -164,84 +257,105 @@ export default function CompanyDashboardPage() {
         <p className="text-sm text-gray-600 mt-1">KYC activity for your company</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-start justify-between">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all hover:border-slate-300 hover:shadow-md">
+          <div className="absolute top-0 right-0 w-20 h-20 -translate-y-1/2 translate-x-1/2 rounded-full bg-slate-100/80" />
+          <div className="relative flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total KYC</p>
-              <p className="text-2xl font-bold text-gray-900 mt-1">{Number(total).toLocaleString()}</p>
-              <p className="text-xs text-gray-500 mt-1">Users verified with your form</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">Total KYC</p>
+              <p className="mt-1.5 font-semibold tabular-nums text-slate-900" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
+                {Number(total).toLocaleString()}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">Users verified</p>
             </div>
-            <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-100 bg-slate-50">
+              <svg className="h-5 w-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-start justify-between">
+        <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all hover:border-emerald-200 hover:shadow-md">
+          <div className="absolute top-0 right-0 w-20 h-20 -translate-y-1/2 translate-x-1/2 rounded-full bg-emerald-50/80" />
+          <div className="relative flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Approved</p>
-              <p className="text-2xl font-bold text-green-700 mt-1">{Number(approved).toLocaleString()}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-emerald-600/80">Approved</p>
+              <p className="mt-1.5 font-semibold tabular-nums text-emerald-800" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
+                {Number(approved).toLocaleString()}
+              </p>
             </div>
-            <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50">
+              <svg className="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-start justify-between">
+        <div className="group relative overflow-hidden rounded-2xl border border-amber-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all hover:border-amber-200 hover:shadow-md">
+          <div className="absolute top-0 right-0 w-20 h-20 -translate-y-1/2 translate-x-1/2 rounded-full bg-amber-50/80" />
+          <div className="relative flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Pending</p>
-              <p className="text-2xl font-bold text-yellow-700 mt-1">{Number(pending).toLocaleString()}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-600/80">Pending</p>
+              <p className="mt-1.5 font-semibold tabular-nums text-amber-800" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
+                {Number(pending).toLocaleString()}
+              </p>
             </div>
-            <div className="w-10 h-10 bg-yellow-50 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-amber-50">
+              <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
         </div>
-        {(() => {
-          const pkg = typeof profile?.package === 'object' ? profile.package : null
-          const pkgName = pkg?.name ?? (typeof profile?.package === 'string' ? profile.package : profile?.plan) ?? '—'
-          const hasPackage = pkg || profile?.package || profile?.plan
-          if (!hasPackage) return null
-          return (
-            <Link href="/dashboard/profile" className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 hover:border-gray-300 transition-colors block">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Package</p>
-                  <p className="text-lg font-bold text-gray-900 mt-1">{pkgName}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {pkg ? `$${pkg.totalChargePerUser ?? pkg.baseChargePerUser ?? '—'}/user` : '—'}
-                    {pkg?.extraChargePerUser != null && pkg.extraChargePerUser > 0 && (
-                      <span> · +${pkg.extraChargePerUser} extra</span>
-                    )}
-                  </p>
-                </div>
-                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </Link>
-          )
-        })()}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
-          <div className="flex items-start justify-between">
+        <div className="group relative overflow-hidden rounded-2xl border border-rose-100 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all hover:border-rose-200 hover:shadow-md">
+          <div className="absolute top-0 right-0 w-20 h-20 -translate-y-1/2 translate-x-1/2 rounded-full bg-rose-50/80" />
+          <div className="relative flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Rejected</p>
-              <p className="text-2xl font-bold text-red-700 mt-1">{Number(rejected).toLocaleString()}</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-rose-600/80">Rejected</p>
+              <p className="mt-1.5 font-semibold tabular-nums text-rose-800" style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)' }}>
+                {Number(rejected).toLocaleString()}
+              </p>
             </div>
-            <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-rose-50">
+              <svg className="h-5 w-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Activity chart */}
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-semibold text-slate-900">User activity</h3>
+            <p className="text-xs text-slate-500 mt-0.5">KYC submissions by period</p>
+          </div>
+          <div className="flex gap-1 rounded-lg border border-slate-300 bg-slate-50/50 p-1">
+            {(['day', 'week', 'month', 'year'] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setChartRange(r)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                  chartRange === r ? 'bg-black text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="h-[280px]">
+          {chartData.length > 0 ? (
+            <ActivityChart data={chartData} />
+          ) : (
+            <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/30 text-sm text-slate-500">
+              No activity in this range
+            </div>
+          )}
         </div>
       </div>
 

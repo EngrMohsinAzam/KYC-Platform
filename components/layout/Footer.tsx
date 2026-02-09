@@ -9,7 +9,18 @@ export const Footer = memo(function Footer() {
         <div className="py-10 md:py-12 grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12">
           {/* Products Column */}
           <div>
-            <h3 className="font-semibold text-white mb-4 text-sm md:text-base">Products</h3>
+            <div className='flex flex-row '>
+            <Image
+                  src="/kyclogo.svg"
+                  alt="DigiPort Logo"
+                  width={70}
+                  height={70}
+                  className="h-12 w-auto text-white"
+                />
+
+                <h3 className=" pl-4 text-white text-sm font-bold">DigiportId</h3>
+
+            </div>
             <ul className="space-y-2.5 text-sm text-gray-300">
               <li><a href="#" className="hover:text-white transition-colors">ID Verification</a></li>
               <li><a href="#" className="hover:text-white transition-colors">Document Verification</a></li>
@@ -57,7 +68,7 @@ export const Footer = memo(function Footer() {
             <div className="flex flex-col md:flex-row items-center gap-4">
               <div className="flex items-center gap-2">
                 <Image
-                  src="/Logo.png"
+                  src="/kyclogo.svg"
                   alt="DigiPort Logo"
                   width={40}
                   height={40}
