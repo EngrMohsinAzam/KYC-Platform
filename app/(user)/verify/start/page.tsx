@@ -108,7 +108,7 @@ function StartContent() {
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 md:py-12">
         <div className="w-full max-w-lg mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <Image src="/Logo.png" alt="DigiPort" width={140} height={48} className="h-10 w-auto" />
+            <Image src="/kyclogo.svg" alt="DigiPort" width={140} height={48} className="h-10 w-auto" />
           </div>
 
           <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3">

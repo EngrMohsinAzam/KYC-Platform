@@ -25,7 +25,7 @@ export default function TermsOfServicePage() {
                 </svg>
               </button>
               <Link href="/" className="flex items-center gap-2">
-                <Image src="/Logo.png" alt="DigiPort" width={32} height={32} className="h-7 w-auto" />
+                <Image src="/kyclogo.svg" alt="DigiPort" width={32} height={32} className="h-7 w-auto" />
                 <span className="text-base md:text-lg font-bold text-gray-900">DigiPort</span>
               </Link>
             </div>

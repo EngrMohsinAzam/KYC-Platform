@@ -112,7 +112,7 @@ function AccountStatusContent() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14 md:h-16">
             <div className="flex items-center gap-2 md:gap-3">
-              <Image src="/Logo.png" alt="DigiPort" width={120} height={40} className="h-6 md:h-8 w-auto" priority />
+              <Image src="/kyclogo.svg" alt="DigiPort" width={120} height={40} className="h-6 md:h-8 w-auto" priority />
               <span className="text-base md:text-xl font-bold text-gray-900">DigiPort</span>
             </div>
             <nav className="hidden md:flex items-center space-x-6">

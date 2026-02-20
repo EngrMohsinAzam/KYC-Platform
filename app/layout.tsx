@@ -31,10 +31,10 @@ export const metadata: Metadata = {
   description: 'Complete identity verification and decentralized ID creation',
   icons: {
     icon: [
-      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/kyclogo.svg', type: 'image/svg+xml', sizes: 'any' },
     ],
-    shortcut: '/favicon-32x32.png',
-    apple: '/favicon-32x32.png',
+    shortcut: '/kyclogo.svg',
+    apple: '/kyclogo.svg',
   },
   // Performance optimizations
   other: {
@@ -59,7 +59,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Favicon */}
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/svg+xml" href="/kyclogo.svg" />
         {/* DNS prefetch for external resources */}
         <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://data-seed-prebsc-1-s1.binance.org" />

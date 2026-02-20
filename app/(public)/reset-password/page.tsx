@@ -109,7 +109,7 @@ export default function ResetPasswordPage() {
               <div className="flex items-center justify-between h-14 md:h-16">
                 <div className="flex items-center gap-2 md:gap-3">
                   <Image
-                    src="/Logo.png"
+                    src="/kyclogo.svg"
                     alt="DigiPort Logo"
                     width={120}
                     height={40}
@@ -198,7 +198,7 @@ export default function ResetPasswordPage() {
             {/* Logo */}
             <div className="flex items-center justify-center mb-6">
               <Image
-                src="/Logo.png"
+                src="/kyclogo.svg"
                 alt="DigiPort Logo"
                 width={40}
                 height={40}

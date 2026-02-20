@@ -46,7 +46,7 @@ function getOrCreateWagmiConfig(): Config {
       injected(),
       coinbaseWallet({
         appName: 'MiraKYC',
-        appLogoUrl: typeof window !== 'undefined' ? `${window.location.origin}/favicon.ico` : 'https://mirakyc.com/favicon.ico',
+        appLogoUrl: typeof window !== 'undefined' ? `${window.location.origin}/kyclogo.svg` : 'https://mirakyc.com/kyclogo.svg',
       }),
       walletConnect({
         projectId,
@@ -54,7 +54,7 @@ function getOrCreateWagmiConfig(): Config {
           name: 'MiraKYC',
           description: 'KYC Verification Platform',
           url: typeof window !== 'undefined' ? window.location.origin : 'https://mirakyc.com',
-          icons: [`${typeof window !== 'undefined' ? window.location.origin : 'https://mirakyc.com'}/favicon.ico`]
+          icons: [`${typeof window !== 'undefined' ? window.location.origin : 'https://mirakyc.com'}/kyclogo.svg`]
         },
       }),
     ],

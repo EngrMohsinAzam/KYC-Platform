@@ -1,6 +1,9 @@
 // API base URL - imported from centralized config
 import { API_BASE_URL } from '../(public)/config'
 
+const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV === 'development'
+const devLog = (..._args: unknown[]) => { if (isDev) console.log(..._args) }
+
 // Convert base64 image to File object
 const base64ToFile = (base64String: string, filename: string): File => {
   // Remove data URL prefix if present
@@ -58,24 +61,8 @@ export const submitKYCData = async (data: {
   timestamp?: string
   feeUnit?: number
 }): Promise<{ success: boolean; message?: string; data?: any; errors?: any[]; isBackendIssue?: boolean }> => {
-  console.log('🔥 submitKYCData FUNCTION CALLED!')
-  console.log('📥 Received data parameter:', {
-    hasUserId: !!data.userId,
-    hasEmail: !!data.email,
-    hasFullName: !!data.fullName,
-    hasPhone: !!data.phone,
-    hasCountry: !!data.countryName,
-    hasCity: !!data.cityName,
-    hasFrontImage: !!data.identityDocumentFront,
-    hasBackImage: !!data.identityDocumentBack,
-    hasSelfie: !!data.liveInImage
-  })
-  
   try {
-    console.log('📦 Creating FormData...')
     const formData = new FormData()
-    console.log('  ✅ FormData created:', formData)
-    console.log('full name ',formData.get('fullName'))
     
     // Add text fields - ensure no empty strings for required fields
     // Validate required fields before sending
@@ -116,41 +103,26 @@ export const submitKYCData = async (data: {
     }
     
     if (requiredFields.length > 0) {
-      const errorMsg = `Missing required fields: ${requiredFields.join(', ')}`
-      console.error('❌ Validation Error:', errorMsg)
-      throw new Error(errorMsg)
+      throw new Error(`Missing required fields: ${requiredFields.join(', ')}`)
     }
     
     formData.append('userId', data.userId.trim())
     // Always send blockchainAddressId - backend requires it
     const blockchainAddressId = data.blockchainAddressId.trim()
     formData.append('blockchainAddressId', blockchainAddressId)
-    console.log('  ✅ Added blockchainAddressId:', blockchainAddressId)
     formData.append('fullName', data.fullName.trim())
     // Add individual name fields if provided
     // Add optional name fields (only if they have values)
-    if (data.firstName && data.firstName.trim()) {
-      formData.append('firstName', data.firstName.trim())
-      console.log('  ✅ Added firstName:', data.firstName.trim())
-    }
-    if (data.lastName && data.lastName.trim()) {
-      formData.append('lastName', data.lastName.trim())
-      console.log('  ✅ Added lastName:', data.lastName.trim())
-    }
-    if (data.fatherName && data.fatherName.trim()) {
-      formData.append('fatherName', data.fatherName.trim())
-      console.log('  ✅ Added fatherName:', data.fatherName.trim())
-    }
+    if (data.firstName && data.firstName.trim()) formData.append('firstName', data.firstName.trim())
+    if (data.lastName && data.lastName.trim()) formData.append('lastName', data.lastName.trim())
+    if (data.fatherName && data.fatherName.trim()) formData.append('fatherName', data.fatherName.trim())
     
     // Required fields
     formData.append('email', data.email.trim())
     formData.append('phone', data.phone.trim())
     
     // Optional address field
-    if (data.address && data.address.trim()) {
-      formData.append('address', data.address.trim())
-      console.log('  ✅ Added address:', data.address.trim())
-    }
+    if (data.address && data.address.trim()) formData.append('address', data.address.trim())
     
     // Required location fields
     formData.append('countryName', data.countryName.trim())
@@ -167,10 +139,7 @@ export const submitKYCData = async (data: {
     }
     
     // Add CNIC if provided (backend expects 'cnicNumber')
-    if (data.cnic && data.cnic.trim()) {
-      formData.append('cnicNumber', data.cnic.trim())
-      console.log('  ✅ Added cnicNumber:', data.cnic.trim())
-    }
+    if (data.cnic && data.cnic.trim()) formData.append('cnicNumber', data.cnic.trim())
     
     // Add blockchain transaction details if available
     if (data.transactionHash) {
@@ -192,105 +161,26 @@ export const submitKYCData = async (data: {
       formData.append('timestamp', data.timestamp)
     }
     
-    // Convert base64 images to File objects and append
-    console.log('🖼️ Converting images to File objects...')
     try {
       const frontFile = base64ToFile(data.identityDocumentFront, 'identity-document-front.jpg')
-      console.log('  ✅ Front file created:', frontFile.name, frontFile.size, 'bytes')
       formData.append('identityDocumentFront', frontFile)
     } catch (err) {
-      console.error('  ❌ Error creating front file:', err)
       throw err
     }
     
     try {
       const backFile = base64ToFile(data.identityDocumentBack, 'identity-document-back.jpg')
-      console.log('  ✅ Back file created:', backFile.name, backFile.size, 'bytes')
       formData.append('identityDocumentBack', backFile)
     } catch (err) {
-      console.error('  ❌ Error creating back file:', err)
       throw err
     }
     
     try {
       const selfieFile = base64ToFile(data.liveInImage, 'live-in-image.jpg')
-      console.log('  ✅ Selfie file created:', selfieFile.name, selfieFile.size, 'bytes')
       formData.append('liveInImage', selfieFile)
     } catch (err) {
-      console.error('  ❌ Error creating selfie file:', err)
       throw err
     }
-    
-    console.log('========================================')
-    console.log('📤 SUBMITTING TO BACKEND API')
-    console.log('========================================')
-    console.log('🌐 API Configuration:')
-    console.log('  - Endpoint: /api/kyc/submit (proxy)')
-    console.log('  - Request Method: POST')
-    console.log('  - Content Type: multipart/form-data (FormData)')
-    
-    console.log('\n📋 User Information Being Sent:')
-    console.log('  - userId:', data.userId)
-    console.log('  - blockchainAddressId:', data.blockchainAddressId)
-    console.log('  - fullName:', data.fullName)
-    console.log('  - email:', data.email)
-    console.log('  - phone:', data.phone)
-    console.log('  - countryName:', data.countryName)
-    console.log('  - cityName:', data.cityName)
-    console.log('  - idType:', data.idType)
-    console.log('  - usaResidence:', data.usaResidence)
-    if (data.cnic) {
-      console.log('  - cnic:', data.cnic)
-    }
-    
-    console.log('\n💰 Payment Information:')
-    console.log('  - feeUnit:', data.feeUnit || 2)
-    if (data.transactionHash) {
-      console.log('  - transactionHash:', data.transactionHash)
-    }
-    if (data.blockNumber) {
-      console.log('  - blockNumber:', data.blockNumber)
-    }
-    if (data.fromAddress) {
-      console.log('  - fromAddress:', data.fromAddress)
-    }
-    if (data.toAddress) {
-      console.log('  - toAddress:', data.toAddress)
-    }
-    if (data.amount) {
-      console.log('  - amount:', data.amount)
-    }
-    if (data.timestamp) {
-      console.log('  - timestamp:', data.timestamp)
-    }
-    
-    console.log('\n📷 Image Information:')
-    console.log('  - Front Image Present:', !!data.identityDocumentFront)
-    console.log('  - Front Image Length:', data.identityDocumentFront?.length || 0, 'characters (base64)')
-    console.log('  - Back Image Present:', !!data.identityDocumentBack)
-    console.log('  - Back Image Length:', data.identityDocumentBack?.length || 0, 'characters (base64)')
-    console.log('  - Selfie Image Present:', !!data.liveInImage)
-    console.log('  - Selfie Image Length:', data.liveInImage?.length || 0, 'characters (base64)')
-    
-    // Log all FormData entries for debugging
-    console.log('\n📦 FormData Contents (all fields being sent):')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    const formDataEntries: Record<string, any> = {}
-    for (const [key, value] of formData.entries()) {
-      if (value instanceof File) {
-        console.log(`  ✅ ${key}: File (${value.name}, ${value.size} bytes, ${value.type})`)
-        formDataEntries[key] = `File: ${value.name}, ${value.size} bytes`
-      } else {
-        const valueStr = String(value)
-        // Truncate long values for logging
-        const displayValue = valueStr.length > 100 ? valueStr.substring(0, 100) + '...' : valueStr
-        console.log(`  ✅ ${key}: ${displayValue}`)
-        formDataEntries[key] = valueStr.length > 0 ? 'Present' : 'EMPTY'
-      }
-    }
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('\n📊 FormData Summary:')
-    console.log(JSON.stringify(formDataEntries, null, 2))
     
     // Check for empty critical fields
     const criticalFields = ['userId', 'blockchainAddressId', 'email', 'fullName', 'phone', 'countryName', 'cityName', 'idType', 'usaResidence']
@@ -298,22 +188,14 @@ export const submitKYCData = async (data: {
     for (const [key, value] of formData.entries()) {
       if (criticalFields.includes(key)) {
         const valueStr = String(value)
-        if (!valueStr || valueStr.trim() === '') {
-          emptyFields.push(key)
-          console.error(`  ❌ ${key}: EMPTY or missing!`)
-        }
+        if (!valueStr || valueStr.trim() === '') emptyFields.push(key)
       }
     }
     if (emptyFields.length > 0) {
       throw new Error(`Critical fields are empty: ${emptyFields.join(', ')}. Please check your data before submission.`)
     }
     
-    console.log('\n🚀 Making POST API Request...')
     const fullEndpoint = '/api/kyc/submit'
-    console.log('  - Endpoint:', fullEndpoint)
-    console.log('  - Method: POST')
-    console.log('  - Content-Type: multipart/form-data (auto-set by browser)')
-    
     // Make the actual request with timeout (via Next.js proxy)
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
@@ -338,33 +220,18 @@ export const submitKYCData = async (data: {
       throw fetchError
     }
     
-    console.log('\n📡 API Request Sent!')
-    console.log('  - Waiting for response...')
-    
-    console.log('\n📥 Response Received from Backend:')
-    console.log('  - Status Code:', response.status)
-    console.log('  - Status Text:', response.statusText)
-    console.log('  - OK:', response.ok)
-    
     if (!response.ok) {
       let errorData: any = null
       let errorText = ''
       try {
         errorText = await response.text()
-        console.error('\n❌ Backend API Error Response:')
-        console.error('  - Status:', response.status)
-        console.error('  - Status Text:', response.statusText)
-        console.error('  - Error Response Body (raw):', errorText)
-        
-        // Try to parse as JSON
         try {
           errorData = JSON.parse(errorText)
-          console.error('  - Error Response (parsed):', JSON.stringify(errorData, null, 2))
-        } catch (jsonError) {
-          console.error('  - Could not parse as JSON, treating as plain text')
+        } catch {
+          // not JSON
         }
-      } catch (parseError) {
-        console.error('  - Could not read error response')
+      } catch {
+        // could not read error response
       }
       
       // Check if it's a connection issue
@@ -408,10 +275,6 @@ export const submitKYCData = async (data: {
         errorMessage += ` - ${errorText}`
       }
       
-      console.error('  - Final Error Message:', errorMessage)
-      console.error('  - Is Backend Issue:', isBackendIssue)
-      console.log('========================================\n')
-      
       return {
         success: false,
         message: errorMessage,
@@ -423,37 +286,18 @@ export const submitKYCData = async (data: {
     let result
     try {
       result = await response.json()
-    } catch (jsonError) {
-      console.error('❌ Error parsing JSON response:', jsonError)
+    } catch {
       const textResponse = await response.text()
-      console.error('  - Raw response:', textResponse)
+      devLog('KYC submit JSON parse error:', textResponse?.slice(0, 200))
       return {
         success: false,
         message: 'Invalid JSON response from backend API'
       }
     }
     
-    console.log('\n✅ Backend API Success Response:')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📋 Full Response Data:')
-    console.log(JSON.stringify(result, null, 2))
-    console.log('\n📊 Response Summary:')
-    console.log('  - Success:', result.success)
-    if (result.message) {
-      console.log('  - Message:', result.message)
-    }
-    if (result.data) {
-      console.log('  - Response Data Keys:', Object.keys(result.data))
-      if (result.data.userId) console.log('    ✅ userId:', result.data.userId)
-      if (result.data.email) console.log('    ✅ email:', result.data.email)
-      if (result.data.kycStatus) console.log('    ✅ kycStatus:', result.data.kycStatus)
-      if (result.data.submittedAt) console.log('    ✅ submittedAt:', result.data.submittedAt)
-    }
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('========================================\n')
     return result
   } catch (error: any) {
-    console.error('Error submitting KYC data:', error)
+    if (isDev) console.error('Error submitting KYC data:', error)
     return { 
       success: false, 
       message: error.message || 'Failed to submit KYC data. Please try again.' 
@@ -524,33 +368,18 @@ export const checkStatusByCNIC = async (cnic: string, companyId?: string): Promi
 
 // Check KYC status by wallet address
 export const checkStatusByWallet = async (walletAddress: string): Promise<{ success: boolean; data?: any; message?: string }> => {
-  console.log('🔍 checkStatusByWallet FUNCTION CALLED!')
-  console.log('  - Wallet Address:', walletAddress)
-  
   try {
-    const url = `${API_BASE_URL}/api/kyc/check-status-by-wallet`
-    const requestBody = { walletAddress }
-    
-    console.log('  - API URL:', url)
-    console.log('  - Request body:', requestBody)
-    console.log('  - Making POST request...')
-    
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}/api/kyc/check-status-by-wallet`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({ walletAddress }),
     })
-    
-    console.log('  - Response status:', response.status)
-    console.log('  - Response statusText:', response.statusText)
-    
     const result = await response.json()
-    console.log('  - Response data:', result)
     return result
   } catch (error: any) {
-    console.error('❌ Error checking status by wallet:', error)
+    if (isDev) console.error('checkStatusByWallet:', error)
     return { 
       success: false, 
       message: error.message || 'Failed to check status. Please try again.' 
@@ -561,45 +390,16 @@ export const checkStatusByWallet = async (walletAddress: string): Promise<{ succ
 // Public: Check if KYC is paused
 export const getKycPausedStatus = async (): Promise<{ success: boolean; data?: any; message?: string }> => {
   try {
-    // Use Next.js API proxy route to avoid mixed content issues (HTTPS -> HTTP)
-    // The proxy route handles the backend call server-side, avoiding browser security restrictions
-    console.log('📡 [getKycPausedStatus] ==========================================')
-    console.log('📡 [getKycPausedStatus] 🚀 CALLING NEXT.JS API PROXY')
-    console.log('📡 [getKycPausedStatus] Using proxy route: /api/kyc/paused-status')
-    console.log('📡 [getKycPausedStatus] Method: GET')
-    console.log('📡 [getKycPausedStatus] ==========================================')
-    
-    // Use Next.js API proxy route (runs on same HTTPS domain, no mixed content issues)
-    const response = await fetch('/api/kyc/paused-status', { 
+    const response = await fetch('/api/kyc/paused-status', {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      cache: 'no-store' // Always fetch fresh data
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
     })
-    
-    console.log('📡 [getKycPausedStatus] ✅ API Response received')
-    console.log('📡 [getKycPausedStatus] Response status:', response.status)
-    console.log('📡 [getKycPausedStatus] Response OK:', response.ok)
-    
-    if (!response.ok) {
-      throw new Error(`API returned status ${response.status}`)
-    }
-    
-    const data = await response.json().catch((err) => {
-      console.error('📡 [getKycPausedStatus] ❌ JSON parse error:', err)
-      return {}
-    })
-    
-    console.log('📡 [getKycPausedStatus] Parsed data:', JSON.stringify(data, null, 2))
-    console.log('📡 [getKycPausedStatus] ==========================================')
+    if (!response.ok) throw new Error(`API returned status ${response.status}`)
+    const data = await response.json().catch(() => ({}))
     return data
   } catch (error: any) {
-    console.error('❌ [getKycPausedStatus] ==========================================')
-    console.error('❌ [getKycPausedStatus] ERROR calling API:', error)
-    console.error('❌ [getKycPausedStatus] Error message:', error?.message)
-    console.error('❌ [getKycPausedStatus] Error stack:', error?.stack)
-    console.error('❌ [getKycPausedStatus] ==========================================')
+    if (isDev) console.error('getKycPausedStatus:', error)
     return { success: false, message: error.message || 'Failed to fetch paused status' }
   }
 }
@@ -624,54 +424,25 @@ export const updateKYCDocuments = async (data: {
     
     // Convert base64 images to File objects if provided
     if (data.identityDocumentFront) {
-      const frontFile = base64ToFile(data.identityDocumentFront, 'identity-document-front.jpg')
-      formData.append('identityDocumentFront', frontFile)
-      console.log('  ✅ Added front document')
+      formData.append('identityDocumentFront', base64ToFile(data.identityDocumentFront, 'identity-document-front.jpg'))
     }
-    
     if (data.identityDocumentBack) {
-      const backFile = base64ToFile(data.identityDocumentBack, 'identity-document-back.jpg')
-      formData.append('identityDocumentBack', backFile)
-      console.log('  ✅ Added back document')
+      formData.append('identityDocumentBack', base64ToFile(data.identityDocumentBack, 'identity-document-back.jpg'))
     }
-    
     if (data.liveInImage) {
-      const selfieFile = base64ToFile(data.liveInImage, 'live-in-image.jpg')
-      formData.append('liveInImage', selfieFile)
-      console.log('  ✅ Added selfie image')
+      formData.append('liveInImage', base64ToFile(data.liveInImage, 'live-in-image.jpg'))
     }
-    
-    const response = await fetch('/api/kyc/update-documents', {
-      method: 'PUT',
-      body: formData,
-    })
-    
-    console.log('  - Response status:', response.status)
-    
+    const response = await fetch('/api/kyc/update-documents', { method: 'PUT', body: formData })
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('❌ API Error:', errorText)
       return {
         success: false,
         message: `API error: ${response.status} ${response.statusText}${errorText ? ' - ' + errorText : ''}`
       }
     }
-    
-    const result = await response.json()
-    console.log('✅ Update successful:', result)
-    
-    // Log status information from response
-    if (result.data) {
-      console.log('📊 Response data status:', {
-        kycStatus: result.data.kycStatus,
-        verificationStatus: result.data.verificationStatus,
-        email: result.data.email
-      })
-    }
-    
-    return result
+    return response.json()
   } catch (error: any) {
-    console.error('❌ Error updating documents:', error)
+    if (isDev) console.error('updateKYCDocuments:', error)
     return {
       success: false,
       message: error.message || 'Failed to update documents. Please try again.'

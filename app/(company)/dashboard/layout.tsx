@@ -112,7 +112,7 @@ export default function DashboardLayout({
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 shrink-0">
           <div className="flex items-center gap-2">
             <Image
-              src="/Logo.png"
+              src="/kyclogo.svg"
               alt="DigiPort Logo"
               width={32}
               height={32}

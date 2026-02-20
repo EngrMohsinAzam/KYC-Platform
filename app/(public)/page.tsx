@@ -1,13 +1,27 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
-import { Footer } from '@/components/layout/Footer'
 import { getSignupEmailCookie } from '@/app/(public)/utils/signup-cookie'
+
+const Footer = dynamic(
+  () => import('@/components/layout/Footer').then((m) => ({ default: m.Footer })),
+  { ssr: true }
+)
 import { getCompanyToken } from '@/app/api/company-api'
+import { AW, BR, GB, SG, US } from 'country-flag-icons/react/3x2'
+
+const COUNTRY_FLAGS: Record<string, React.ComponentType<{ className?: string; title?: string }>> = {
+  'Aruba': AW,
+  'Brazil': BR,
+  'United Kingdom': GB,
+  'Singapore': SG,
+  'United States': US,
+}
 
 export default function LandingPage() {
   const router = useRouter()
@@ -17,6 +31,7 @@ export default function LandingPage() {
   const [selectedVerificationType, setSelectedVerificationType] = useState<string>('ID Verification')
   const [selectedCountry, setSelectedCountry] = useState<string>('United Kingdom')
   const [passRate, setPassRate] = useState<string>('95.86%')
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right'>('right')
   const [expandedCard, setExpandedCard] = useState<string | null>(null)
   const [showDemoModal, setShowDemoModal] = useState(false)
   const [demoForm, setDemoForm] = useState({ name: '', email: '', company: '', phone: '' })
@@ -45,7 +60,8 @@ export default function LandingPage() {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  // Pass rate data
+  // Pass rate data and country list (order used for auto-rotation)
+  const PASS_RATE_COUNTRIES = ['United Kingdom', 'United States', 'Singapore', 'Brazil', 'Aruba']
   const passRateData: { [key: string]: string } = {
     'United Kingdom': '95.86%',
     'United States': '94.23%',
@@ -54,17 +70,26 @@ export default function LandingPage() {
     'Aruba': '93.67%'
   }
 
-  // Handle pass rate calculation
-  const handleCalculatePassRate = () => {
-    const rate = passRateData[selectedCountry] || '93.50%'
-    setPassRate(rate)
-  }
+  // Auto-rotate country every 4 seconds and update pass rate (slide from right)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSlideDirection('right')
+      setSelectedCountry((prev) => {
+        const idx = PASS_RATE_COUNTRIES.indexOf(prev)
+        const nextIdx = (idx + 1) % PASS_RATE_COUNTRIES.length
+        return PASS_RATE_COUNTRIES[nextIdx]
+      })
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    setPassRate(passRateData[selectedCountry] || '93.50%')
+  }, [selectedCountry])
 
   // Handle demo form submission
   const handleDemoSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // Here you would typically send the data to your backend
-    console.log('Demo request:', demoForm)
     alert('Thank you for your interest! We will contact you soon.')
     setShowDemoModal(false)
     setDemoForm({ name: '', email: '', company: '', phone: '' })
@@ -111,7 +136,7 @@ export default function LandingPage() {
             <div className="flex items-center gap-2 md:gap-3 flex-nowrap">
               <Image
                 src="/kyclogo.svg"
-                alt="MIRA KYC Logo"
+                alt="DigiPort"
                 width={120}
                 height={40}
                 className="h-6 md:h-8 w-auto flex-shrink-0"
@@ -376,58 +401,83 @@ export default function LandingPage() {
             <div className="bg-white rounded-xl p-5 md:p-6 shadow-lg">
               <h2 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-900 mb-4 md:mb-5">
                 See the average pass rate in your target country
-                </h2>
+              </h2>
 
-              <div className="mb-4 md:mb-5">
-                <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">
-                  Select country
-                </label>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <select 
-                    value={selectedCountry}
-                    onChange={(e) => setSelectedCountry(e.target.value)}
-                    className="flex-1 px-3 md:px-4 py-2 md:py-2.5 border border-gray-300 rounded-lg bg-white text-gray-900 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              {/* Result Area - arrows on sides to change country (like image carousel) */}
+              <div className="bg-gray-50 rounded-lg p-4 md:p-5 overflow-hidden">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Left arrow - previous country (touch-friendly on mobile) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idx = PASS_RATE_COUNTRIES.indexOf(selectedCountry)
+                      const prevIdx = idx <= 0 ? PASS_RATE_COUNTRIES.length - 1 : idx - 1
+                      const prev = PASS_RATE_COUNTRIES[prevIdx]
+                      setSlideDirection('left')
+                      setSelectedCountry(prev)
+                      setPassRate(passRateData[prev] || '93.50%')
+                    }}
+                    className="flex-shrink-0 min-w-[44px] min-h-[44px] w-10 h-10 md:w-10 md:h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 active:bg-gray-200 hover:border-gray-300 transition-colors touch-manipulation"
+                    aria-label="Previous country"
                   >
-                    <option>Aruba</option>
-                    <option>United Kingdom</option>
-                    <option>United States</option>
-                    <option>Singapore</option>
-                    <option>Brazil</option>
-                  </select>
-                  <button 
-                    onClick={handleCalculatePassRate}
-                    className="px-4 md:px-5 py-2 md:py-2.5 bg-gray-900 text-white rounded-lg text-xs md:text-sm font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Center: flag + country + pass rate (slide from side + shine) */}
+                  <div className="flex-1 min-w-0 text-center relative overflow-hidden min-h-[140px] sm:min-h-[160px]">
+                    <div
+                      key={selectedCountry}
+                      className={slideDirection === 'right' ? 'pass-rate-slide-from-right' : 'pass-rate-slide-from-left'}
+                    >
+                      <div className="mb-2 md:mb-3 flex justify-center">
+                        {(() => {
+                          const FlagComponent = COUNTRY_FLAGS[selectedCountry]
+                          return FlagComponent ? (
+                            <FlagComponent
+                              title={selectedCountry}
+                              className="w-12 md:w-14 h-auto rounded shadow-sm"
+                            />
+                          ) : (
+                            <span className="text-2xl" aria-hidden>🏳️</span>
+                          )
+                        })()}
+                      </div>
+                      <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">
+                        {selectedCountry} — {passRate}
+                      </h3>
+                      <p className="text-xs text-gray-600 mb-3 md:mb-4">
+                        DigiPort&apos;s average pass rate for {selectedCountry} is {passRate}
+                      </p>
+                      <div className="flex justify-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-gray-900"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-900"></div>
+                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                      </div>
+                    </div>
+                    {/* Shine layer - sweeps across on change */}
+                    <div key={`shine-${selectedCountry}`} className="pass-rate-shine" aria-hidden />
+                  </div>
+
+                  {/* Right arrow - next country (touch-friendly on mobile) */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const idx = PASS_RATE_COUNTRIES.indexOf(selectedCountry)
+                      const nextIdx = (idx + 1) % PASS_RATE_COUNTRIES.length
+                      const next = PASS_RATE_COUNTRIES[nextIdx]
+                      setSlideDirection('right')
+                      setSelectedCountry(next)
+                      setPassRate(passRateData[next] || '93.50%')
+                    }}
+                    className="flex-shrink-0 min-w-[44px] min-h-[44px] w-10 h-10 md:w-10 md:h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 active:bg-gray-200 hover:border-gray-300 transition-colors touch-manipulation"
+                    aria-label="Next country"
                   >
-                    Show me
-                    <svg className="w-3 h-3 md:w-3.5 md:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
                   </button>
-                </div>
-              </div>
-
-              {/* Result Area */}
-              <div className="bg-gray-50 rounded-lg p-4 md:p-5 text-center">
-                <div className="mb-2 md:mb-3 flex justify-center">
-                  <Image
-                    src="/UK.png"
-                    alt={`${selectedCountry} Flag`}
-                    width={48}
-                    height={36}
-                    className="w-10 md:w-12 h-auto"
-                  />
-                </div>
-                <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">
-                  {selectedCountry} - {passRate}
-                </h3>
-                <p className="text-xs text-gray-600 mb-3 md:mb-4">
-                  DigiPort&apos;s average pass rate for {selectedCountry} is {passRate}
-                </p>
-                {/* Pagination dots */}
-                <div className="flex justify-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-gray-900"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-900"></div>
-                  <div className="w-2 h-2 rounded-full bg-gray-400"></div>
                 </div>
               </div>
             </div>

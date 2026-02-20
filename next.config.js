@@ -14,7 +14,7 @@ const nextConfig = {
   experimental: {
     missingSuspenseWithCSRBailout: false,
     optimizeCss: true,
-    optimizePackageImports: ['@heroicons/react', 'react-icons'],
+    optimizePackageImports: ['@heroicons/react', 'react-icons', 'recharts'],
   },
   // Performance optimizations
   compress: true,

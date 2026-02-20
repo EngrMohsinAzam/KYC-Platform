@@ -610,3 +610,99 @@ textarea {
   }
 }
 
+/* Pass rate: slide in from one side */
+@keyframes pass-rate-slide-from-right {
+  from {
+    transform: translateX(100%);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pass-rate-slide-from-left {
+  from {
+    transform: translateX(-100%);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.pass-rate-slide-from-right {
+  animation: pass-rate-slide-from-right 0.4s ease-out forwards;
+  will-change: transform;
+}
+
+.pass-rate-slide-from-left {
+  animation: pass-rate-slide-from-left 0.4s ease-out forwards;
+  will-change: transform;
+}
+
+/* Mobile: same slide, slightly shorter duration for snappier feel */
+@media (max-width: 640px) {
+  .pass-rate-slide-from-right {
+    animation: pass-rate-slide-from-right 0.35s ease-out forwards;
+  }
+  .pass-rate-slide-from-left {
+    animation: pass-rate-slide-from-left 0.35s ease-out forwards;
+  }
+}
+
+/* Shine layer - sweeps across like common platform carousels */
+@keyframes pass-rate-shine-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.pass-rate-shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.pass-rate-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 35%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.15) 65%,
+    transparent 100%
+  );
+  animation: pass-rate-shine-sweep 0.6s ease-in-out 0.15s forwards;
+  will-change: transform;
+}
+
+/* Mobile: shine a bit quicker and slightly stronger so it's visible on small screens */
+@media (max-width: 640px) {
+  .pass-rate-shine::after {
+    width: 60%;
+    animation: pass-rate-shine-sweep 0.5s ease-in-out 0.1s forwards;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.2) 35%,
+      rgba(255, 255, 255, 0.45) 50%,
+      rgba(255, 255, 255, 0.2) 65%,
+      transparent 100%
+    );
+  }
+}
+

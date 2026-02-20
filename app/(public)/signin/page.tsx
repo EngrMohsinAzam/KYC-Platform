@@ -58,7 +58,7 @@ export default function SignInPage() {
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
-              <Image src="/Logo.png" alt="DigiPort" width={32} height={32} className="h-8 w-auto" />
+              <Image src="/kyclogo.svg" alt="DigiPort" width={32} height={32} className="h-8 w-auto" />
               <span className="font-bold text-gray-900">DigiPort</span>
             </Link>
             <Link href="/" className="text-sm text-gray-500 hover:text-gray-700">

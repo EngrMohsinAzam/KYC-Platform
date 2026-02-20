@@ -8,35 +8,11 @@ import { Modal } from '@/components/ui/Modal'
 
 type TimeRange = 'day' | 'week' | 'month' | 'year'
 
-const LazyResponsiveContainer = nextDynamic(() => import('recharts').then((m) => m.ResponsiveContainer), { ssr: false })
-const LazyLineChart = nextDynamic(() => import('recharts').then((m) => m.LineChart), { ssr: false })
-const LazyCartesianGrid = nextDynamic(() => import('recharts').then((m) => m.CartesianGrid), { ssr: false })
-const LazyXAxis = nextDynamic(() => import('recharts').then((m) => m.XAxis), { ssr: false })
-const LazyYAxis = nextDynamic(() => import('recharts').then((m) => m.YAxis), { ssr: false })
-const LazyTooltip = nextDynamic(() => import('recharts').then((m) => m.Tooltip), { ssr: false })
-const LazyLegend = nextDynamic(() => import('recharts').then((m) => m.Legend), { ssr: false })
-const LazyLine = nextDynamic(() => import('recharts').then((m) => m.Line), { ssr: false })
-
-function ActivityChart({ data }: { data: { label: string; total: number; approved: number; pending: number; rejected: number }[] }) {
-  return (
-    <LazyResponsiveContainer width="100%" height="100%">
-      <LazyLineChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 4 }}>
-        <LazyCartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-        <LazyXAxis dataKey="label" tick={{ fontSize: 11 }} stroke="#94a3b8" tickLine={false} />
-        <LazyYAxis tick={{ fontSize: 11 }} stroke="#94a3b8" tickLine={false} axisLine={false} width={32} />
-        <LazyTooltip
-          contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0' }}
-          labelStyle={{ fontWeight: 600, color: '#0f172a' }}
-        />
-        <LazyLegend wrapperStyle={{ fontSize: 12 }} />
-        <LazyLine type="monotone" dataKey="total" stroke="#475569" strokeWidth={2} dot={{ fill: '#475569', r: 3 }} name="Total" />
-        <LazyLine type="monotone" dataKey="approved" stroke="#059669" strokeWidth={2} dot={{ fill: '#059669', r: 3 }} name="Approved" />
-        <LazyLine type="monotone" dataKey="pending" stroke="#d97706" strokeWidth={2} dot={{ fill: '#d97706', r: 3 }} name="Pending" />
-        <LazyLine type="monotone" dataKey="rejected" stroke="#dc2626" strokeWidth={2} dot={{ fill: '#dc2626', r: 3 }} name="Rejected" />
-      </LazyLineChart>
-    </LazyResponsiveContainer>
-  )
-}
+// Lazy load entire chart (recharts) only when dashboard is viewed
+const ActivityChart = nextDynamic(
+  () => import('@/components/dashboard/ActivityChart').then((m) => m.default),
+  { ssr: false, loading: () => <div className="h-[280px] flex items-center justify-center bg-gray-50 rounded-xl animate-pulse" /> }
+)
 
 type PackageInfo = {
   selected?: string
