@@ -163,7 +163,7 @@ export default function EnterEmailPage() {
           <Button
             onClick={() => void handleContinue()}
             disabled={loading || !email.trim()}
-            className="hidden md:block h-[52px] !rounded-[12px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
+            className="hidden md:block h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
           >
             {loading ? 'Checking...' : 'Continue'}
           </Button>
@@ -185,7 +185,7 @@ export default function EnterEmailPage() {
         <Button
           onClick={() => void handleContinue()}
           disabled={loading || !email.trim()}
-          className="h-[48px] !rounded-[14px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white font-semibold text-[16px]"
+          className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
         >
           {loading ? 'Checking...' : 'Continue'}
         </Button>

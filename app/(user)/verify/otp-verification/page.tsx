@@ -587,14 +587,14 @@ export default function OTPVerification() {
             <Button
               onClick={() => void handleVerify()}
               disabled={loading || otp.join('').length !== 6}
-              className="h-[52px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
+              className="h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               {loading ? 'Checking...' : 'Go to email'}
             </Button>
             <Button
               onClick={() => void handleSendOTP()}
               disabled={sendingOTP || resendTimer > 0 || loading}
-              className="h-[52px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E8E8E9] disabled:bg-[#E8E8E9] disabled:opacity-100 text-[#000000] disabled:text-[#000000] text-[16px] font-semibold"
+              className="h-[52px] !rounded-[12px] !bg-[#E8E8E9] hover:!bg-[#E8E8E9] focus:!bg-[#E8E8E9] active:!bg-[#E8E8E9] disabled:!bg-[#E8E8E9] disabled:opacity-100 !text-[#000000] disabled:!text-[#000000] text-[16px] font-semibold"
             >
               {resendTimer > 0 ? `Resend email (${resendTimer}s)` : 'Resend email'}
             </Button>
@@ -618,14 +618,14 @@ export default function OTPVerification() {
           <Button
             onClick={() => void handleVerify()}
             disabled={loading || otp.join('').length !== 6}
-            className="h-[68px] !rounded-[14px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
+            className="h-[68px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
           >
             {loading ? 'Checking...' : 'Go to email'}
           </Button>
           <Button
             onClick={() => void handleSendOTP()}
             disabled={sendingOTP || resendTimer > 0 || loading}
-            className="h-[68px] !rounded-[14px] bg-[#E8E8E9] hover:bg-[#E8E8E9] disabled:bg-[#E8E8E9] disabled:opacity-100 text-[#000000] disabled:text-[#000000] text-[16px] font-semibold"
+            className="h-[68px] !rounded-[14px] !bg-[#E8E8E9] hover:!bg-[#E8E8E9] focus:!bg-[#E8E8E9] active:!bg-[#E8E8E9] disabled:!bg-[#E8E8E9] disabled:opacity-100 !text-[#000000] disabled:!text-[#000000] text-[16px] font-semibold"
           >
             {resendTimer > 0 ? `Resend email (${resendTimer}s)` : 'Resend email'}
           </Button>

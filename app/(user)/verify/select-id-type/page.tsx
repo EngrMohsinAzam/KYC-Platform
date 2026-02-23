@@ -180,7 +180,7 @@ export default function SelectIdType() {
             <Button
               onClick={handleNext}
               disabled={!canProceed || !!pausedMessage}
-              className="h-[52px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
+              className="h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               Continue
             </Button>
@@ -206,7 +206,7 @@ export default function SelectIdType() {
         <Button
           onClick={handleNext}
           disabled={!canProceed || !!pausedMessage}
-          className="h-[48px] !rounded-[14px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
+          className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
         >
           Continue
         </Button>
