@@ -267,11 +267,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
-import { Header } from '@/components/layout/Header'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
-import { getCountryByValue, getCitiesForCountry } from '@/app/(public)/utils/countries'
-import { LoadingDots } from '@/components/ui/LoadingDots'
 
 // API base URL - imported from centralized config
 import { API_BASE_URL } from '../../../(public)/config'
@@ -347,6 +343,7 @@ export default function OTPVerification() {
 
   const email = state.personalInfo?.email || ''
   const hasAutoSentRef = useRef(false)
+  const displayEmail = email.trim()
 
   useEffect(() => {
     if (email && !otpSent && !hasAutoSentRef.current) {
@@ -361,6 +358,40 @@ export default function OTPVerification() {
       return () => clearTimeout(timer)
     }
   }, [resendTimer])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const mql = window.matchMedia('(min-width: 768px)')
+    const prevHtmlOverflow = document.documentElement.style.overflowY
+    const prevBodyOverflow = document.body.style.overflowY
+
+    const applyDesktopScrollLock = () => {
+      if (mql.matches) {
+        document.documentElement.style.overflowY = 'hidden'
+        document.body.style.overflowY = 'hidden'
+      } else {
+        document.documentElement.style.overflowY = prevHtmlOverflow
+        document.body.style.overflowY = prevBodyOverflow
+      }
+    }
+
+    applyDesktopScrollLock()
+
+    if (mql.addEventListener) {
+      mql.addEventListener('change', applyDesktopScrollLock)
+      return () => {
+        mql.removeEventListener('change', applyDesktopScrollLock)
+        document.documentElement.style.overflowY = prevHtmlOverflow
+        document.body.style.overflowY = prevBodyOverflow
+      }
+    }
+
+    return () => {
+      document.documentElement.style.overflowY = prevHtmlOverflow
+      document.body.style.overflowY = prevBodyOverflow
+    }
+  }, [])
 
   const handleSendOTP = async () => {
     if (!email) {
@@ -415,6 +446,22 @@ export default function OTPVerification() {
     }
   }
 
+  const handlePasteFromClipboard = async () => {
+    try {
+      const pastedData = (await navigator.clipboard.readText()).trim()
+      if (/^\d{6}$/.test(pastedData)) {
+        const newOtp = pastedData.split('')
+        setOtp(newOtp)
+        setError(null)
+        inputRefs.current[5]?.focus()
+      } else if (pastedData.length > 0) {
+        setError('Clipboard must contain a 6-digit code')
+      }
+    } catch {
+      setError('Could not access clipboard')
+    }
+  }
+
   const handleVerify = async () => {
     const otpString = otp.join('')
     
@@ -463,78 +510,127 @@ export default function OTPVerification() {
   }
 
   return (
-    <div className="min-h-screen bg-white md:bg-surface-gray flex flex-col">
-      <Header showBack title="Verify your email" />
-      <ProgressBar currentStep={4} totalSteps={6} />
-      <main className="flex-1 px-4 md:px-0 pt-6 pb-32 md:pb-24 md:flex md:items-center md:justify-center">
-        <div className="w-full max-w-md md:bg-white md:rounded-2xl p-4 md:p-6 md:my-8 md:border-[2px] md:border-grey-400">
-          <div className="mb-2">
-            <p className="text-sm text-text-light">Check your email</p>
+    <div className="min-h-screen bg-[#FFFFFF] flex flex-col transform-none [zoom:1] [scale:1]">
+      <div className="md:hidden px-4 pt-5">
+        <button
+          type="button"
+          aria-label="Go back"
+          onClick={() => router.push('/verify/enter-email')}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
+
+      <main className="flex-1 w-full overflow-y-auto md:overflow-hidden flex flex-col items-center md:justify-center px-4 pt-3 pb-40 md:pt-4 md:pb-4 transform-none">
+        <section className="hidden md:block text-center mb-5">
+          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
+            We&apos;re required to collect this verify your identity.
+          </p>
+        </section>
+
+        <div className="w-full max-w-[560px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-5">
+          <h2 className="text-[24px] md:text-[18px] leading-[1.3] font-bold md:font-semibold text-[#000000] mb-2">
+            Confirm Email
+          </h2>
+          <p className="text-[14px] md:text-[16px] leading-[1.35] font-normal text-[#828282] mb-5">
+            Please enter the confirmation code sent to your email.Thos cpde will expire in two hours.
+          </p>
+
+          <div className="inline-flex items-center gap-2 bg-[#E8E8E9] rounded-[12px] md:rounded-[10px] px-4 py-2 mb-6">
+            <span className="text-[14px] md:text-[16px] leading-none font-normal text-[#000000]">{displayEmail}</span>
+            <svg className="h-4 w-4 text-[#000000]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
+            </svg>
           </div>
 
-          <div className="mb-6 md:mb-8">
-            <h2 className="text-2xl font-bold text-text-primary mb-4">
-              Enter verification code
-            </h2>
-            <p className="text-sm text-text-secondary mb-6">
-              We&apos;ve sent a 6-digit verification code to <span className="font-semibold text-text-primary">{email}</span>
-            </p>
-
-            <div className="mb-6">
-              <div className="flex gap-2 md:gap-3 justify-center">
-                {otp.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={(el) => { inputRefs.current[index] = el }}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    onPaste={handlePaste}
-                    disabled={loading}
-                    className="w-11 h-12 md:w-12 md:h-14 text-center text-xl md:text-2xl font-bold border-2 border-surface-light rounded-lg focus:border-primary focus:outline-none transition-colors disabled:bg-gray-100"
-                  />
-                ))}
-              </div>
-              {error && (
-                <p className="text-sm text-red-600 mt-3 text-center">{error}</p>
-              )}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 md:gap-3">
+              {otp.map((digit, index) => (
+                <input
+                  key={index}
+                  ref={(el) => { inputRefs.current[index] = el }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  onPaste={handlePaste}
+                  disabled={loading}
+                  className={`w-[50px] h-[74px] md:w-[36px] md:h-[50px] text-center text-[24px] md:text-[16px] font-semibold rounded-[12px] md:rounded-[10px] border-2 transition-colors focus:outline-none ${
+                    index === 0
+                      ? 'border-[#6D3CCC] bg-[#E8E8E9] text-[#000000]'
+                      : 'border-transparent bg-[#E8E8E9] text-[#000000]'
+                  }`}
+                />
+              ))}
             </div>
-
-            <div className="text-center mb-6 md:mb-0">
-              <p className="text-sm text-text-secondary mb-2">
-                Didn&apos;t receive the code?
-              </p>
-              <button
-                onClick={handleSendOTP}
-                disabled={sendingOTP || resendTimer > 0 || loading}
-                className="text-sm text-primary hover:underline disabled:text-text-light disabled:no-underline flex items-center gap-2 justify-center"
-              >
-                {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
-              </button>
-            </div>
+            {error && (
+              <p className="text-sm text-red-600 mt-3">{error}</p>
+            )}
           </div>
 
-          <div className="md:block fixed md:relative bottom-0 left-0 right-0 p-4 bg-white md:bg-transparent border-t md:border-t-0 border-surface-light">
+          <button
+            type="button"
+            onClick={() => void handlePasteFromClipboard()}
+            className="text-[14px] md:text-[14px] font-normal md:font-semibold text-[#000000] hover:text-[#6D3CCC] transition-colors"
+          >
+            Paste from clipboard
+          </button>
+
+          <div className="hidden md:block mt-5 space-y-3">
             <Button
-              onClick={handleVerify}
+              onClick={() => void handleVerify()}
               disabled={loading || otp.join('').length !== 6}
-              className="w-full flex items-center justify-center gap-2"
+              className="h-[52px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
             >
-              {loading ? (
-                <>
-                  <LoadingDots size="sm" color="#ffffff" />
-                  <span></span>
-                </>
-              ) : (
-                'Verify & Continue'
-              )}
+              {loading ? 'Checking...' : 'Go to email'}
             </Button>
+            <Button
+              onClick={() => void handleSendOTP()}
+              disabled={sendingOTP || resendTimer > 0 || loading}
+              className="h-[52px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E8E8E9] disabled:bg-[#E8E8E9] disabled:opacity-100 text-[#000000] disabled:text-[#000000] text-[16px] font-semibold"
+            >
+              {resendTimer > 0 ? `Resend email (${resendTimer}s)` : 'Resend email'}
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => router.push('/verify/enter-email')}
+              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-6 mx-auto hover:text-[#000000] transition-colors"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to Previous
+            </button>
           </div>
         </div>
       </main>
+
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+        <div className="space-y-3">
+          <Button
+            onClick={() => void handleVerify()}
+            disabled={loading || otp.join('').length !== 6}
+            className="h-[68px] !rounded-[14px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
+          >
+            {loading ? 'Checking...' : 'Go to email'}
+          </Button>
+          <Button
+            onClick={() => void handleSendOTP()}
+            disabled={sendingOTP || resendTimer > 0 || loading}
+            className="h-[68px] !rounded-[14px] bg-[#E8E8E9] hover:bg-[#E8E8E9] disabled:bg-[#E8E8E9] disabled:opacity-100 text-[#000000] disabled:text-[#000000] text-[16px] font-semibold"
+          >
+            {resendTimer > 0 ? `Resend email (${resendTimer}s)` : 'Resend email'}
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }

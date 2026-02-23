@@ -3,303 +3,151 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
-import { RadioButton } from '@/components/ui/RadioButton'
-import { Header } from '@/components/layout/Header'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
-import { CiGlobe } from "react-icons/ci";
 
 export default function ResidentSelection() {
   const router = useRouter()
   const { state, dispatch } = useAppContext()
   
-  // Check if selected country is USA (value is 'us' in countries.ts)
-  const isUSACountry = state.selectedCountry?.toLowerCase() === 'us' || 
-                       state.selectedCountry === 'US' || 
-                       state.selectedCountry === 'USA' || 
-                       state.selectedCountry === 'United States'
-  
-  // If country is selected and it's NOT USA, pre-select "other" and disable selection
-  const isPreSelected = state.selectedCountry && !isUSACountry
-  const isDisabled = isPreSelected
-  
-  const [selected, setSelected] = useState<string>(() => {
-    // If already set in state, use that (this works after refresh due to localStorage)
-    if (state.isResidentUSA !== undefined) {
-      return state.isResidentUSA ? 'usa' : 'other'
-    }
-    // Auto-select "other" if country is not USA and country is selected
-    if (isPreSelected && state.selectedCountry) {
-      // Also save to state so it persists
-      dispatch({ type: 'SET_RESIDENT_USA', payload: false })
-      return 'other'
-    }
-    // Auto-select "usa" if country is USA
-    if (isUSACountry && state.selectedCountry) {
-      dispatch({ type: 'SET_RESIDENT_USA', payload: true })
-      return 'usa'
-    }
-    // If we have a country but no selection yet, determine based on country
-    if (state.selectedCountry) {
-      const isUSA = state.selectedCountry.toLowerCase() === 'us' || 
-                   state.selectedCountry === 'US' || 
-                   state.selectedCountry === 'USA' || 
-                   state.selectedCountry === 'United States'
-      if (isUSA) {
-        dispatch({ type: 'SET_RESIDENT_USA', payload: true })
-        return 'usa'
-      } else {
-        dispatch({ type: 'SET_RESIDENT_USA', payload: false })
-        return 'other'
-      }
-    }
-    return ''
-  })
+  const [selected, setSelected] = useState<string>('')
 
   const handleContinue = () => {
     dispatch({ type: 'SET_RESIDENT_USA', payload: selected === 'usa' })
     router.push('/verify/identity')
   }
 
-  // Update selection when country changes or when state.isResidentUSA changes (after refresh)
+  // Do not restore prior choice. Require manual selection on each visit.
   useEffect(() => {
-    // If state.isResidentUSA is set (from localStorage after refresh), sync with local state
-    if (state.isResidentUSA !== undefined) {
-      const expectedSelection = state.isResidentUSA ? 'usa' : 'other'
-      if (selected !== expectedSelection) {
-        setSelected(expectedSelection)
+    setSelected('')
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const mql = window.matchMedia('(min-width: 768px)')
+    const prevHtmlOverflow = document.documentElement.style.overflowY
+    const prevBodyOverflow = document.body.style.overflowY
+
+    const applyDesktopScrollLock = () => {
+      if (mql.matches) {
+        document.documentElement.style.overflowY = 'hidden'
+        document.body.style.overflowY = 'hidden'
+      } else {
+        document.documentElement.style.overflowY = prevHtmlOverflow
+        document.body.style.overflowY = prevBodyOverflow
       }
     }
-    
-    // Auto-select based on country if no selection yet
-    if (!selected && state.selectedCountry) {
-      if (isPreSelected) {
-        setSelected('other')
-        dispatch({ type: 'SET_RESIDENT_USA', payload: false })
-      } else if (isUSACountry) {
-        setSelected('usa')
-        dispatch({ type: 'SET_RESIDENT_USA', payload: true })
+
+    applyDesktopScrollLock()
+
+    if (mql.addEventListener) {
+      mql.addEventListener('change', applyDesktopScrollLock)
+      return () => {
+        mql.removeEventListener('change', applyDesktopScrollLock)
+        document.documentElement.style.overflowY = prevHtmlOverflow
+        document.body.style.overflowY = prevBodyOverflow
       }
-    } else if (isPreSelected && selected !== 'other') {
-      setSelected('other')
-      dispatch({ type: 'SET_RESIDENT_USA', payload: false })
-    } else if (isUSACountry && selected !== 'usa' && state.selectedCountry) {
-      setSelected('usa')
-      dispatch({ type: 'SET_RESIDENT_USA', payload: true })
     }
-  }, [state.selectedCountry, state.isResidentUSA, isPreSelected, isUSACountry, selected, dispatch])
+
+    return () => {
+      document.documentElement.style.overflowY = prevHtmlOverflow
+      document.body.style.overflowY = prevBodyOverflow
+    }
+  }, [])
 
   const handleSelect = (value: string) => {
-    // Don't allow changing if pre-selected (non-USA country)
-    if (isDisabled) {
-      return // Prevent any changes
-    }
     setSelected(value)
   }
 
   return (
-    <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">
-      {/* Mobile Header - Simple back and close */}
-      <div className="md:hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <button onClick={() => router.back()} className="p-2">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button onClick={() => router.push('/')} className="p-2">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <div className="min-h-screen h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+      <div className="md:hidden px-4 pt-5">
+        <button
+          type="button"
+          aria-label="Go back"
+          onClick={() => router.back()}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
       </div>
 
-      {/* Desktop Header */}
-      <div className="hidden md:block">
-        <Header showBack showClose />
-        <ProgressBar currentStep={2} totalSteps={5} />
-      </div>
-      
-      {/* Scrollable main content */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="min-h-full md:flex md:items-center md:justify-center md:py-16">
-       
-          {/* Mobile Design - Full screen, centered content */}
-          <div className="md:hidden h-full flex flex-col px-4 pt-12 pb-32">
-            <div className="flex justify-center items-center mb-8">
-              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                <CiGlobe className="w-8 h-8 text-gray-400" />
-              </div>
-            </div>
+      <main className="flex-1 w-full overflow-y-auto md:overflow-hidden flex flex-col items-center md:justify-center px-4 pt-3 pb-32 md:pt-2 md:pb-2">
+        <section className="hidden md:block text-center mb-4">
+          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
+            We&apos;re required to collect this verify your identity.
+          </p>
+        </section>
 
-            {/* Title - Centered on mobile */}
-            <h1 className="text-lg font-medium text-gray-900 text-center mb-8">
-              I&apos;m a resident of or live in:
-            </h1>
+        <div className="w-full max-w-[680px] md:border-2 md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4">
+          <h2 className="text-[16px] md:text-[18px] leading-[1.35] font-semibold text-[#000000] mb-2">
+            Country residency
+          </h2>
+          <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-4">
+            Select where you currently reside
+          </p>
 
-            {/* Radio Options */}
-            <div className="space-y-3 flex-1">
-              {/* All countries except USA */}
-              <button
-                onClick={() => handleSelect('other')}
-                disabled={Boolean(isDisabled && selected === 'other')}
-                className={`
-                  flex items-center justify-between w-full p-4 border rounded-lg transition-all
-                  ${selected === 'other' 
-                    ? 'border-gray-900 bg-white' 
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                  }
-                  ${isDisabled && selected === 'other' ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <CiGlobe className="w-4 h-4 text-gray-500" />
-                  </div>
-                  <span className="text-gray-700 font-normal text-sm">
-                    All countries except USA
-                  </span>
-                </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                  selected === 'other' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
-                }`}>
-                  {selected === 'other' && (
-                    <div className="w-2 h-2 rounded-full bg-white"></div>
-                  )}
-                </div>
-              </button>
+          <div className="space-y-2">
+            <button
+              onClick={() => handleSelect('other')}
+              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border text-left flex items-center justify-between transition-colors ${
+                selected === 'other'
+                  ? 'border-[#6D3CCC] bg-[#E8E8E9]'
+                  : 'border-transparent bg-[#E8E8E9]'
+              } cursor-pointer`}
+            >
+              <span className="text-[14px] md:text-[16px] font-normal text-[#000000]">All countries except USA</span>
+              <span className={`w-5 h-5 rounded-full border ${selected === 'other' ? 'border-[#6D3CCC] bg-[#6D3CCC]' : 'border-[#828282]'}`}>
+                <span className={`block w-2 h-2 rounded-full bg-white mx-auto mt-[5px] ${selected === 'other' ? 'opacity-100' : 'opacity-0'}`} />
+              </span>
+            </button>
 
-              {/* United States of America */}
-              <button
-                onClick={() => handleSelect('usa')}
-                disabled={Boolean(isDisabled)}
-                className={`
-                  flex items-center justify-between w-full p-4 border rounded-lg transition-all
-                  ${selected === 'usa' 
-                    ? 'border-gray-900 bg-white' 
-                    : 'border-gray-200 bg-white hover:border-gray-300'
-                  }
-                  ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                `}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-gray-600 text-xs font-bold">US</span>
-                  </div>
-                  <span className="text-gray-700 font-normal text-sm">
-                    United States of America
-                  </span>
-                </div>
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                  selected === 'usa' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
-                }`}>
-                  {selected === 'usa' && (
-                    <div className="w-2 h-2 rounded-full bg-white"></div>
-                  )}
-                </div>
-              </button>
-            </div>
+            <button
+              onClick={() => handleSelect('usa')}
+              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border text-left flex items-center justify-between transition-colors ${
+                selected === 'usa'
+                  ? 'border-[#6D3CCC] bg-[#E8E8E9]'
+                  : 'border-transparent bg-[#E8E8E9]'
+              } cursor-pointer`}
+            >
+              <span className="text-[14px] md:text-[16px] font-normal text-[#000000]">United States of America</span>
+              <span className={`w-5 h-5 rounded-full border ${selected === 'usa' ? 'border-[#6D3CCC] bg-[#6D3CCC]' : 'border-[#828282]'}`}>
+                <span className={`block w-2 h-2 rounded-full bg-white mx-auto mt-[5px] ${selected === 'usa' ? 'opacity-100' : 'opacity-0'}`} />
+              </span>
+            </button>
           </div>
 
-          {/* Desktop Design - Card with all content */}
-          <div className="hidden md:block w-full max-w-md lg:max-w-2xl px-4">
-            
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-              <div className="flex justify-center items-center mb-8">
-                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-                  <CiGlobe className="w-8 h-8 text-gray-400" />
-                </div>
-              </div>
-              {/* Title - Desktop */}
-              <div className="mb-8 text-left">
-                <h1 className="text-2xl font-medium text-gray-900">
-                  I&apos;m a resident of or live in:
-                </h1>
-              </div>
+          <div className="hidden md:block mt-6">
+            <Button
+              onClick={handleContinue}
+              disabled={!selected}
+              className="h-[52px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
+            >
+              Continue
+            </Button>
 
-              {/* Radio Options - Desktop */}
-              <div className="space-y-3 mb-8">
-                {/* All countries except USA */}
-                <button
-                  onClick={() => handleSelect('other')}
-                  disabled={Boolean(isDisabled && selected === 'other')}
-                  className={`
-                    flex items-center justify-between w-full p-4 border rounded-lg transition-all
-                    ${selected === 'other' 
-                      ? 'border-gray-900 bg-white' 
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                    }
-                    ${isDisabled && selected === 'other' ? 'opacity-75 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <CiGlobe className="w-4 h-4 text-gray-500" />
-                    </div>
-                    <span className="text-gray-700 font-normal">
-                      All countries except USA
-                    </span>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                    selected === 'other' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
-                  }`}>
-                    {selected === 'other' && (
-                      <div className="w-2 h-2 rounded-full bg-white"></div>
-                    )}
-                  </div>
-                </button>
-
-                {/* United States of America */}
-                <button
-                  onClick={() => handleSelect('usa')}
-                  disabled={Boolean(isDisabled)}
-                  className={`
-                    flex items-center justify-between w-full p-4 border rounded-lg transition-all
-                    ${selected === 'usa' 
-                      ? 'border-gray-900 bg-white' 
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                    }
-                    ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                  `}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
-                      <span className="text-gray-600 text-xs font-bold">US</span>
-                    </div>
-                    <span className="text-gray-700 font-normal">
-                      United States of America
-                    </span>
-                  </div>
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
-                    selected === 'usa' ? 'border-gray-900 bg-gray-900' : 'border-gray-300'
-                  }`}>
-                    {selected === 'usa' && (
-                      <div className="w-2 h-2 rounded-full bg-white"></div>
-                    )}
-                  </div>
-                </button>
-              </div>
-
-              {/* Desktop Button */}
-              <Button 
-                onClick={handleContinue} 
-                disabled={!selected} 
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Continue
-              </Button>
-            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/verify/select-id-type')}
+              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-6 mx-auto hover:text-[#000000] transition-colors"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to Previous
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Mobile Fixed Button */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
-        <Button 
-          onClick={handleContinue} 
-          disabled={!selected} 
-          className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+        <Button
+          onClick={handleContinue}
+          disabled={!selected}
+          className="h-[48px] !rounded-[14px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
         >
           Continue
         </Button>

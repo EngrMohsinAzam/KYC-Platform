@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { Header } from '@/components/layout/Header'
 import { useAppContext } from '@/context/useAppContext'
 import { getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
 import { checkStatusByEmail } from '@/app/api/api'
@@ -22,9 +21,15 @@ export default function EnterEmailPage() {
 
   useEffect(() => {
     const ctx = getCompanyContext()
+    const isLocalPreviewHost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+
     if (!ctx?.companyId || !ctx?.companySlug) {
-      router.replace('/verify/start')
-      return
+      if (!isLocalPreviewHost) {
+        router.replace('/verify/start')
+        return
+      }
     }
     setChecking(false)
   }, [router])
@@ -92,8 +97,7 @@ export default function EnterEmailPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header showBack onBack={() => router.push('/')} title="Enter your email" />
+      <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
         </main>
@@ -102,50 +106,90 @@ export default function EnterEmailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header showBack onBack={() => router.push('/verify/start')} title="Enter your email" />
+    <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
+      <div className="md:hidden flex justify-end px-4 pt-3">
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={() => router.push('/verify/start')}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+          </svg>
+        </button>
+      </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 md:py-12">
-        <div className="w-full max-w-md mx-auto">
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-2 text-center">
-            Give us your email
-          </h1>
-          <p className="text-sm text-gray-600 mb-6 text-center">
-            Enter your email. We&apos;ll check if you&apos;ve already verified with this company, then continue.
+      <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-6 pb-24 md:py-12">
+        <section className="hidden md:block text-center mb-7">
+          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
+            We&apos;re required to collect this verify your identity.
           </p>
+        </section>
 
+        <div className="w-full max-w-[760px] md:bg-transparent md:border-2 md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email address
+            <label className="block text-[16px] md:text-[18px] leading-[1.4] font-semibold text-[#000000] mb-2">
+              Email
             </label>
+            <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3">
+              Enter the email address you&apos;d like to use
+            </p>
             <Input
               type="email"
-              placeholder="you@example.com"
+              placeholder="Email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)
                 setError(null)
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !loading && email.trim()) {
+                  void handleContinue()
+                }
+              }}
               disabled={loading}
-              className="w-full"
+              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[#6D3CCC] bg-[#E8E8E9] md:bg-[#E8E8E9] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
             />
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
+            <div className="mb-4">
+              <p className="text-sm md:text-base text-red-600">{error}</p>
             </div>
           )}
 
           <Button
             onClick={() => void handleContinue()}
             disabled={loading || !email.trim()}
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl py-3"
+            className="hidden md:block h-[52px] !rounded-[12px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white text-[16px] font-semibold"
           >
-            {loading ? 'Checking…' : 'Continue'}
+            {loading ? 'Checking...' : 'Continue'}
           </Button>
+
+          <button
+            type="button"
+            onClick={() => router.push('/verify/start')}
+            className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-7 mx-auto hover:text-[#000000] transition-colors"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+            </svg>
+            Back to Previous
+          </button>
         </div>
       </main>
+
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+        <Button
+          onClick={() => void handleContinue()}
+          disabled={loading || !email.trim()}
+          className="h-[48px] !rounded-[14px] bg-[#6D3CCC] hover:bg-[#6D3CCC] disabled:bg-[#6D3CCC] disabled:opacity-100 text-white disabled:text-white font-semibold text-[16px]"
+        >
+          {loading ? 'Checking...' : 'Continue'}
+        </Button>
+      </div>
     </div>
   )
 }
