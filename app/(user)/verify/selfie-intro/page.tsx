@@ -39,9 +39,9 @@ export default function SelfieIntroPage() {
   }
 
   return (
-    <div className="h-screen min-h-screen max-h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
+    <div className="min-h-screen h-[100dvh] md:h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
       {/* Mobile: back arrow */}
-      <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
+      <div className="md:hidden flex-shrink-0 px-4 pt-1.5 pb-0">
         <button
           type="button"
           aria-label="Go back"
@@ -54,25 +54,26 @@ export default function SelfieIntroPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden px-4 pt-2 pb-20 md:py-4 md:pb-4">
-        {/* White card: carbon copy of documents page layout and styles */}
-        <div className="w-full max-w-[500px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border md:border-[#E8E8E9] md:pt-5 md:px-6 md:pb-5 flex-shrink-0">
+      {/* Mobile: scrollable area with padding so content is not hidden under fixed button */}
+      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-0 pb-[88px] md:pb-4 md:py-4">
+        {/* White card: compact on mobile, aligned to top */}
+        <div className="w-full max-w-[500px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border md:border-[#E8E8E9] md:pt-5 md:px-6 md:pb-5 flex-shrink-0 pt-0">
           <h1 className="text-[20px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left md:text-center w-full">
             Let&apos;s make sure you&apos;re you
           </h1>
-          <p className="text-[13px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-3 md:mb-3 text-left md:text-center w-full">
+          <p className="text-[13px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-2 md:mb-3 text-left md:text-center w-full">
             A live photo of your face is required to verify your identity.
           </p>
 
-          <div className="flex justify-center w-full mb-3 md:mb-4 self-center">
+          <div className="flex justify-center w-full mb-2 md:mb-4 self-center">
             <img
               src="/selfei.png"
               alt=""
-              className="max-w-[180px] md:max-w-[220px] max-h-[100px] md:max-h-[120px] w-auto h-auto object-contain"
+              className="max-w-[180px] md:max-w-[220px] max-h-[80px] md:max-h-[120px] w-auto h-auto object-contain"
             />
           </div>
 
-          <div className="w-full mb-3 md:mb-4">
+          <div className="w-full mb-2 md:mb-4">
             <p className="text-[11px] md:text-[12px] leading-[1.45] font-normal text-[#828282] text-left max-w-full break-words">
               By clicking the button below, you consent to Persona, our vendor, collecting, using, and
               utilizing its service providers to process your biometric information to verify your
@@ -110,8 +111,8 @@ export default function SelfieIntroPage() {
         </div>
       </main>
 
-      {/* Mobile: fixed Continue at bottom - same as documents page (color, radius, height) */}
-      <div className="md:hidden flex-shrink-0 px-4 pb-6 pt-4 bg-[#F5F5F5] border-t border-[#E8E8E9]">
+      {/* Mobile: fixed to bottom so Continue is always visible on real devices */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#F5F5F5] border-t border-[#E8E8E9] z-10">
         <Button
           onClick={handleContinue}
           className="h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white font-semibold text-[16px] w-full"
