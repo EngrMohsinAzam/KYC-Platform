@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button'
 /** Inline illustration: ID card (left) + passport (right), purple style - compact so all fits in viewport */
 function DocumentsIllustration() {
   return (
-    <div className="flex justify-center items-center w-full h-[80px] md:h-[100px] flex-shrink-0">
+    <div className="flex justify-center items-center w-full h-[64px] md:h-[100px] flex-shrink-0">
       <svg
         viewBox="0 0 200 140"
         className="max-w-[180px] md:max-w-[220px] w-full h-full object-contain"
@@ -63,8 +63,8 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="h-screen min-h-screen max-h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
-      <div className="md:hidden flex-shrink-0 px-4 pt-3 pb-0">
+    <div className="min-h-screen max-h-screen h-[100dvh] md:h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
+      <div className="md:hidden flex-shrink-0 px-4 pt-1.5 pb-0">
         <button
           type="button"
           aria-label="Go back"
@@ -77,21 +77,21 @@ export default function DocumentsPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden px-4 pt-2 pb-20 md:py-4 md:pb-4">
-        {/* White card: compact spacing so everything fits in viewport without scroll */}
-        <div className="w-full max-w-[500px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border md:border-[#E8E8E9] md:pt-5 md:px-6 md:pb-5 flex-shrink-0">
+      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-0 pb-4 md:py-4 md:pb-4">
+        {/* White card: compact on mobile, aligned to top so all fits in viewport */}
+        <div className="w-full max-w-[500px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border md:border-[#E8E8E9] md:pt-5 md:px-6 md:pb-5 flex-shrink-0 pt-0">
           <h1 className="text-[20px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left md:text-center w-full">
             Upload a photo ID
           </h1>
-          <p className="text-[13px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-3 md:mb-3 text-left md:text-center w-full">
+          <p className="text-[13px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-2 md:mb-3 text-left md:text-center w-full">
             A valid, government-issued photo ID is required to verify your identity.
           </p>
 
-          <div className="flex justify-center w-full mb-3 md:mb-4 self-center">
+          <div className="flex justify-center w-full mb-2 md:mb-4 self-center">
             <DocumentsIllustration />
           </div>
 
-          <div className="w-full mb-3 md:mb-4">
+          <div className="w-full mb-2 md:mb-4">
             <p className="text-[11px] md:text-[12px] leading-[1.45] font-normal text-[#828282] text-left max-w-full break-words">
               By clicking the button below, you consent to Persona, our vendor, collecting, using, and
               utilizing its service providers to process your biometric information to verify your
@@ -129,8 +129,8 @@ export default function DocumentsPage() {
         </div>
       </main>
 
-      {/* Mobile: fixed Continue at bottom, always visible */}
-      <div className="md:hidden flex-shrink-0 px-4 pb-6 pt-4 bg-[#F5F5F5] border-t border-[#E8E8E9]">
+      {/* Mobile: Continue at bottom, always visible */}
+      <div className="md:hidden flex-shrink-0 px-4 pb-4 pt-3 bg-[#F5F5F5] border-t border-[#E8E8E9]">
         <Button
           onClick={handleContinue}
           className="h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white font-semibold text-[16px] w-full"
