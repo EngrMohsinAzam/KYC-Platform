@@ -63,7 +63,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen max-h-screen h-[100dvh] md:h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
+    <div className="min-h-screen h-[100dvh] md:h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
       <div className="md:hidden flex-shrink-0 px-4 pt-1.5 pb-0">
         <button
           type="button"
@@ -77,8 +77,9 @@ export default function DocumentsPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-0 pb-4 md:py-4 md:pb-4">
-        {/* White card: compact on mobile, aligned to top so all fits in viewport */}
+      {/* Mobile: scrollable area with padding so content is not hidden under fixed button */}
+      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-0 pb-[88px] md:pb-4 md:py-4">
+        {/* White card: compact on mobile, aligned to top */}
         <div className="w-full max-w-[500px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border md:border-[#E8E8E9] md:pt-5 md:px-6 md:pb-5 flex-shrink-0 pt-0">
           <h1 className="text-[20px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left md:text-center w-full">
             Upload a photo ID
@@ -129,8 +130,8 @@ export default function DocumentsPage() {
         </div>
       </main>
 
-      {/* Mobile: Continue at bottom, always visible */}
-      <div className="md:hidden flex-shrink-0 px-4 pb-4 pt-3 bg-[#F5F5F5] border-t border-[#E8E8E9]">
+      {/* Mobile: fixed to bottom so Continue is always visible on real devices */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#F5F5F5] border-t border-[#E8E8E9] z-10">
         <Button
           onClick={handleContinue}
           className="h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white font-semibold text-[16px] w-full"
