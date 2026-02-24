@@ -126,7 +126,7 @@ export default function EnterAddressPage() {
       },
     })
     setLoading(false)
-    router.push('/verify/identity')
+    router.push('/verify/documents')
   }
 
   const canProceed =

@@ -436,7 +436,25 @@ export default function UploadDocument() {
   const cameraBackRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const hasAutoOpenedCameraRef = useRef(false)
   const [isMobile, setIsMobile] = useState(false)
+  
+  // When coming from upload-id-type (openCamera=1), open camera directly: 1 image for passport, 2 for national ID
+  useEffect(() => {
+    const openCamera = searchParams.get('openCamera') === '1'
+    if (!openCamera || frontImage || currentSide !== 'front') return
+    if (hasAutoOpenedCameraRef.current) return
+    hasAutoOpenedCameraRef.current = true
+    const isMobileDevice = typeof navigator !== 'undefined' && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && window.innerWidth < 768))
+    const timer = setTimeout(() => {
+      if (isMobileDevice) {
+        cameraInputRef.current?.click()
+      } else {
+        startCamera()
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [searchParams, frontImage, currentSide])
   
   useEffect(() => {
     // Preload animation (optional, won't break if it fails)
@@ -1095,11 +1113,10 @@ export default function UploadDocument() {
       }
       
       setTimeout(() => {
-        // Preserve update mode query params if in update mode
         if (isUpdateMode && updateEmail) {
-          router.push(`/verify/identity?update=true&email=${encodeURIComponent(updateEmail)}`)
+          router.push(`/verify/selfie-intro?update=true&email=${encodeURIComponent(updateEmail)}`)
         } else {
-          router.push('/verify/identity')
+          router.push('/verify/selfie-intro')
         }
       }, 300)
       return
@@ -1108,11 +1125,10 @@ export default function UploadDocument() {
     if (currentSide === 'front' && !needsBackSide && frontImage) {
       dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: frontImage })
       setTimeout(() => {
-        // Preserve update mode query params if in update mode
         if (isUpdateMode && updateEmail) {
-          router.push(`/verify/identity?update=true&email=${encodeURIComponent(updateEmail)}`)
+          router.push(`/verify/selfie-intro?update=true&email=${encodeURIComponent(updateEmail)}`)
         } else {
-          router.push('/verify/identity')
+          router.push('/verify/selfie-intro')
         }
       }, 200)
       return

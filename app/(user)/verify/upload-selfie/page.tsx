@@ -3,15 +3,90 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
-import { Header } from '@/components/layout/Header'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import dynamic from 'next/dynamic'
 
-// Dynamically import Lottie
-const Lottie = dynamic(() => import('lottie-react'), { 
-  ssr: false
-})
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
+
+const PURPLE = '#6D3CCC'
+
+/** Circular frame outside selfie: dotted circle + equalizer bars drawn fully outside the selfie circle */
+function SelfieCircleFrame({ sizePx, paused = false }: { sizePx: number; paused?: boolean }) {
+  const ringR = 66
+  const numBars = 28
+  const barAngles = Array.from({ length: numBars }, (_, i) => {
+    const t = (i / (numBars - 1)) * 0.65 + 0.175
+    return (t - 0.5) * Math.PI * 2
+  })
+  const [heights, setHeights] = useState(() => barAngles.map(() => 4))
+  const rafRef = useRef<number>()
+
+  useEffect(() => {
+    if (paused) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      return
+    }
+    const startRef = { current: 0 }
+    const animate = (time: number) => {
+      if (!startRef.current) startRef.current = time
+      const elapsed = (time - startRef.current) / 1000
+      setHeights(
+        barAngles.map((_, i) => {
+          const wave = Math.sin(elapsed * 3 + i * 0.4) * 0.5 + Math.sin(elapsed * 5 + i * 0.2) * 0.3
+          return 4 + Math.max(0, wave * 12)
+        })
+      )
+      rafRef.current = requestAnimationFrame(animate)
+    }
+    rafRef.current = requestAnimationFrame(animate)
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current)
+    }
+  }, [barAngles.length, paused])
+
+  const cx = 50
+  const cy = 50
+
+  return (
+    <svg
+      viewBox="-16 -16 132 132"
+      className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
+      style={{ width: sizePx, height: sizePx, overflow: 'visible' }}
+    >
+      <circle
+        cx={cx}
+        cy={cy}
+        r={ringR}
+        fill="none"
+        stroke={PURPLE}
+        strokeWidth={1.8}
+        strokeDasharray="1.5 4"
+        strokeLinecap="round"
+      />
+      <g transform={`translate(${cx}, ${cy})`}>
+        {barAngles.map((angle, i) => {
+          const h = heights[i] ?? 4
+          const x1 = (ringR * Math.cos(angle))
+          const y1 = (-ringR * Math.sin(angle))
+          const x2 = ((ringR + h) * Math.cos(angle))
+          const y2 = (-(ringR + h) * Math.sin(angle))
+          return (
+            <line
+              key={i}
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
+              stroke={PURPLE}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+            />
+          )
+        })}
+      </g>
+    </svg>
+  )
+}
 
 type LivenessStep = 'center' | 'left' | 'right' | 'up' | 'down' | 'complete'
 
@@ -574,341 +649,114 @@ export default function UploadSelfie() {
   }
 
     return (
-      <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <div className="md:hidden">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-            <button onClick={() => router.back()} className="p-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <button onClick={() => router.push('/')} className="p-2">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
+      <div className="min-h-screen h-screen bg-black flex flex-col overflow-hidden">
+        <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
+          <button type="button" onClick={() => router.back()} className="p-2 text-white hover:opacity-80" aria-label="Go back">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
-
-        {/* Desktop Header */}
-        <div className="hidden md:block">
-          <Header showBack showClose />
-          <ProgressBar currentStep={4} totalSteps={5} />
-        </div>
-        
-        <main className="flex-1 overflow-y-auto">
-          <div className="min-h-full md:flex md:items-center md:justify-center md:py-8">
-            {/* Mobile Design */}
-          <div className="md:hidden h-full flex flex-col px-4 pt-4 pb-32">
-            <h1 className="text-xl font-semibold text-gray-900 mb-2">
-              Take a Selfie
-            </h1>
-            <p className="text-sm text-gray-500 mb-4">
-              Make sure your face is clearly visible and well-lit
-            </p>
-
-            <div className="flex-1 flex flex-col min-h-0">
-              <div className="relative w-full flex-1 min-h-[400px] max-h-[70vh] bg-gray-900 rounded-2xl overflow-hidden mb-4">
-                {/* Always render video element - never remove from DOM */}
-                        <video
-                          ref={videoRefMobile}
-                          autoPlay
-                          playsInline
-                          muted
-                          className="w-full h-full object-cover absolute inset-0"
-                          style={{ 
-                            transform: 'scaleX(-1)',
-                            opacity: (isVideoReady && isCameraActive && stream) ? 1 : 0,
-                            transition: isVideoReady ? 'opacity 0.3s ease-in-out' : 'none',
-                            pointerEvents: 'none',
-                            zIndex: 0,
-                            backgroundColor: '#000',
-                            display: 'block',
-                            visibility: (isVideoReady && isCameraActive && stream) ? 'visible' : 'hidden'
-                          }}
-                        />
-                        <canvas ref={canvasRef} className="hidden" />
-                        
-                {isCameraLoading && !isVideoReady ? (
-                  <div className="w-full h-full flex items-center justify-center absolute inset-0 z-20 bg-gray-900">
-                    <div className="text-center">
-                      <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                      <p className="text-white text-sm">Starting camera...</p>
-                    </div>
-                  </div>
-                ) : isVideoReady && isCameraActive && stream ? (
-                  <>
-                        {/* Face frame overlay */}
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                      <div className="relative w-full h-full flex items-center justify-center">
-                          <div className="w-[70%] aspect-square rounded-full border-4 border-green-500 relative">
-                            <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                              <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(16, 185, 129, 0.2)" strokeWidth="4" />
-                              <circle
-                                cx="50" cy="50" r="48" fill="none"
-                              stroke={getProgressColorHex()}
-                                strokeWidth="4"
-                                strokeDasharray={`${2 * Math.PI * 48}`}
-                                strokeDashoffset={`${2 * Math.PI * 48 * (1 - progress / 100)}`}
-                                strokeLinecap="round"
-                                className="transition-all duration-300"
-                              />
-                            </svg>
-                          
-                          {/* Center dot indicator */}
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className={`w-2 h-2 rounded-full ${currentStep === 'complete' ? 'bg-green-500' : 'bg-white'} transition-all duration-300`} />
-                          </div>
-                        </div>
-
-                      </div>
-                    </div>
-
-                    {/* Instruction text */}
-                        <div className="absolute bottom-4 left-4 right-4">
-                      <p className="text-white text-sm text-center font-semibold">
-                            Position your face in the center and tap the button to capture
-                          </p>
-                        </div>
-
-                      </>
-                ) : capturedImage ? (
-                  <img src={capturedImage} alt="Selfie" className="w-full h-full object-contain" />
-                    ) : !isCameraLoading ? (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                          <p className="text-white text-sm">Initializing camera...</p>
-                        </div>
-                      </div>
-                    ) : null}
-              </div>
-
-              <p className="text-sm text-gray-600 text-center mb-4">
-                {capturedImage 
-                  ? '✓ Selfie captured successfully'
-                  : isCameraActive
-                  ? 'Position your face within the frame and tap the button below to capture'
-                  : isMobile
-                  ? 'Tap the button below to take a selfie'
-                  : 'Ready to capture'}
-              </p>
-
-
-              {/* Hidden native camera input - front camera for selfie */}
-              <input
-                ref={cameraFrontRef}
-                type="file"
-                accept="image/*"
-                capture="user"
-                onChange={handleNativeCameraChange}
-                className="hidden"
-                aria-label="Take selfie with front camera"
+        <main className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden px-4 py-4 md:py-6">
+          <h1 className="text-white text-lg md:text-xl font-bold text-center mb-6">
+            Centre your self on the screen
+          </h1>
+          <div className="relative flex-shrink-0 overflow-visible" style={{ width: 280, height: 280 }}>
+            <div className="absolute inset-0 rounded-full overflow-hidden bg-black">
+              <video
+                ref={videoRefMobile}
+                autoPlay
+                playsInline
+                muted
+                className="md:hidden w-full h-full object-cover"
+                style={{
+                  transform: 'scaleX(-1)',
+                  opacity: (isVideoReady && isCameraActive && stream && !capturedImage) ? 1 : 0,
+                  display: (isVideoReady && isCameraActive && stream && !capturedImage) ? 'block' : 'none',
+                }}
               />
-            </div>
-          </div>
-
-          {/* Desktop Design */}
-          <div className="hidden md:block w-full max-w-md lg:max-w-2xl px-4">
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">
-                Take a Selfie
-              </h1>
-              <p className="text-sm text-gray-600 mb-6">
-                Please take a clear selfie for face verification. Make sure your face is clearly visible and well-lit.
-              </p>
-
-              <div className="mb-6">
-                <div className="relative w-full aspect-[3/2] bg-gray-900 rounded-lg overflow-hidden mb-4">
-                  {/* Always render video element - never remove from DOM */}
-                        <video
-                          ref={videoRefDesktop}
-                          autoPlay
-                          playsInline
-                          muted
-                          className="w-full h-full object-cover absolute inset-0"
-                          style={{ 
-                            transform: 'scaleX(-1)',
-                            opacity: (isVideoReady && isCameraActive && stream) ? 1 : 0,
-                            transition: isVideoReady ? 'opacity 0.3s ease-in-out' : 'none',
-                            pointerEvents: 'none',
-                            zIndex: 0,
-                            backgroundColor: '#000',
-                            display: 'block',
-                            visibility: (isVideoReady && isCameraActive && stream) ? 'visible' : 'hidden'
-                          }}
-                        />
-                          <canvas ref={canvasRef} className="hidden" />
-                          
-                  {isCameraLoading && !isVideoReady ? (
-                    <div className="w-full h-full flex items-center justify-center absolute inset-0 z-20 bg-gray-900">
-                      <div className="text-center">
-                        <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                        <p className="text-white text-sm">Starting camera...</p>
-                      </div>
-                    </div>
-                  ) : isVideoReady && isCameraActive && stream ? (
-                    <>
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-                        <div className="relative w-full h-full flex items-center justify-center">
-                            <div className="w-[70%] max-w-[256px] aspect-square rounded-full border-4 border-green-500 relative">
-                              <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(16, 185, 129, 0.2)" strokeWidth="4" />
-                                <circle
-                                  cx="50" cy="50" r="48" fill="none"
-                                stroke={getProgressColorHex()}
-                                  strokeWidth="4"
-                                  strokeDasharray={`${2 * Math.PI * 48}`}
-                                  strokeDashoffset={`${2 * Math.PI * 48 * (1 - progress / 100)}`}
-                                strokeLinecap="round"
-                                  className="transition-all duration-300"
-                                />
-                              </svg>
-                            
-                            {/* Center dot indicator */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <div className={`w-2 h-2 rounded-full ${currentStep === 'complete' ? 'bg-green-500' : 'bg-white'} transition-all duration-300`} />
-                            </div>
-                          </div>
-
-                            </div>
-                          </div>
-
-                          <div className="absolute bottom-4 left-4 right-4">
-                            <p className="text-white text-sm text-center font-medium">Position your face in the center and click the button to capture</p>
-                          </div>
-                        </>
-                  ) : capturedImage ? (
-                    <img src={capturedImage} alt="Selfie" className="w-full h-full object-contain" />
-                      ) : !isCameraLoading ? (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <div className="text-center">
-                            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                            <p className="text-white text-sm">Initializing camera...</p>
-                          </div>
-                        </div>
-                      ) : null}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {isCameraActive && !capturedImage && (
-                  <>
-                    <Button 
-                      onClick={captureSelfie}
-                      className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                      disabled={!isVideoReady}
-                    >
-                      Capture Selfie
-                    </Button>
-                    <button onClick={stopCamera} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
-                      Cancel Camera
-                    </button>
-                  </>
-                )}
-                {capturedImage && (
-                  <>
-                    <Button 
-                      onClick={handleContinue} 
-                      className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                    >
-                      Continue
-                    </Button>
-                    <button onClick={handleRetake} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
-                      Retake photo
-                    </button>
-                  </>
-                )}
-                {!capturedImage && !isCameraActive && (
-                  <>
-                    {isMobile ? (
-                      <Button 
-                        onClick={handleTakeSelfie}
-                        className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                      >
-                        Take Selfie
-                      </Button>
-                    ) : (
-                      <Button 
-                        onClick={() => {
-                          console.log('📸 Manual camera start requested')
-                          startCamera()
-                        }} 
-                        className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                      >
-                        Start Camera
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </main>
-
-      {/* Mobile Fixed Button */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
-        <div className="space-y-2">
-          {isCameraActive && !capturedImage && (
-            <>
-              <Button 
-                onClick={captureSelfie}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                disabled={!isVideoReady}
-              >
-                Capture Selfie
-              </Button>
-              <button onClick={stopCamera} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
-                Cancel Camera
-              </button>
-            </>
-          )}
-          {capturedImage && (
-            <>
-              <Button 
-                onClick={handleContinue} 
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-              >
-                Continue
-              </Button>
-              <button onClick={handleRetake} className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium">
-                Retake Photo
-              </button>
-            </>
-          )}
-          {!capturedImage && !isCameraActive && (
-            <>
-              {isMobile ? (
-                <Button 
-                  onClick={handleTakeSelfie}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                >
-                  Take Selfie
-                </Button>
-              ) : (
-                <Button 
-                  onClick={() => {
-                    console.log('📸 Manual camera start requested')
-                    startCamera()
-                  }} 
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium"
-                >
-                  Start Camera
-                </Button>
+              <video
+                ref={videoRefDesktop}
+                autoPlay
+                playsInline
+                muted
+                className="hidden md:block w-full h-full object-cover"
+                style={{
+                  transform: 'scaleX(-1)',
+                  opacity: (isVideoReady && isCameraActive && stream && !capturedImage) ? 1 : 0,
+                  display: (isVideoReady && isCameraActive && stream && !capturedImage) ? 'block' : 'none',
+                }}
+              />
+              {capturedImage && (
+                <img
+                  src={capturedImage}
+                  alt="Selfie"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ transform: 'scaleX(-1)' }}
+                />
               )}
-            </>
-          )}
-          {isCameraActive && !stream && (
-            <div className="w-full p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-2">
-              <p className="text-sm text-yellow-800 text-center">
-                Camera is starting... Please wait
-              </p>
+              {isCameraLoading && !isVideoReady && !capturedImage && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black">
+                  <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <p className="absolute bottom-2 left-0 right-0 text-white text-xs text-center">Starting camera...</p>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            <SelfieCircleFrame sizePx={280} paused={!!capturedImage} />
+          </div>
+          <canvas ref={canvasRef} className="hidden" aria-hidden />
+          <div className="mt-8 flex flex-col items-center w-full max-w-[320px] gap-3">
+            {capturedImage ? (
+              <>
+                <Button
+                  onClick={handleContinue}
+                  className="w-full h-12 rounded-[14px] md:rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-base"
+                >
+                  Continue
+                </Button>
+                <button
+                  type="button"
+                  onClick={handleRetake}
+                  className="text-white/90 text-sm hover:text-white flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Retake photo
+                </button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={captureSelfie}
+                  disabled={!isVideoReady || !stream}
+                  className="w-full h-12 rounded-[14px] md:rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] disabled:opacity-50 text-white font-semibold text-base"
+                >
+                  Continue
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="text-white/90 text-sm hover:text-white flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Previous
+                </button>
+              </>
+            )}
+          </div>
+        </main>
+        <input
+          ref={cameraFrontRef}
+          type="file"
+          accept="image/*"
+          capture="user"
+          onChange={handleNativeCameraChange}
+          className="hidden"
+          aria-label="Take selfie"
+        />
       </div>
-    </div>
-  )
-}
+    )
+  }
