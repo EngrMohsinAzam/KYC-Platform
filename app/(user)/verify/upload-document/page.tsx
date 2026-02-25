@@ -391,8 +391,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
-import { Header } from '@/components/layout/Header'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
 
@@ -400,6 +398,19 @@ const idTypeLabels: Record<string, string> = {
   'passport': 'Passport',
   'national-id': 'National ID Card',
   'drivers-license': "Driver's License",
+}
+
+/** Document upload illustration - uses Doc3.png from public; larger in center on mobile */
+function HandPhoneIllustration() {
+  return (
+    <div className="flex justify-center items-center w-full flex-shrink-0 my-2 md:my-6">
+      <img
+        src="/Doc3.png"
+        alt="Upload or capture your document"
+        className="max-w-[160px] md:max-w-[180px] w-full h-auto object-contain"
+      />
+    </div>
+  )
 }
 
 export default function UploadDocument() {
@@ -439,16 +450,30 @@ export default function UploadDocument() {
   const hasAutoOpenedCameraRef = useRef(false)
   const [isMobile, setIsMobile] = useState(false)
   
+  // Lock page scroll - fixed, non-scrollable layout
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const prevHtml = document.documentElement.style.overflowY
+    const prevBody = document.body.style.overflowY
+    document.documentElement.style.overflowY = 'hidden'
+    document.body.style.overflowY = 'hidden'
+    return () => {
+      document.documentElement.style.overflowY = prevHtml
+      document.body.style.overflowY = prevBody
+    }
+  }, [])
+
   // When coming from upload-id-type (openCamera=1), open camera directly: 1 image for passport, 2 for national ID
   useEffect(() => {
     const openCamera = searchParams.get('openCamera') === '1'
     if (!openCamera || frontImage || currentSide !== 'front') return
     if (hasAutoOpenedCameraRef.current) return
     hasAutoOpenedCameraRef.current = true
-    const isMobileDevice = typeof navigator !== 'undefined' && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (typeof window !== 'undefined' && window.innerWidth < 768))
+    const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768
     const timer = setTimeout(() => {
-      if (isMobileDevice) {
-        cameraInputRef.current?.click()
+      if (isMobileViewport) {
+        const el = document.getElementById('doc-camera-input') as HTMLInputElement | null
+        el?.click()
       } else {
         startCamera()
       }
@@ -785,26 +810,25 @@ export default function UploadDocument() {
   };
 
   const handleCameraClick = async () => {
-    // On mobile, use native camera (user can choose camera)
-    if (isMobile) {
-      cameraInputRef.current?.click()
+    if (typeof window === 'undefined') return
+    // Use viewport width so dev-tools mobile view also uses camera input (not desktop file picker)
+    const isMobileViewport = window.innerWidth < 768
+    const cameraInput = document.getElementById('doc-camera-input') as HTMLInputElement | null
+    if (cameraInput && isMobileViewport) {
+      cameraInput.click()
       return
     }
-    
-    // On desktop/web, use web camera
-    if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') {
+    // Desktop viewport: use web camera
+    if (typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function') {
       await startCamera()
     } else {
-      // Fallback to file input with capture attribute
-      cameraInputRef.current?.click()
+      cameraInput?.click()
     }
   };
 
   const handleNativeCamera = () => {
-    if (isMobile) {
-      // Use a single input that lets user choose camera
-      cameraInputRef.current?.click()
-    }
+    const cameraInput = document.getElementById('doc-camera-input') as HTMLInputElement | null
+    cameraInput?.click()
   };
 
   // Handle video element ready - ensure video displays properly
@@ -924,19 +948,6 @@ export default function UploadDocument() {
         parent.style.setProperty('position', 'relative', 'important')
       }
     }
-    
-    // CRITICAL: Add a visual test - set a temporary background color to verify video is visible
-    // This will help us see if the video element itself is visible
-    setTimeout(() => {
-      const testColor = 'rgba(255, 0, 0, 0.1)' // Light red tint
-      video.style.setProperty('background-color', testColor, 'important')
-      console.log('🔴 TEST: Video background set to light red - if you see red, video element is visible')
-      
-      // After 2 seconds, set back to black
-      setTimeout(() => {
-        video.style.setProperty('background-color', '#000', 'important')
-      }, 2000)
-    }, 500)
     
     // Function to attempt playing the video
     const attemptPlay = async () => {
@@ -1151,33 +1162,110 @@ export default function UploadDocument() {
   const currentImage = currentSide === 'front' ? frontImage : backImage;
   const canContinue = currentImage !== null && (currentSide === 'front' || (currentSide === 'back' && frontImage));
 
+  // Intro state: no image yet, not in camera - show carbon-copy design from reference images
+  const showIntroCard = !currentImage && !isCameraActive && !isCameraLoading && !isUploading;
+  const sideLabel = currentSide === 'front' ? 'Front Side' : 'Back Side';
+  const pageTitle = `${idTypeLabel} (${sideLabel})`;
+  const instructionLine1 = currentSide === 'front'
+    ? "Upload a clear image of your ID's front side to continue or"
+    : "Upload a clear image of your ID's back side to continue or";
+  const instructionLine2 = 'Capture a live photo of your document.';
+
   return (
-    <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">
-      <div className="md:hidden">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <button onClick={() => router.back()} className="p-2" type="button" aria-label="Go back">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <button onClick={() => router.push('/')} className="p-2" type="button" aria-label="Close">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+    <div className="min-h-screen h-[100dvh] md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+      {/* Mobile: back chevron only - match upload-id-type */}
+      <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
+        <button
+          type="button"
+          aria-label="Go back"
+          onClick={() => router.push('/verify/upload-id-type')}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
       </div>
 
-      {/* Desktop Header */}
-      <div className="hidden md:block">
-        <Header showBack showClose />
-        <ProgressBar currentStep={4} totalSteps={5} />
-      </div>
-      
-      <main className="flex-1 overflow-y-auto">
-        <div className="min-h-full md:flex md:items-center md:justify-center md:py-8">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 py-3 md:px-6 md:py-6">
+        {/* Intro card: carbon copy of reference images - when no image and camera not active */}
+        {showIntroCard && (
+          <div className="flex-1 min-h-0 flex flex-col md:items-center md:justify-center w-full md:max-w-[560px] md:mx-auto">
+          <div className="flex-1 min-h-0 flex flex-col w-full md:flex-shrink-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-6 md:py-6 md:max-h-[90vh] md:overflow-hidden">
+            {/* Top: title - instruction lines only on mobile */}
+            <div className="flex-shrink-0 pt-0 md:pt-0">
+              <h1 className="text-[18px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-2 text-left md:text-center w-full">
+                {pageTitle}
+              </h1>
+              <p className="text-[12px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-0.5 text-left md:text-center w-full md:hidden">
+                {instructionLine1}
+              </p>
+              <p className="text-[12px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-0 text-left md:text-center w-full md:hidden">
+                {instructionLine2}
+              </p>
+            </div>
+            {/* Middle: illustration centered - takes remaining space on mobile */}
+            <div className="flex-1 min-h-0 flex items-center justify-center py-2 md:py-4">
+              <HandPhoneIllustration />
+            </div>
+            {/* Bottom: buttons + Back to Previous - at very bottom on mobile */}
+            <div className="flex-shrink-0 flex flex-col w-full pb-2 md:pb-0">
+            <div className="flex flex-col gap-2 md:gap-3 w-full">
+              <button
+                type="button"
+                onClick={handleFileClick}
+                className="w-full h-[44px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] text-base md:text-[16px] font-medium transition-colors"
+              >
+                <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
+                Choose File
+              </button>
+              <button
+                type="button"
+                onClick={handleCameraClick}
+                className="w-full h-[44px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white text-base md:text-[16px] font-semibold transition-colors"
+              >
+                <HiOutlineCamera className="w-5 h-5" />
+                Take Photo
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/verify/upload-id-type')}
+              className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[13px] md:text-[14px] font-normal mt-4 md:mt-6 w-full hover:text-[#000000] transition-colors"
+            >
+              <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to Previous
+            </button>
+            </div>
+            {/* Hidden inputs for intro card - camera input has id so Take Photo always opens camera on mobile */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileChange}
+              className="hidden"
+              aria-label="Upload ID document"
+            />
+            <input
+              id="doc-camera-input"
+              ref={cameraInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handleFileChange}
+              className="hidden"
+              aria-label="Take photo with camera"
+            />
+          </div>
+          </div>
+        )}
+
+        {!showIntroCard && (
+        <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col md:flex-row md:items-center md:justify-center md:py-4">
           {/* Mobile Design - Full screen */}
-          <div className="md:hidden h-full flex flex-col px-4 pt-8 pb-32">
+          <div className="md:hidden h-full flex flex-col px-4 pt-4 pb-32 overflow-hidden min-h-0">
             {/* Title and Step Info */}
             <div className="mb-6">
               <h1 className="text-xl font-semibold text-gray-900 mb-2">
@@ -1206,11 +1294,12 @@ export default function UploadDocument() {
             </div>
 
             {/* Upload Area */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
               <div 
                 className={`
-                  relative w-full aspect-[3/2] rounded-2xl overflow-hidden mb-4 transition-all duration-300
-                  ${currentImage ? 'bg-white border border-gray-200' : 'bg-gray-50 border-2 border-dashed border-gray-300'}
+                  relative w-full rounded-2xl overflow-hidden mb-4 transition-all duration-300
+                  ${isCameraActive || isCameraLoading ? 'min-h-0' : 'aspect-[3/2]'}
+                  ${currentImage ? 'bg-white border border-gray-200' : isCameraActive || isCameraLoading ? 'bg-transparent' : 'bg-gray-50 border-2 border-dashed border-gray-300'}
                 `}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -1226,70 +1315,81 @@ export default function UploadDocument() {
                     <p className="text-sm text-gray-600 font-medium">Processing document...</p>
                   </div>
                 ) : isCameraActive || isCameraLoading ? (
-                  <div className="relative w-full h-full bg-black rounded-2xl overflow-hidden">
-                    {isCameraLoading ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-                        <p className="text-white text-sm">Starting camera...</p>
-                      </div>
-                    ) : (
-                      <>
-                        {/* Always render video element when camera is active - make it always visible */}
-                        <video
-                          ref={(el) => {
-                            if (el) {
-                              (videoRef as any).current = el
-                              if (stream) {
-                                // Immediately set up video when ref is set
-                                console.log('🎬 Video ref callback - setting up immediately')
-                                el.srcObject = stream
-                                el.style.cssText = `
-                                  display: block !important;
-                                  width: 100% !important;
-                                  height: 100% !important;
-                                  object-fit: cover !important;
-                                  background-color: #000 !important;
-                                  position: absolute !important;
-                                  top: 0 !important;
-                                  left: 0 !important;
-                                  z-index: 5 !important;
-                                  opacity: 1 !important;
-                                  visibility: visible !important;
-                                `
-                                el.play().catch(err => console.warn('Play error in ref callback:', err))
-                              }
-                            }
-                          }}
-                          autoPlay
-                          playsInline
-                          muted
-                        />
-                        {!stream && (
-                          <div className="w-full h-full flex items-center justify-center absolute inset-0 z-0">
-                            <div className="text-center">
-                              <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-                              <p className="text-white text-sm">Preparing camera...</p>
-                            </div>
+                  <div className="flex flex-col gap-4 w-full">
+                    {/* Camera card: light gray, rounded, shadow - reference design */}
+                    <div className="bg-gray-200 rounded-2xl shadow-lg overflow-hidden">
+                      <div className="relative w-full aspect-[3/2] bg-black rounded-xl overflow-hidden">
+                        {isCameraLoading ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center">
+                            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                            <p className="text-white text-sm">Starting camera...</p>
                           </div>
+                        ) : (
+                          <>
+                            <video
+                              ref={(el) => {
+                                if (el) {
+                                  (videoRef as any).current = el
+                                  if (stream) {
+                                    el.srcObject = stream
+                                    el.style.cssText = `
+                                      display: block !important;
+                                      width: 100% !important;
+                                      height: 100% !important;
+                                      object-fit: cover !important;
+                                      background-color: #000 !important;
+                                      position: absolute !important;
+                                      top: 0 !important;
+                                      left: 0 !important;
+                                      z-index: 5 !important;
+                                      opacity: 1 !important;
+                                      visibility: visible !important;
+                                    `
+                                    el.play().catch(() => {})
+                                  }
+                                }
+                              }}
+                              autoPlay
+                              playsInline
+                              muted
+                            />
+                            {!stream && (
+                              <div className="w-full h-full flex flex-col items-center justify-center absolute inset-0 z-0">
+                                <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                                <p className="text-white text-sm">Preparing camera...</p>
+                              </div>
+                            )}
+                            <canvas ref={canvasRef} className="hidden" />
+                          </>
                         )}
-                        <canvas ref={canvasRef} className="hidden" />
-                      </>
-                    )}
-                    <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
-                      <button
-                        onClick={stopCamera}
-                        disabled={isCameraLoading}
-                        className="px-6 py-3 bg-white text-gray-900 rounded-full font-medium shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={capturePhoto}
-                        disabled={isCameraLoading}
-                        className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Capture Photo
-                      </button>
+                        {/* Overlaid buttons - aligned, Capture same color as Continue */}
+                        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 px-4 z-10">
+                          <button
+                            onClick={stopCamera}
+                            disabled={isCameraLoading}
+                            className="h-11 px-6 min-w-[120px] bg-white border-2 border-black text-black rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={capturePhoto}
+                            disabled={isCameraLoading}
+                            className="h-11 px-6 min-w-[140px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
+                          >
+                            Capture Photo
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Tips for best results - directly below camera card */}
+                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                      <h4 className="font-semibold text-gray-900 mb-2 text-sm">Tips for best results</h4>
+                      <ul className="text-xs text-gray-600 space-y-1.5">
+                        <li>• Ensure all information is clearly visible and readable</li>
+                        <li>• Use good lighting and avoid shadows or glare</li>
+                        <li>• Place document on a flat, contrasting surface</li>
+                        <li>• Capture the entire document within the frame</li>
+                      </ul>
                     </div>
                   </div>
                 ) : currentImage ? (
@@ -1314,33 +1414,33 @@ export default function UploadDocument() {
                         <>
                           <button
                             onClick={handleNativeCamera}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-[15px] transition-all"
                           >
                             <HiOutlineCamera className="w-5 h-5" />
                             <span>Take Photo</span>
                           </button>
                           <button
                             onClick={handleFileClick}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
+                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[15px] transition-all"
                           >
-                            <HiOutlinePhotograph className="w-5 h-5" />
-                            <span>Upload from Device</span>
+                            <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
+                            <span>Choose File</span>
                           </button>
                         </>
                       ) : (
                         <>
                           <button
                             onClick={handleCameraClick}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-[15px] transition-all"
                           >
                             <HiOutlineCamera className="w-5 h-5" />
                             <span>Take Photo</span>
                           </button>
                           <button
                             onClick={handleFileClick}
-                            className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
+                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[15px] transition-all"
                           >
-                            <HiOutlinePhotograph className="w-5 h-5" />
+                            <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
                             <span>Choose File</span>
                           </button>
                         </>
@@ -1354,12 +1454,12 @@ export default function UploadDocument() {
                       onChange={handleFileChange}
                       className="hidden"
                     />
-                    {/* Native mobile camera input - no capture attribute, lets user choose camera */}
                     <input
+                      id="doc-camera-input"
                       ref={cameraInputRef}
                       type="file"
                       accept="image/*"
-                      capture
+                      capture="environment"
                       onChange={handleFileChange}
                       className="hidden"
                       aria-label="Take photo with camera"
@@ -1381,12 +1481,11 @@ export default function UploadDocument() {
             </div>
           </div>
 
-          {/* Desktop Design - Keep existing */}
-          <div className="hidden md:block w-full max-w-md lg:max-w-2xl px-4">
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-              {/* Your existing desktop code here... */}
-              <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-900 mb-2">
+          {/* Desktop Design - aligned like other verify pages */}
+          <div className="hidden md:flex md:flex-1 md:min-h-0 md:items-center md:justify-center w-full md:px-6">
+            <div className="w-full max-w-[560px] bg-white rounded-[14px] border border-[#E8E8E9] shadow-md p-6 max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="mb-4 md:mb-3">
+                <h1 className="text-[24px] font-bold text-[#000000] mb-2">
                   {idTypeLabel}
                 </h1>
                 {needsBackSide && (
@@ -1414,11 +1513,12 @@ export default function UploadDocument() {
                 )}
               </div>
 
-              <div className="mb-6">
+              <div className="mb-4 flex-1 min-h-0 flex flex-col">
                 <div 
                   className={`
-                    relative w-full aspect-[3/2] rounded-2xl overflow-hidden mb-4 transition-all
-                    ${currentImage ? 'bg-white border border-gray-200' : 'bg-gray-50 border-2 border-dashed border-gray-300'}
+                    relative w-full rounded-2xl overflow-hidden mb-4 transition-all
+                    ${isCameraActive || isCameraLoading ? 'min-h-0' : 'aspect-[3/2]'}
+                    ${currentImage ? 'bg-white border border-gray-200' : isCameraActive || isCameraLoading ? 'bg-transparent' : 'bg-gray-50 border-2 border-dashed border-gray-300'}
                   `}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
@@ -1434,7 +1534,9 @@ export default function UploadDocument() {
                       <p className="text-sm text-gray-600 font-medium">Processing document...</p>
                     </div>
                   ) : isCameraActive || isCameraLoading ? (
-                    <div className="relative w-full h-full bg-black rounded-2xl" style={{ overflow: 'hidden' }}>
+                    <div className="flex flex-col gap-4 w-full">
+                      <div className="bg-gray-200 rounded-2xl shadow-lg overflow-hidden">
+                        <div className="relative w-full aspect-[3/2] bg-black rounded-xl overflow-hidden">
                       {isCameraLoading ? (
                         <div className="w-full h-full flex flex-col items-center justify-center">
                           <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
@@ -1442,14 +1544,11 @@ export default function UploadDocument() {
                         </div>
                       ) : (
                         <>
-                          {/* Always render video element when camera is active - make it always visible */}
                           <video
                             ref={(el) => {
                               if (el) {
                                 (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el
                                 if (stream) {
-                                  // Immediately set up video when ref is set
-                                  console.log('🎬 Video ref callback - setting up immediately')
                                   el.srcObject = stream
                                   el.style.cssText = `
                                     display: block !important;
@@ -1464,7 +1563,7 @@ export default function UploadDocument() {
                                     opacity: 1 !important;
                                     visibility: visible !important;
                                   `
-                                  el.play().catch(err => console.warn('Play error in ref callback:', err))
+                                  el.play().catch(() => {})
                                 }
                               }
                             }}
@@ -1473,31 +1572,40 @@ export default function UploadDocument() {
                             muted
                           />
                           {!stream && (
-                            <div className="w-full h-full flex items-center justify-center absolute inset-0 z-0">
-                              <div className="text-center">
-                                <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4 mx-auto"></div>
-                                <p className="text-white text-sm">Preparing camera...</p>
-                              </div>
+                            <div className="w-full h-full flex flex-col items-center justify-center absolute inset-0 z-0">
+                              <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
+                              <p className="text-white text-sm">Preparing camera...</p>
                             </div>
                           )}
                           <canvas ref={canvasRef} className="hidden" />
                         </>
                       )}
-                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4 px-4 z-10">
+                      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 px-4 z-10">
                         <button
                           onClick={stopCamera}
                           disabled={isCameraLoading}
-                          className="px-6 py-3 bg-white text-gray-900 rounded-full font-medium shadow-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="h-11 px-6 min-w-[120px] bg-white border-2 border-black text-black rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
                         >
                           Cancel
                         </button>
                         <button
                           onClick={capturePhoto}
                           disabled={isCameraLoading}
-                          className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium shadow-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="h-11 px-6 min-w-[140px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
                         >
                           Capture Photo
                         </button>
+                      </div>
+                        </div>
+                      </div>
+                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 md:hidden">
+                        <h4 className="font-semibold text-gray-900 mb-2 text-sm">Tips for best results</h4>
+                        <ul className="text-sm text-gray-600 space-y-1.5">
+                          <li>• Ensure all information is clearly visible and readable</li>
+                          <li>• Use good lighting and avoid shadows or glare</li>
+                          <li>• Place document on a flat, contrasting surface</li>
+                          <li>• Capture the entire document within the frame</li>
+                        </ul>
                       </div>
                     </div>
                   ) : currentImage ? (
@@ -1531,16 +1639,16 @@ export default function UploadDocument() {
                       <div className="flex gap-3 w-full max-w-sm">
                         <button
                           onClick={handleCameraClick}
-                          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white rounded-full font-medium transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-[15px] transition-all"
                         >
                           <HiOutlineCamera className="w-5 h-5" />
                           <span>Take Photo</span>
                         </button>
                         <button
                           onClick={handleFileClick}
-                          className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-gray-50 text-gray-900 border-2 border-gray-300 rounded-full font-medium transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[15px] transition-all"
                         >
-                          <HiOutlinePhotograph className="w-5 h-5" />
+                          <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
                           <span>Choose File</span>
                         </button>
                       </div>
@@ -1559,7 +1667,7 @@ export default function UploadDocument() {
                   )}
                 </div>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 md:hidden">
                   <h4 className="font-medium text-gray-900 mb-3">Tips for best results</h4>
                   <ul className="text-sm text-gray-600 space-y-2">
                     <li>• Ensure all information is clearly visible and readable</li>
@@ -1574,7 +1682,7 @@ export default function UploadDocument() {
                 <Button 
                   onClick={handleContinue} 
                   disabled={!canContinue}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="w-full h-[48px] md:h-[52px] !rounded-[12px] md:!rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] text-white font-semibold text-[16px] disabled:!bg-[#E8E8E9] disabled:!text-[#828282] disabled:cursor-not-allowed"
                 >
                   {currentSide === 'front' && needsBackSide && frontImage 
                     ? 'Continue to Back Side →' 
@@ -1584,28 +1692,22 @@ export default function UploadDocument() {
                     ? 'Upload Back Side to Continue'
                     : 'Continue'}
                 </Button>
-                {currentImage && (
-                  <button 
-                    onClick={handleRetake}
-                    className="w-full px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 rounded-full font-medium"
-                  >
-                    Retake Photo
-                  </button>
-                )}
               </div>
             </div>
           </div>
         </div>
+        )}
       </main>
 
       {/* Mobile Fixed Button */}
-      {!isCameraActive && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 shadow-lg">
+      {/* Mobile Fixed Button - only when not on intro and not in camera */}
+      {!isCameraActive && !showIntroCard && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#E8E8E9] shadow-lg">
           <div className="space-y-2">
             <Button 
               onClick={handleContinue} 
               disabled={!canContinue}
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-full py-3 font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="w-full h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] text-white font-semibold text-[16px] disabled:!bg-[#E8E8E9] disabled:!text-[#828282] disabled:cursor-not-allowed"
             >
               {currentSide === 'front' && needsBackSide && frontImage 
                 ? 'Continue to Back Side →' 
@@ -1618,7 +1720,7 @@ export default function UploadDocument() {
             {currentImage && (
               <button 
                 onClick={handleRetake}
-                className="w-full px-6 py-3 bg-gray-100 text-gray-900 rounded-full font-medium"
+                className="w-full h-[48px] !rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[16px]"
               >
                 Retake Photo
               </button>
