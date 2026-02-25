@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { LoadingDots } from '@/components/ui/LoadingDots'
@@ -185,19 +186,13 @@ export function WalletSelectionModal({
                         : 'bg-white border-gray-200'
                     }`}>
                       {wallet.iconUrl ? (
-                        <img 
-                          src={wallet.iconUrl} 
+                        <Image
+                          src={wallet.iconUrl}
                           alt={wallet.name}
+                          width={40}
+                          height={40}
                           className="w-full h-full object-contain p-1"
-                          onError={(e) => {
-                            // Fallback to SVG if image fails to load
-                            const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
-                            const parent = target.parentElement
-                            if (parent) {
-                              parent.innerHTML = wallet.icon
-                            }
-                          }}
+                          unoptimized
                         />
                       ) : (
                         <div dangerouslySetInnerHTML={{ __html: wallet.icon }} />
@@ -255,18 +250,13 @@ export function WalletSelectionModal({
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden opacity-60">
                       {metaMaskWallet.iconUrl ? (
-                        <img 
-                          src={metaMaskWallet.iconUrl} 
+                        <Image
+                          src={metaMaskWallet.iconUrl}
                           alt={metaMaskWallet.name}
+                          width={40}
+                          height={40}
                           className="w-full h-full object-contain p-1"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
-                            const parent = target.parentElement
-                            if (parent) {
-                              parent.innerHTML = metaMaskWallet.icon
-                            }
-                          }}
+                          unoptimized
                         />
                       ) : (
                         <div dangerouslySetInnerHTML={{ __html: metaMaskWallet.icon }} />
@@ -298,19 +288,13 @@ export function WalletSelectionModal({
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-white rounded-lg border border-gray-200 overflow-hidden opacity-60">
                       {wallet.iconUrl ? (
-                        <img 
-                          src={wallet.iconUrl} 
+                        <Image
+                          src={wallet.iconUrl}
                           alt={wallet.name}
+                          width={40}
+                          height={40}
                           className="w-full h-full object-contain p-1"
-                          onError={(e) => {
-                            // Fallback to SVG if image fails to load
-                            const target = e.target as HTMLImageElement
-                            target.style.display = 'none'
-                            const parent = target.parentElement
-                            if (parent) {
-                              parent.innerHTML = wallet.icon
-                            }
-                          }}
+                          unoptimized
                         />
                       ) : (
                         <div dangerouslySetInnerHTML={{ __html: wallet.icon }} />

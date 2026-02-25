@@ -93,8 +93,6 @@ Auth: **Super-admin token** (stored similarly, different key). Login via `/api/s
 | `/verify/start/[companySlug]/[companyId]` | `(user)/verify/start/[companySlug]/[companyId]/page.tsx` | Start verification with company (validate, “Powered by”, KYC URL) |
 | `/verify/select-id-type` | `(user)/verify/select-id-type/page.tsx` | Select ID type |
 | `/verify/resident-selection` | `(user)/verify/resident-selection/page.tsx` | Resident selection |
-| `/verify/identity` | `(user)/verify/identity/page.tsx` | Identity step |
-| `/verify/personal-info` | `(user)/verify/personal-info/page.tsx` | Personal info |
 | `/verify/upload-document` | `(user)/verify/upload-document/page.tsx` | Upload document |
 | `/verify/upload-selfie` | `(user)/verify/upload-selfie/page.tsx` | Upload selfie |
 | `/verify/otp-verification` | `(user)/verify/otp-verification/page.tsx` | OTP (verify flow) |

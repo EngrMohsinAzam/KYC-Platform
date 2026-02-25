@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
@@ -112,7 +113,7 @@ export default function Rejected() {
 
   const handleUploadDocuments = () => {
     if (rejectionData?.email) {
-      router.push(`/verify/identity?update=true&email=${encodeURIComponent(rejectionData.email)}`)
+      router.push(`/verify/upload-document?update=true&email=${encodeURIComponent(rejectionData.email)}`)
     }
   }
 
@@ -947,10 +948,12 @@ export default function Rejected() {
                 </div>
               ) : currentDocumentImage ? (
                 <div className="relative w-full h-full group">
-                  <img
+                  <Image
                     src={currentDocumentImage}
                     alt={`ID Document ${documentCurrentSide}`}
-                    className="w-full h-full object-contain"
+                    fill
+                    className="object-contain"
+                    unoptimized
                   />
                 </div>
               ) : (
@@ -1098,10 +1101,12 @@ export default function Rejected() {
                 </div>
               ) : selfie ? (
                 <div className="relative w-full h-full group">
-                  <img
+                  <Image
                     src={selfie}
                     alt="Selfie"
-                    className="w-full h-full object-contain"
+                    fill
+                    className="object-contain"
+                    unoptimized
                   />
                 </div>
               ) : (

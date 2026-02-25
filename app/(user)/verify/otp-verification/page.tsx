@@ -510,8 +510,8 @@ export default function OTPVerification() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col transform-none [zoom:1] [scale:1]">
-      <div className="md:hidden px-4 pt-5">
+    <div className="h-screen bg-[#FFFFFF] flex flex-col overflow-hidden transform-none [zoom:1] [scale:1]">
+      <div className="md:hidden px-4 pt-5 flex-shrink-0">
         <button
           type="button"
           aria-label="Go back"
@@ -524,32 +524,32 @@ export default function OTPVerification() {
         </button>
       </div>
 
-      <main className="flex-1 w-full overflow-y-auto md:overflow-hidden flex flex-col items-center md:justify-center px-4 pt-3 pb-40 md:pt-4 md:pb-4 transform-none">
-        <section className="hidden md:block text-center mb-5">
-          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
-          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
+      <main className="flex-1 w-full min-h-0 overflow-y-auto md:overflow-hidden flex flex-col items-center md:justify-center px-4 pt-3 pb-40 md:py-4 transform-none">
+        <section className="hidden md:block text-center mb-3 md:mb-4 flex-shrink-0">
+          <h1 className="text-[34px] md:text-[22px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-1 md:mt-1.5 text-[16px] md:text-[14px] leading-[1.5] font-normal text-[#828282]">
             We&apos;re required to collect this verify your identity.
           </p>
         </section>
 
-        <div className="w-full max-w-[560px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-5">
-          <h2 className="text-[24px] md:text-[18px] leading-[1.3] font-bold md:font-semibold text-[#000000] mb-2">
+        <div className="w-full max-w-[560px] md:max-w-[560px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4 flex-shrink-0">
+          <h2 className="text-[24px] md:text-[16px] leading-[1.3] font-bold md:font-semibold text-[#000000] mb-1.5">
             Confirm Email
           </h2>
-          <p className="text-[14px] md:text-[16px] leading-[1.35] font-normal text-[#828282] mb-5">
-            Please enter the confirmation code sent to your email.Thos cpde will expire in two hours.
+          <p className="text-[14px] md:text-[13px] leading-[1.35] font-normal text-[#828282] mb-3 md:mb-4">
+            Please enter the confirmation code sent to your email. This code will expire in two hours.
           </p>
 
-          <div className="inline-flex items-center gap-2 bg-[#E8E8E9] rounded-[12px] md:rounded-[10px] px-4 py-2 mb-6">
-            <span className="text-[14px] md:text-[16px] leading-none font-normal text-[#000000]">{displayEmail}</span>
-            <svg className="h-4 w-4 text-[#000000]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <div className="inline-flex items-center gap-2 bg-[#E8E8E9] rounded-[12px] md:rounded-[10px] px-4 py-2 mb-4">
+            <span className="text-[14px] md:text-[13px] leading-none font-normal text-[#000000] truncate max-w-[200px] md:max-w-[280px]">{displayEmail}</span>
+            <svg className="h-4 w-4 text-[#000000] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 20h9" />
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4 12.5-12.5z" />
             </svg>
           </div>
 
-          <div className="mb-4">
-            <div className="flex items-center gap-2 md:gap-3">
+          <div className="mb-3">
+            <div className="flex items-center gap-2">
               {otp.map((digit, index) => (
                 <input
                   key={index}
@@ -562,7 +562,7 @@ export default function OTPVerification() {
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
                   disabled={loading}
-                  className={`w-[50px] h-[74px] md:w-[36px] md:h-[50px] text-center text-[24px] md:text-[16px] font-semibold rounded-[12px] md:rounded-[10px] border-2 transition-colors focus:outline-none ${
+                  className={`w-[50px] h-[74px] md:w-[32px] md:h-[44px] text-center text-[24px] md:text-[14px] font-semibold rounded-[12px] md:rounded-[8px] border-2 transition-colors focus:outline-none ${
                     index === 0
                       ? 'border-[#6D3CCC] bg-[#E8E8E9] text-[#000000]'
                       : 'border-transparent bg-[#E8E8E9] text-[#000000]'
@@ -571,30 +571,30 @@ export default function OTPVerification() {
               ))}
             </div>
             {error && (
-              <p className="text-sm text-red-600 mt-3">{error}</p>
+              <p className="text-sm text-red-600 mt-2">{error}</p>
             )}
           </div>
 
           <button
             type="button"
             onClick={() => void handlePasteFromClipboard()}
-            className="text-[14px] md:text-[14px] font-normal md:font-semibold text-[#000000] hover:text-[#6D3CCC] transition-colors"
+            className="text-[14px] md:text-[13px] font-normal md:font-semibold text-[#000000] hover:text-[#6D3CCC] transition-colors"
           >
             Paste from clipboard
           </button>
 
-          <div className="hidden md:block mt-5 space-y-3">
+          <div className="hidden md:flex flex-col mt-4 space-y-2">
             <Button
               onClick={() => void handleVerify()}
               disabled={loading || otp.join('').length !== 6}
-              className="h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+              className="h-[44px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[14px] font-semibold"
             >
               {loading ? 'Checking...' : 'Go to email'}
             </Button>
             <Button
               onClick={() => void handleSendOTP()}
               disabled={sendingOTP || resendTimer > 0 || loading}
-              className="h-[52px] !rounded-[12px] !bg-[#E8E8E9] hover:!bg-[#E8E8E9] focus:!bg-[#E8E8E9] active:!bg-[#E8E8E9] disabled:!bg-[#E8E8E9] disabled:opacity-100 !text-[#000000] disabled:!text-[#000000] text-[16px] font-semibold"
+              className="h-[44px] !rounded-[10px] !bg-[#E8E8E9] hover:!bg-[#E8E8E9] focus:!bg-[#E8E8E9] active:!bg-[#E8E8E9] disabled:!bg-[#E8E8E9] disabled:opacity-100 !text-[#000000] disabled:!text-[#000000] text-[14px] font-semibold"
             >
               {resendTimer > 0 ? `Resend email (${resendTimer}s)` : 'Resend email'}
             </Button>
@@ -602,7 +602,7 @@ export default function OTPVerification() {
             <button
               type="button"
               onClick={() => router.push('/verify/enter-email')}
-              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-6 mx-auto hover:text-[#000000] transition-colors"
+              className="flex items-center justify-center gap-2 text-[#828282] text-[13px] leading-none font-normal mt-4 mx-auto hover:text-[#000000] transition-colors"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />

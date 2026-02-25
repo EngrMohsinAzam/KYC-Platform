@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 
 export default function SelfieIntroPage() {
@@ -66,9 +67,11 @@ export default function SelfieIntroPage() {
           </p>
 
           <div className="flex justify-center w-full mb-2 md:mb-4 self-center">
-            <img
+            <Image
               src="/selfei.png"
-              alt=""
+              alt="Selfie verification"
+              width={220}
+              height={120}
               className="max-w-[180px] md:max-w-[220px] max-h-[80px] md:max-h-[120px] w-auto h-auto object-contain"
             />
           </div>

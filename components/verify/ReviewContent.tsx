@@ -136,6 +136,30 @@ export default function ReviewContent() {
     }
   }, [isConnected, address])
 
+  // Desktop: lock scroll so entire page is fixed and all content visible (must run before any early return)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mql = window.matchMedia('(min-width: 768px)')
+    const prevHtml = document.documentElement.style.overflowY
+    const prevBody = document.body.style.overflowY
+    const apply = () => {
+      if (mql.matches) {
+        document.documentElement.style.overflowY = 'hidden'
+        document.body.style.overflowY = 'hidden'
+      } else {
+        document.documentElement.style.overflowY = prevHtml
+        document.body.style.overflowY = prevBody
+      }
+    }
+    apply()
+    mql.addEventListener?.('change', apply)
+    return () => {
+      mql.removeEventListener?.('change', apply)
+      document.documentElement.style.overflowY = prevHtml
+      document.body.style.overflowY = prevBody
+    }
+  }, [])
+
   const checkNetworkAndBalance = async () => {
     try {
       console.log('🌐 checkNetworkAndBalance called')
@@ -1381,124 +1405,126 @@ export default function ReviewContent() {
   const displayBlockchain = isConnected && !loadingTransactionData ? blockchainName : (state.blockchain || 'Binance Chain')
   const displayWalletAddress = isConnected && address ? address : ''
 
+  const handleDisconnect = () => {
+    disconnect()
+    dispatch({ type: 'SET_WALLET', payload: '' })
+    localStorage.removeItem('lastConnectedWallet')
+    localStorage.removeItem('lastConnectorId')
+  }
+
   return (
-    <div className="min-h-screen h-screen bg-white md:bg-gray-50 flex flex-col overflow-hidden">
-      <Header showBack showClose />
-      <ProgressBar currentStep={5} totalSteps={5} />
-      
-      <main className="flex-1 overflow-y-auto">
-        <div className="min-h-full md:flex md:items-center md:justify-center md:py-8">
-          {/* Mobile Design */}
-          <div className="md:hidden h-full flex flex-col px-4 pt-8 pb-32">
-            {/* Title */}
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Get your decentralised ID
-            </h1>
-            
-            {/* Subtitle */}
-            <p className="text-sm text-gray-500 mb-6">
-              Verified on the Mira-20 Blockchain
-            </p>
+    <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">
+      {/* Mobile: back arrow only */}
+      <div className="md:hidden px-4 pt-5 flex-shrink-0">
+        <button
+          type="button"
+          aria-label="Go back"
+          onClick={() => router.push('/verify/otp-verification')}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
 
-            {/* Error Messages */}
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="text-sm text-red-600 whitespace-pre-line">{error}</div>
-              </div>
-            )}
+      <main className="flex-1 w-full min-h-0 overflow-y-auto md:overflow-hidden flex flex-col items-center md:justify-center px-4 pt-3 pb-36 md:py-4">
+        {/* Page title - centered on desktop, left on mobile; compact on desktop */}
+        <section className="w-full max-w-[560px] md:max-w-[520px] text-left md:text-center md:mb-2 flex-shrink-0">
+          <h1 className="text-[24px] md:text-[20px] font-bold text-[#000000] mb-0.5 md:mb-0">
+            Get your decentralised ID
+          </h1>
+          <p className="text-[14px] md:text-[13px] text-[#828282]">
+            Verified on the Mira-20 Blockchain
+          </p>
+        </section>
 
-            {networkError && (
-              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-600">{networkError}</p>
-              </div>
-            )}
+        {/* White card - compact padding on desktop */}
+        <div className="w-full max-w-[560px] md:max-w-[520px] bg-white md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm md:px-6 md:py-4 flex-shrink-0">
+          {/* Instructional text - smaller on desktop */}
+          <h2 className="text-[16px] md:text-[14px] font-bold text-[#000000] mb-1.5 md:mb-1 text-left md:text-center">
+            To create your decentralised ID, you need to blockstamp it.
+          </h2>
+          <p className="text-[14px] md:text-[12px] md:leading-snug text-[#828282] leading-relaxed mb-4 md:mb-3 text-left md:text-center">
+            In accordance with local laws and regulations, identity verification is required to access your Lumira Coins once the claim process starts. With this system, you will have a decentralised passport, in which you are recognised in the System.
+          </p>
 
-            {/* Main Content */}
-            <div className="mb-6">
-              {/* Instructional Text */}
-              <h2 className="text-base font-bold text-gray-900 mb-3">
-                To create your decentralised ID, you need to blockstamp it.
-              </h2>
-              <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                In accordance with local laws and regulations, identity verification is required to access your Lumira Coins once the claim process starts. With this system, you will have a decentralised passport, in which you are recognised in the System.
-              </p>
+          {/* Error messages - compact on desktop */}
+          {error && (
+            <div className="mb-3 md:mb-2 p-3 md:p-2 bg-red-50 border border-red-200 rounded-lg">
+              <div className="text-sm md:text-xs text-red-600 whitespace-pre-line">{error}</div>
+            </div>
+          )}
+          {networkError && (
+            <div className="mb-3 md:mb-2 p-3 md:p-2 bg-amber-50 border border-amber-200 rounded-lg">
+              <p className="text-sm md:text-xs text-amber-800">{networkError}</p>
+            </div>
+          )}
 
-              {/* ID Details Section - Always show */}
-              <div className="bg-gray-100 rounded-lg p-4 mb-6 space-y-3">
-              
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">Estimated gas fee</span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {isConnected && loadingTransactionData ? 'Calculating...' : displayGasFee}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-700">Blockchain</span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {displayBlockchain}
-                  </span>
-                </div>
-              </div>
-
-              {/* Help Link */}
-              <div className="mb-6 text-center">
-                <button 
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    setShowHelpModal(true)
-                  }}
-                  className="text-sm text-blue-600 hover:underline cursor-pointer bg-transparent border-none p-0 font-normal"
-                >
-                  Need help? Click here
-                </button>
-              </div>
-
-              {/* Wallet Connection Section */}
-              <div className="bg-gray-100 rounded-lg p-4 mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-gray-700">Connected wallet</span>
-                  {isConnected && (
-                    <button
-                      onClick={() => {
-                        disconnect()
-                        dispatch({ type: 'SET_WALLET', payload: '' })
-                        localStorage.removeItem('lastConnectedWallet')
-                        localStorage.removeItem('lastConnectorId')
-                      }}
-                      className="text-xs text-red-600 hover:text-red-700 font-medium underline"
-                    >
-                      Disconnect
-                    </button>
-                  )}
-                </div>
-                <span className={`text-sm font-mono ${isConnected ? 'text-gray-900 break-all' : 'text-gray-500'}`}>
-                  {isConnected ? displayWalletAddress : 'None'}
-                </span>
-                {isConnected && bnbBalance && (
-                  <p className="text-xs text-gray-600 mt-2">Balance: {bnbBalance} BNB</p>
-                )}
-              </div>
+          {/* Data rows - tighter on desktop */}
+          <div className="bg-[#E8E8E9] rounded-[12px] md:rounded-[10px] overflow-hidden mb-3 md:mb-2">
+            <div className="flex justify-between items-center px-4 py-2.5 md:py-2 border-b border-[#d0d0d0]">
+              <span className="text-[14px] md:text-[13px] text-[#000000]">ID Number</span>
+              <span className="text-[14px] md:text-[13px] font-medium text-[#000000]">{idNumber}</span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-2.5 md:py-2 border-b border-[#d0d0d0]">
+              <span className="text-[14px] md:text-[13px] text-[#000000]">Estimated gas fee</span>
+              <span className="text-[14px] md:text-[13px] font-medium text-[#000000]">
+                {isConnected && loadingTransactionData ? 'Calculating...' : displayGasFee}
+              </span>
+            </div>
+            <div className="flex justify-between items-center px-4 py-2.5 md:py-2">
+              <span className="text-[14px] md:text-[13px] text-[#000000]">Blockchain</span>
+              <span className="text-[14px] md:text-[13px] font-medium text-[#000000]">{displayBlockchain}</span>
             </div>
           </div>
 
-          {/* Mobile Fixed Button */}
-          {!isConnected ? (
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+          {/* Help link */}
+          <div className="text-center mb-3 md:mb-2">
+            <button
+              type="button"
+              onClick={(e) => { e.preventDefault(); setShowHelpModal(true) }}
+              className="text-[14px] md:text-[13px] text-[#000000] hover:text-[#6D3CCC] underline cursor-pointer bg-transparent border-none p-0 font-normal"
+            >
+              Need help? Click here
+            </button>
+          </div>
+
+          {/* Connected wallet bar - compact on desktop */}
+          <div className="flex justify-between items-center gap-2 bg-[#E8E8E9] rounded-[12px] md:rounded-[10px] px-4 py-2.5 md:py-2 mb-4 md:mb-3">
+            <span className="text-[14px] md:text-[13px] text-[#000000]">Connected wallet</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`text-[14px] md:text-[13px] font-medium truncate max-w-[180px] md:max-w-[200px] ${isConnected ? 'text-[#000000]' : 'text-[#828282]'}`}>
+                {isConnected ? formatWalletAddress(displayWalletAddress) : 'None'}
+              </span>
+              {isConnected && (
+                <button
+                  type="button"
+                  onClick={handleDisconnect}
+                  className="flex-shrink-0 text-[12px] text-[#6D3CCC] hover:text-[#8558D9] font-medium underline"
+                  aria-label="Disconnect wallet"
+                >
+                  Disconnect
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Desktop: button + Back - compact */}
+          <div className="hidden md:flex flex-col">
+            {!isConnected ? (
               <Button
                 onClick={handleOpenWalletModal}
                 disabled={connecting}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg py-3 font-medium"
+                className="w-full h-[44px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[14px] font-semibold"
               >
                 {connecting ? 'Connecting...' : 'Connect wallet'}
               </Button>
-            </div>
-          ) : (
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-lg">
+            ) : (
               <Button
                 onClick={handleSubmitKYC}
                 disabled={processingPayment || submittingToBackend || !!networkError}
-                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg py-3 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full h-[44px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] disabled:!opacity-70 !text-white text-[14px] font-semibold flex items-center justify-center gap-2"
               >
                 {processingPayment ? (
                   <>
@@ -1511,152 +1537,58 @@ export default function ReviewContent() {
                     <span>Submitting</span>
                   </>
                 ) : (
-                  'Confirm blockstamp'
+                  'Continue'
                 )}
               </Button>
-            </div>
-          )}
-
-          {/* Desktop Design */}
-          <div className="hidden md:block w-full max-w-md px-4">
-            <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-              {/* Title */}
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                Get your decentralised ID
-              </h1>
-              
-              {/* Subtitle */}
-              <p className="text-sm text-gray-500 mb-6">
-                Verified on the Mira-20 Blockchain
-              </p>
-
-              {/* Error Messages */}
-              {error && (
-                <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="text-sm text-red-600 whitespace-pre-line">{error}</div>
-                </div>
-              )}
-
-              {networkError && (
-                <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-600">{networkError}</p>
-                </div>
-              )}
-
-              {/* Main Content */}
-              <div className="mb-6">
-                {/* Instructional Text */}
-                <h2 className="text-base font-bold text-gray-900 mb-3">
-                  To create your decentralised ID, you need to blockstamp it.
-                </h2>
-                <p className="text-sm text-gray-700 mb-6 leading-relaxed">
-                  In accordance with local laws and regulations, identity verification is required to access your Lumira Coins once the claim process starts. With this system, you will have a decentralised passport, in which you are recognised in the System.
-                </p>
-
-                {/* ID Details Section - Always show */}
-                <div className="bg-gray-100 rounded-lg p-4 mb-6 space-y-3">
-                  {/* <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-700">ID Number</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {idNumber}
-                    </span>
-                  </div> */}
-                  <div className="flex justify-between items-center">
-  <span className="text-sm text-gray-700">Estimated gas fee</span>
-  <span className="text-sm font-semibold text-gray-900">
-    0.05 USD
-  </span>
-</div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-700">Blockchain</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {displayBlockchain}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Help Link */}
-                <div className="mb-6 text-center">
-                  <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault()
-                      setShowHelpModal(true)
-                    }}
-                    className="text-sm text-blue-600 hover:underline cursor-pointer bg-transparent border-none p-0 font-normal"
-                  >
-                    Need help? Click here
-                  </button>
-                </div>
-
-                {/* Wallet Connection Section */}
-                <div className="bg-gray-100 rounded-lg p-4 mb-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-700">Connected wallet</span>
-                    {isConnected && (
-                      <button
-                        onClick={() => {
-                          disconnect()
-                          dispatch({ type: 'SET_WALLET', payload: '' })
-                          localStorage.removeItem('lastConnectedWallet')
-                          localStorage.removeItem('lastConnectorId')
-                        }}
-                        className="text-xs text-red-600 hover:text-red-700 font-medium underline"
-                      >
-                        Disconnect
-                      </button>
-                    )}
-                  </div>
-                  <span className={`text-sm font-mono ${isConnected ? 'text-gray-900 break-all' : 'text-gray-500'}`}>
-                    {isConnected ? displayWalletAddress : 'None'}
-                  </span>
-                  {isConnected && bnbBalance && (
-                    <p className="text-xs text-gray-600 mt-2">Balance: {bnbBalance} BNB</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Action Button */}
-              {!isConnected ? (
-                <Button
-                  onClick={handleOpenWalletModal}
-                  disabled={connecting}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg py-3 font-medium"
-                >
-                  {connecting ? 'Connecting' : 'Connect wallet'}
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSubmitKYC}
-                  disabled={processingPayment || submittingToBackend || !!networkError}
-                  className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-lg py-3 font-medium disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {processingPayment ? (
-                    <>
-                      <LoadingDots size="sm" color="#ffffff" />
-                      <span> </span>
-                    </>
-                  ) : submittingToBackend ? (
-                    <>
-                      <LoadingDots size="sm" color="#ffffff" />
-                      <span></span>
-                    </>
-                  ) : (
-                    'Confirm blockstamp'
-                  )}
-                </Button>
-              )}
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={() => router.push('/verify/otp-verification')}
+              className="flex items-center justify-center gap-2 text-[#828282] text-[13px] mt-4 hover:text-[#000000] transition-colors"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to Previous
+            </button>
           </div>
         </div>
       </main>
 
-      {/* Help Modal */}
-      <HelpModal
-        isOpen={showHelpModal}
-        onClose={() => setShowHelpModal(false)}
-      />
-      
+      {/* Mobile fixed bottom button */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9]">
+        {!isConnected ? (
+          <Button
+            onClick={handleOpenWalletModal}
+            disabled={connecting}
+            className="w-full h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[16px] font-semibold"
+          >
+            {connecting ? 'Connecting...' : 'Connect wallet'}
+          </Button>
+        ) : (
+          <Button
+            onClick={handleSubmitKYC}
+            disabled={processingPayment || submittingToBackend || !!networkError}
+            className="w-full h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] disabled:!opacity-70 !text-white text-[16px] font-semibold flex items-center justify-center gap-2"
+          >
+            {processingPayment ? (
+              <>
+                <LoadingDots size="sm" color="#ffffff" />
+                <span>Processing transaction</span>
+              </>
+            ) : submittingToBackend ? (
+              <>
+                <LoadingDots size="sm" color="#ffffff" />
+                <span>Submitting</span>
+              </>
+            ) : (
+              'Continue'
+            )}
+          </Button>
+        )}
+      </div>
+
+      <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
     </div>
   )
 }

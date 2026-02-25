@@ -390,6 +390,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
@@ -400,14 +401,16 @@ const idTypeLabels: Record<string, string> = {
   'drivers-license': "Driver's License",
 }
 
-/** Document upload illustration - uses Doc3.png from public; moved up a bit on mobile */
+/** Document upload illustration - smaller on mobile so both buttons fit on screen */
 function HandPhoneIllustration() {
   return (
-    <div className="flex justify-center items-center w-full flex-shrink-0 mt-0 mb-1 md:my-6">
-      <img
+    <div className="flex justify-center items-center w-full flex-shrink-0 my-2 md:my-6">
+      <Image
         src="/Doc3.png"
         alt="Upload or capture your document"
-        className="max-w-[160px] md:max-w-[180px] w-full h-auto object-contain"
+        width={180}
+        height={120}
+        className="max-w-[100px] md:max-w-[180px] w-full h-auto object-contain"
       />
     </div>
   )
@@ -1190,31 +1193,31 @@ export default function UploadDocument() {
       <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-6">
         {/* Intro card: carbon copy of reference images - when no image and camera not active */}
         {showIntroCard && (
-          <div className="flex-1 min-h-0 flex flex-col md:items-center md:justify-center w-full md:max-w-[560px] md:mx-auto">
-          <div className="flex-1 min-h-0 flex flex-col w-full md:flex-shrink-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-6 md:py-6 md:max-h-[90vh] md:overflow-hidden">
-            {/* Top: title - instruction lines only on mobile */}
-            <div className="flex-shrink-0 pt-0 md:pt-0">
-              <h1 className="text-[18px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-2 text-left md:text-center w-full">
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[560px] md:mx-auto py-2 md:py-0">
+          <div className="w-full max-w-[400px] flex flex-col flex-shrink-0 md:flex-1 md:min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-6 md:py-6 md:max-h-[90vh] md:overflow-hidden">
+            {/* Top: title + instructions - compact on mobile */}
+            <div className="flex-shrink-0 text-center md:text-left">
+              <h1 className="text-[18px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-2 w-full">
                 {pageTitle}
               </h1>
-              <p className="text-[12px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-0.5 text-left md:text-center w-full md:hidden">
+              <p className="text-[11px] md:text-[15px] leading-[1.35] font-normal text-[#828282] mb-0.5 text-center md:text-center w-full md:hidden">
                 {instructionLine1}
               </p>
-              <p className="text-[12px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-0 text-left md:text-center w-full md:hidden">
+              <p className="text-[11px] md:text-[15px] leading-[1.35] font-normal text-[#828282] mb-0 text-center md:text-center w-full md:hidden">
                 {instructionLine2}
               </p>
             </div>
-            {/* Middle: illustration centered - moved up on mobile so both buttons fit */}
-            <div className="flex-1 min-h-0 flex items-center justify-center py-1 md:py-4">
+            {/* Middle: illustration - no flex-grow on mobile so buttons stay visible */}
+            <div className="flex-shrink-0 flex items-center justify-center py-2 md:flex-1 md:min-h-0 md:py-4">
               <HandPhoneIllustration />
             </div>
-            {/* Bottom: both buttons visible, padding up from bottom */}
-            <div className="flex-shrink-0 flex flex-col w-full pt-2 pb-6 md:pb-0">
-            <div className="flex flex-col gap-3 w-full">
+            {/* Bottom: both buttons - always visible on mobile */}
+            <div className="flex-shrink-0 flex flex-col w-full pt-1 pb-4 md:pt-2 md:pb-0">
+            <div className="flex flex-col gap-2.5 w-full">
               <button
                 type="button"
                 onClick={handleFileClick}
-                className="w-full h-[44px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] text-base md:text-[16px] font-medium transition-colors"
+                className="w-full h-[42px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] text-[15px] md:text-[16px] font-medium transition-colors"
               >
                 <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
                 Choose File
@@ -1222,7 +1225,7 @@ export default function UploadDocument() {
               <button
                 type="button"
                 onClick={handleCameraClick}
-                className="w-full h-[44px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white text-base md:text-[16px] font-semibold transition-colors"
+                className="w-full h-[42px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white text-[15px] md:text-[16px] font-semibold transition-colors"
               >
                 <HiOutlineCamera className="w-5 h-5" />
                 Take Photo
@@ -1394,10 +1397,12 @@ export default function UploadDocument() {
                   </div>
                 ) : currentImage ? (
                   <div className="relative w-full h-full">
-                    <img
+                    <Image
                       src={currentImage}
                       alt={`ID Document ${currentSide}`}
-                      className="w-full h-full object-contain"
+                      fill
+                      className="object-contain"
+                      unoptimized
                     />
                   </div>
                 ) : (
@@ -1504,10 +1509,13 @@ export default function UploadDocument() {
                 {currentSide === 'back' && frontImage && (
                   <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
                     <p className="text-sm font-semibold text-green-800 mb-3">✓ Front side uploaded! Now take a photo of the BACK side.</p>
-                    <img
+                    <Image
                       src={frontImage}
                       alt="Front side preview"
+                      width={320}
+                      height={213}
                       className="w-full max-w-xs mx-auto rounded-lg border border-gray-200 shadow-sm"
+                      unoptimized
                     />
                   </div>
                 )}
@@ -1610,10 +1618,12 @@ export default function UploadDocument() {
                     </div>
                   ) : currentImage ? (
                     <div className="relative w-full h-full group">
-                      <img
+                      <Image
                         src={currentImage}
                         alt={`ID Document ${currentSide}`}
-                        className="w-full h-full object-contain"
+                        fill
+                        className="object-contain"
+                        unoptimized
                       />
                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
                         <button

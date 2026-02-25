@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import dynamic from 'next/dynamic'
@@ -533,11 +534,11 @@ export default function UploadSelfie() {
     if (capturedImage) {
       console.log('✅ Continuing with selfie image saved')
       dispatch({ type: 'SET_SELFIE_IMAGE', payload: capturedImage })
-      // Preserve update mode query params if in update mode
+      // Identity page removed - go directly to OTP verification
       if (isUpdateMode && updateEmail) {
-        router.push(`/verify/identity?update=true&email=${encodeURIComponent(updateEmail)}`)
+        router.push(`/verify/otp-verification?update=true&email=${encodeURIComponent(updateEmail)}`)
       } else {
-        router.push('/verify/identity')
+        router.push('/verify/otp-verification')
       }
     }
   }
@@ -688,11 +689,13 @@ export default function UploadSelfie() {
                 }}
               />
               {capturedImage && (
-                <img
+                <Image
                   src={capturedImage}
                   alt="Selfie"
-                  className="absolute inset-0 w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                   style={{ transform: 'scaleX(-1)' }}
+                  unoptimized
                 />
               )}
               {isCameraLoading && !isVideoReady && !capturedImage && (

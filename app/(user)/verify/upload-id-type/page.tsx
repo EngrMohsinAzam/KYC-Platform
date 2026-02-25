@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useAppContext } from '@/context/useAppContext'
 
 export default function UploadIdTypePage() {
@@ -74,7 +75,7 @@ export default function UploadIdTypePage() {
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="flex-shrink-0 w-10 h-10 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
-                  <img src="/Doc-icon1.png" alt="" className="w-full h-full object-contain object-center scale-150" />
+                  <Image src="/Doc-icon1.png" alt="" width={40} height={40} className="w-full h-full object-contain object-center scale-150" />
                 </span>
                 <span className="text-[15px] md:text-[16px] font-normal text-[#000000]">National ID</span>
               </div>
@@ -88,7 +89,7 @@ export default function UploadIdTypePage() {
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="flex-shrink-0 w-10 h-10 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
-                  <img src="/Doc-icon2.png" alt="" className="w-full h-full object-contain" />
+                  <Image src="/Doc-icon2.png" alt="" width={40} height={40} className="w-full h-full object-contain" />
                 </span>
                 <span className="text-[15px] md:text-[16px] font-normal text-[#000000]">Passport</span>
               </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { companyKycByUserId, companyKycUserStatus } from '@/app/api/company-api'
 
 type KycUser = {
@@ -234,11 +235,14 @@ export default function CompanyUserDetailPage() {
             {user.identityDocumentFront && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-2">ID front</p>
-                <a href={user.identityDocumentFront} target="_blank" rel="noopener noreferrer" className="block">
-                  <img
+                <a href={user.identityDocumentFront} target="_blank" rel="noopener noreferrer" className="block relative w-full max-h-[320px]">
+                  <Image
                     src={user.identityDocumentFront}
                     alt="ID front"
+                    width={400}
+                    height={320}
                     className="max-w-full w-full max-h-[320px] object-contain rounded-lg border border-gray-200 bg-gray-50"
+                    unoptimized
                   />
                 </a>
               </div>
@@ -246,11 +250,14 @@ export default function CompanyUserDetailPage() {
             {user.identityDocumentBack && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-2">ID back</p>
-                <a href={user.identityDocumentBack} target="_blank" rel="noopener noreferrer" className="block">
-                  <img
+                <a href={user.identityDocumentBack} target="_blank" rel="noopener noreferrer" className="block relative w-full max-h-[320px]">
+                  <Image
                     src={user.identityDocumentBack}
                     alt="ID back"
+                    width={400}
+                    height={320}
                     className="max-w-full w-full max-h-[320px] object-contain rounded-lg border border-gray-200 bg-gray-50"
+                    unoptimized
                   />
                 </a>
               </div>
@@ -258,11 +265,14 @@ export default function CompanyUserDetailPage() {
             {user.liveInImage && (
               <div>
                 <p className="text-xs font-medium text-gray-500 uppercase mb-2">Selfie</p>
-                <a href={user.liveInImage} target="_blank" rel="noopener noreferrer" className="block">
-                  <img
+                <a href={user.liveInImage} target="_blank" rel="noopener noreferrer" className="block relative w-full max-h-[320px]">
+                  <Image
                     src={user.liveInImage}
                     alt="Selfie"
+                    width={400}
+                    height={320}
                     className="max-w-full w-full max-h-[320px] object-contain rounded-lg border border-gray-200 bg-gray-50"
+                    unoptimized
                   />
                 </a>
               </div>

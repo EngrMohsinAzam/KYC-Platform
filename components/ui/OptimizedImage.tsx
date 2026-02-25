@@ -36,22 +36,24 @@ export const OptimizedImage = memo(function OptimizedImage({
   // Check if src is base64
   const isBase64 = src.startsWith('data:image') || src.startsWith('blob:')
 
-  // For base64 images, use regular img tag with optimizations
+  // For base64/images that need unoptimized, use Next.js Image with unoptimized
   if (isBase64 || error) {
     return (
-      <img
+      <Image
         src={src}
         alt={alt}
+        width={width || 800}
+        height={height || 600}
         className={className}
         loading={loading}
-        decoding="async"
-        onLoad={() => setIsLoading(false)}
-        onError={() => setError(true)}
+        unoptimized
         style={{
           objectFit,
           opacity: isLoading ? 0.5 : 1,
           transition: 'opacity 0.3s ease-in-out',
         }}
+        onLoad={() => setIsLoading(false)}
+        onError={() => setError(true)}
       />
     )
   }
