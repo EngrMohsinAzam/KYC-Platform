@@ -15,9 +15,6 @@ export function CompanyBanner() {
 
   if (!company) return null
 
-  return (
-    <div className="py-2 px-4 text-center bg-gray-100 border-b border-gray-200">
-     
-    </div>
-  )
+  // Optional: show a compact top bar with company name (set to return null to remove top gap entirely)
+  return null
 }
