@@ -400,10 +400,10 @@ const idTypeLabels: Record<string, string> = {
   'drivers-license': "Driver's License",
 }
 
-/** Document upload illustration - uses Doc3.png from public; larger in center on mobile */
+/** Document upload illustration - uses Doc3.png from public; moved up a bit on mobile */
 function HandPhoneIllustration() {
   return (
-    <div className="flex justify-center items-center w-full flex-shrink-0 my-2 md:my-6">
+    <div className="flex justify-center items-center w-full flex-shrink-0 mt-0 mb-1 md:my-6">
       <img
         src="/Doc3.png"
         alt="Upload or capture your document"
@@ -1187,7 +1187,7 @@ export default function UploadDocument() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 py-3 md:px-6 md:py-6">
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-6">
         {/* Intro card: carbon copy of reference images - when no image and camera not active */}
         {showIntroCard && (
           <div className="flex-1 min-h-0 flex flex-col md:items-center md:justify-center w-full md:max-w-[560px] md:mx-auto">
@@ -1204,13 +1204,13 @@ export default function UploadDocument() {
                 {instructionLine2}
               </p>
             </div>
-            {/* Middle: illustration centered - takes remaining space on mobile */}
-            <div className="flex-1 min-h-0 flex items-center justify-center py-2 md:py-4">
+            {/* Middle: illustration centered - moved up on mobile so both buttons fit */}
+            <div className="flex-1 min-h-0 flex items-center justify-center py-1 md:py-4">
               <HandPhoneIllustration />
             </div>
-            {/* Bottom: buttons + Back to Previous - at very bottom on mobile */}
-            <div className="flex-shrink-0 flex flex-col w-full pb-2 md:pb-0">
-            <div className="flex flex-col gap-2 md:gap-3 w-full">
+            {/* Bottom: both buttons visible, padding up from bottom */}
+            <div className="flex-shrink-0 flex flex-col w-full pt-2 pb-6 md:pb-0">
+            <div className="flex flex-col gap-3 w-full">
               <button
                 type="button"
                 onClick={handleFileClick}
