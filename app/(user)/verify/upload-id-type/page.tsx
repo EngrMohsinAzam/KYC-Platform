@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useAppContext } from '@/context/useAppContext'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 export default function UploadIdTypePage() {
   const router = useRouter()
@@ -111,6 +112,7 @@ export default function UploadIdTypePage() {
           </button>
         </div>
       </main>
+      <PoweredBy />
     </div>
   )
 }

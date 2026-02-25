@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 export default function ResidentSelection() {
   const router = useRouter()
@@ -142,7 +143,7 @@ export default function ResidentSelection() {
           </div>
         </div>
       </main>
-
+      <PoweredBy />
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
         <Button
           onClick={handleContinue}

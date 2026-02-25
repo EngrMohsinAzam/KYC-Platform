@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 import { getCountryOptions, getCitiesForCountry } from '@/app/(public)/utils/countries'
 import { getKycPausedStatus } from '@/app/api/api'
 
@@ -198,7 +199,7 @@ export default function SelectIdType() {
           </div>
         </div>
       </main>
-
+      <PoweredBy />
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
         <p className="text-[12px] text-[#828282] mb-3">
           By continuing, you agree to the <a href="#" className="text-[#6D3CCC]">Terms of Service</a>, <a href="#" className="text-[#6D3CCC]">Privacy Policy</a>, and <a href="#" className="text-[#6D3CCC]">Biometrics Policy</a>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 import dynamic from 'next/dynamic'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
@@ -751,6 +752,7 @@ export default function UploadSelfie() {
             )}
           </div>
         </main>
+        <PoweredBy />
         <input
           ref={cameraFrontRef}
           type="file"

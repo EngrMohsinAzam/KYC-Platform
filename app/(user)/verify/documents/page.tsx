@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 /** Inline illustration: ID card (left) + passport (right), purple style - compact so all fits in viewport */
 function DocumentsIllustration() {
@@ -129,7 +130,7 @@ export default function DocumentsPage() {
           </div>
         </div>
       </main>
-
+      <PoweredBy />
       {/* Mobile: fixed to bottom so Continue is always visible on real devices */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#F5F5F5] border-t border-[#E8E8E9] z-10">
         <Button

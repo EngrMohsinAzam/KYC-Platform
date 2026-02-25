@@ -8,6 +8,7 @@ import { ProgressBar } from '@/components/ui/ProgressBar'
 import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { HelpModal } from '@/components/ui/HelpModal'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/app/(public)/wallet/web3'
 import { submitKYCData } from '@/app/api/api'
@@ -1554,7 +1555,7 @@ export default function ReviewContent() {
           </div>
         </div>
       </main>
-
+      <PoweredBy />
       {/* Mobile fixed bottom button */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9]">
         {!isConnected ? (

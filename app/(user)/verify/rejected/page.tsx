@@ -12,6 +12,7 @@ import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
 import { Modal } from '@/components/ui/Modal'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 const idTypeLabels: Record<string, string> = {
   'passport': 'Passport',
@@ -867,7 +868,7 @@ export default function Rejected() {
           </div>
         </div>
       </main>
-
+      <PoweredBy />
       <Footer />
 
       {/* Document Upload Modal */}

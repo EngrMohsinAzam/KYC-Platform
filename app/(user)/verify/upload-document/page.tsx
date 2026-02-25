@@ -394,6 +394,7 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 const idTypeLabels: Record<string, string> = {
   'passport': 'Passport',
@@ -1708,7 +1709,7 @@ export default function UploadDocument() {
         </div>
         )}
       </main>
-
+      <PoweredBy />
       {/* Mobile Fixed Button */}
       {/* Mobile Fixed Button - only when not on intro and not in camera */}
       {!isCameraActive && !showIntroCard && (

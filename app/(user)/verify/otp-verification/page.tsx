@@ -268,6 +268,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 // API base URL - imported from centralized config
 import { API_BASE_URL } from '../../../(public)/config'
@@ -612,7 +613,7 @@ export default function OTPVerification() {
           </div>
         </div>
       </main>
-
+      <PoweredBy />
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
         <div className="space-y-3">
           <Button

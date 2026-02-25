@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { Header } from '@/components/layout/Header'
 import { checkStatusByEmail } from '@/app/api/api'
 import { LoadingDots } from '@/components/ui/LoadingDots'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 // Validate email format
 const validateEmail = (email: string): boolean => {
@@ -186,6 +187,7 @@ export default function CheckStatus() {
           </div>
         </div>
       </main>
+      <PoweredBy />
     </div>
   )
 }

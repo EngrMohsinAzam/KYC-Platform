@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 export default function SelfieIntroPage() {
   const router = useRouter()
@@ -113,6 +114,8 @@ export default function SelfieIntroPage() {
           </div>
         </div>
       </main>
+
+      <PoweredBy />
 
       {/* Mobile: fixed to bottom so Continue is always visible on real devices */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#F5F5F5] border-t border-[#E8E8E9] z-10">

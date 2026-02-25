@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 import { Header } from '@/components/layout/Header'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 export default function UnderReview() {
   const router = useRouter()
@@ -45,6 +46,7 @@ export default function UnderReview() {
           </div>
         </div>
       </main>
+      <PoweredBy />
     </div>
   )
 }

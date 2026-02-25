@@ -9,6 +9,7 @@ import { Footer } from '@/components/layout/Footer'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { getKycPausedStatus } from '@/app/api/api'
 import { clearCompanyContext, setCompanyContext, getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 function StartContent() {
   const router = useRouter()
@@ -96,6 +97,7 @@ function StartContent() {
             <Link href="/" className="text-sm text-gray-600 hover:underline">Back to home</Link>
           </div>
         </main>
+        <PoweredBy />
         <Footer />
       </div>
     )
@@ -144,6 +146,7 @@ function StartContent() {
         </div>
       </main>
 
+      <PoweredBy />
       <Footer />
     </div>
   )

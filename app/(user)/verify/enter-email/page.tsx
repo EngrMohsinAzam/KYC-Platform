@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/Input'
 import { useAppContext } from '@/context/useAppContext'
 import { getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
 import { checkStatusByEmail } from '@/app/api/api'
+import { PoweredBy } from '@/components/verify/PoweredBy'
 
 const validateEmail = (email: string): boolean =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
@@ -180,7 +181,7 @@ export default function EnterEmailPage() {
           </button>
         </div>
       </main>
-
+      <PoweredBy />
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
         <Button
           onClick={() => void handleContinue()}
