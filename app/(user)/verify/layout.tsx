@@ -11,7 +11,7 @@ export default function VerifyLayout({
   return (
     <div className="h-screen flex flex-col overflow-hidden bg-gray-50">
       <CompanyBanner />
-      <main className="flex-1 min-h-0 overflow-y-auto">
+      <main className="flex-1 min-h-0 flex flex-col overflow-y-auto overflow-x-hidden">
         {children}
       </main>
       <PoweredBy />

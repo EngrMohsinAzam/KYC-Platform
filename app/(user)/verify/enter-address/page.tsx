@@ -181,7 +181,7 @@ export default function EnterAddressPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-3 pb-28 md:py-4 md:min-h-0">
+      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0">
         <section className="hidden md:block text-center mb-3 md:mb-4">
           <h1 className="text-[34px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-1 text-[16px] leading-[1.5] font-normal text-[#828282]">
