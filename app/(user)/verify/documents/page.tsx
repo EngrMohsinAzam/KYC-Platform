@@ -5,41 +5,16 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { PoweredBy } from '@/components/verify/PoweredBy'
 
-/** Inline illustration: ID card (left) + passport (right), purple style - compact so all fits in viewport */
+/** Illustration: upload document graphic from Upload-Doc.svg */
 function DocumentsIllustration() {
   return (
     <div className="flex justify-center items-center w-full h-[64px] md:h-[100px] flex-shrink-0">
-      <svg
-        viewBox="0 0 200 140"
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/Upload-Doc.svg"
+        alt=""
         className="max-w-[180px] md:max-w-[220px] w-full h-full object-contain"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <ellipse cx="100" cy="75" rx="85" ry="55" fill="#EDE7F6" opacity="0.6" />
-        <ellipse cx="70" cy="70" rx="35" ry="25" fill="#D1C4E9" opacity="0.4" />
-        <ellipse cx="130" cy="80" rx="40" ry="28" fill="#D1C4E9" opacity="0.4" />
-        <rect x="108" y="25" width="72" height="100" rx="6" ry="6" fill="#7E57C2" />
-        <rect x="112" y="32" width="64" height="86" rx="4" ry="4" fill="#9575CD" />
-        <rect x="118" y="38" width="52" height="4" rx="2" fill="#B39DDB" />
-        <circle cx="144" cy="72" r="18" stroke="#FFC107" strokeWidth="2.5" fill="none" />
-        <ellipse cx="144" cy="72" rx="18" ry="9" stroke="#FFC107" strokeWidth="1.5" fill="none" />
-        <path d="M126 72h36M144 54v36" stroke="#FFC107" strokeWidth="1.5" />
-        <path d="M132 58 Q144 65 156 58 M132 86 Q144 79 156 86" stroke="#FFC107" strokeWidth="1.2" fill="none" />
-        <rect x="118" y="98" width="40" height="3" rx="1.5" fill="#B39DDB" />
-        <rect x="118" y="105" width="52" height="3" rx="1.5" fill="#B39DDB" />
-        <rect x="118" y="112" width="35" height="3" rx="1.5" fill="#B39DDB" />
-        <rect x="20" y="45" width="100" height="65" rx="8" ry="8" fill="#9575CD" />
-        <rect x="24" y="49" width="92" height="57" rx="6" ry="6" fill="#B39DDB" />
-        <circle cx="52" cy="77" r="18" fill="#7E57C2" />
-        <ellipse cx="52" cy="72" rx="10" ry="11" fill="#5E35B1" />
-        <path d="M42 82 Q52 92 62 82 Q58 88 52 90 Q46 88 42 82" fill="#5E35B1" />
-        <rect x="78" y="55" width="32" height="4" rx="2" fill="#7E57C2" />
-        <rect x="78" y="64" width="28" height="4" rx="2" fill="#7E57C2" />
-        <rect x="78" y="73" width="35" height="4" rx="2" fill="#7E57C2" />
-        <rect x="78" y="82" width="30" height="4" rx="2" fill="#7E57C2" />
-        <path d="M95 98 L105 98 L100 106 Z" fill="#5E35B1" />
-        <ellipse cx="110" cy="102" rx="5" ry="4" fill="#FFC107" opacity="0.9" />
-      </svg>
+      />
     </div>
   )
 }

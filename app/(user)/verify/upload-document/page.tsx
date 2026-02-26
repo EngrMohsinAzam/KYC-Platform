@@ -451,8 +451,17 @@ export default function UploadDocument() {
   const cameraBackRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const cameraContainerRef = useRef<HTMLDivElement>(null)
   const hasAutoOpenedCameraRef = useRef(false)
+  const hasAutoOpenedCameraForBackRef = useRef(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showCaptureTips, setShowCaptureTips] = useState(false)
+  const [flashOn, setFlashOn] = useState(false)
+  
+  // Instruction for camera overlay
+  const cameraInstructionText = currentSide === 'front'
+    ? "Place the front of your ID in the frame"
+    : "Place the back of your ID in the frame"
   
   // Lock page scroll - fixed, non-scrollable layout
   useEffect(() => {
@@ -467,23 +476,31 @@ export default function UploadDocument() {
     }
   }, [])
 
-  // When coming from upload-id-type (openCamera=1), open camera directly: 1 image for passport, 2 for national ID
+  // When coming from upload-id-type (openCamera=1), open in-app camera for all devices so capture button shows (ID card, driving license, passport)
   useEffect(() => {
     const openCamera = searchParams.get('openCamera') === '1'
     if (!openCamera || frontImage || currentSide !== 'front') return
     if (hasAutoOpenedCameraRef.current) return
     hasAutoOpenedCameraRef.current = true
-    const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768
     const timer = setTimeout(() => {
-      if (isMobileViewport) {
-        const el = document.getElementById('doc-camera-input') as HTMLInputElement | null
-        el?.click()
-      } else {
-        startCamera()
-      }
+      // Try in-app camera first (mobile + desktop) so user sees capture button; startCamera() falls back to file input on mobile if getUserMedia fails
+      startCamera()
     }, 500)
     return () => clearTimeout(timer)
   }, [searchParams, frontImage, currentSide])
+  
+  // When user goes to back side (after capturing front), open camera directly instead of showing Take Photo / upload page
+  useEffect(() => {
+    if (currentSide === 'front') {
+      hasAutoOpenedCameraForBackRef.current = false
+      return
+    }
+    if (currentSide !== 'back' || !needsBackSide || backImage || isCameraActive || isCameraLoading) return
+    if (hasAutoOpenedCameraForBackRef.current) return
+    hasAutoOpenedCameraForBackRef.current = true
+    const timer = setTimeout(() => startCamera(), 500)
+    return () => clearTimeout(timer)
+  }, [currentSide, needsBackSide, backImage, isCameraActive, isCameraLoading])
   
   useEffect(() => {
     // Preload animation (optional, won't break if it fails)
@@ -780,37 +797,59 @@ export default function UploadDocument() {
   };
 
   const capturePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current
-      const canvas = canvasRef.current
-      const context = canvas.getContext('2d')
-      
-      if (context && video.videoWidth > 0 && video.videoHeight > 0) {
-        // Set canvas dimensions to match video
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        
-        // Draw the video frame to canvas
-        context.drawImage(video, 0, 0, canvas.width, canvas.height)
-        
-        const imageData = canvas.toDataURL('image/jpeg', 0.9)
-        
-        // Process the captured image
-        if (currentSide === 'front') {
-          setFrontImage(imageData)
-          dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: imageData })
-          dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: imageData })
-        } else if (currentSide === 'back') {
-          setBackImage(imageData)
-          dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: imageData })
+    if (!videoRef.current || !canvasRef.current) return
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    const context = canvas.getContext('2d')
+    if (!context || video.videoWidth <= 0 || video.videoHeight <= 0) {
+      alert('Camera not ready. Please wait a moment and try again.')
+      return
+    }
+    const vw = video.videoWidth
+    const vh = video.videoHeight
+    const container = cameraContainerRef.current
+    let sx = 0, sy = 0, sw = vw, sh = vh
+    if (container) {
+      const rect = container.getBoundingClientRect()
+      const cw = rect.width
+      const ch = rect.height
+      if (cw > 0 && ch > 0) {
+        const scale = Math.max(cw / vw, ch / vh)
+        const scaledW = vw * scale
+        const scaledH = vh * scale
+        const offsetX = (scaledW - cw) / 2
+        const offsetY = (scaledH - ch) / 2
+        let frameW = 0.85 * cw
+        let frameH = frameW / (3 / 2)
+        if (frameH > ch) {
+          frameH = ch
+          frameW = frameH * (3 / 2)
         }
-        
-        stopCamera()
-      } else {
-        console.error('Video not ready for capture')
-        alert('Camera not ready. Please wait a moment and try again.')
+        const frameLeft = (cw - frameW) / 2
+        const frameTop = (ch - frameH) / 2
+        sx = (offsetX + frameLeft) / scale
+        sy = (offsetY + frameTop) / scale
+        sw = frameW / scale
+        sh = frameH / scale
+        sx = Math.max(0, Math.min(sx, vw - 1))
+        sy = Math.max(0, Math.min(sy, vh - 1))
+        sw = Math.max(1, Math.min(sw, vw - sx))
+        sh = Math.max(1, Math.min(sh, vh - sy))
       }
     }
+    canvas.width = Math.round(sw)
+    canvas.height = Math.round(sh)
+    context.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
+    const imageData = canvas.toDataURL('image/jpeg', 0.9)
+    if (currentSide === 'front') {
+      setFrontImage(imageData)
+      dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: imageData })
+      dispatch({ type: 'SET_DOCUMENT_IMAGE', payload: imageData })
+    } else if (currentSide === 'back') {
+      setBackImage(imageData)
+      dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: imageData })
+    }
+    stopCamera()
   };
 
   const handleCameraClick = async () => {
@@ -1177,7 +1216,8 @@ export default function UploadDocument() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
-      {/* Mobile: back chevron only - match upload-id-type */}
+      {/* Mobile: back chevron - hide when camera is open in card */}
+      {!isCameraActive && !isCameraLoading && (
       <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
         <button
           type="button"
@@ -1190,15 +1230,16 @@ export default function UploadDocument() {
           </svg>
         </button>
       </div>
+      )}
 
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-6">
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-4">
         {/* Intro card: carbon copy of reference images - when no image and camera not active */}
         {showIntroCard && (
-          <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[560px] md:mx-auto py-2 md:py-0">
-          <div className="w-full max-w-[400px] flex flex-col flex-shrink-0 md:flex-1 md:min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-6 md:py-6 md:max-h-[90vh] md:overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[680px] md:mx-auto py-2 md:py-0">
+          <div className="w-full max-w-[680px] flex flex-col flex-shrink-0 md:flex-1 md:min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 md:max-h-[90vh] md:overflow-hidden md:scale-[0.97] md:origin-center">
             {/* Top: title + instructions - compact on mobile */}
             <div className="flex-shrink-0 text-center md:text-left">
-              <h1 className="text-[18px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-2 w-full">
+              <h1 className="text-[17px] md:text-[22px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 w-full">
                 {pageTitle}
               </h1>
               <p className="text-[11px] md:text-[15px] leading-[1.35] font-normal text-[#828282] mb-0.5 text-center md:text-center w-full md:hidden">
@@ -1209,16 +1250,16 @@ export default function UploadDocument() {
               </p>
             </div>
             {/* Middle: illustration - no flex-grow on mobile so buttons stay visible */}
-            <div className="flex-shrink-0 flex items-center justify-center py-2 md:flex-1 md:min-h-0 md:py-4">
+            <div className="flex-shrink-0 flex items-center justify-center py-1.5 md:flex-1 md:min-h-0 md:py-3">
               <HandPhoneIllustration />
             </div>
             {/* Bottom: both buttons - always visible on mobile */}
             <div className="flex-shrink-0 flex flex-col w-full pt-1 pb-4 md:pt-2 md:pb-0">
-            <div className="flex flex-col gap-2.5 w-full">
+            <div className="flex flex-col gap-2 w-full">
               <button
                 type="button"
                 onClick={handleFileClick}
-                className="w-full h-[42px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] text-[15px] md:text-[16px] font-medium transition-colors"
+                className="w-full h-[40px] md:h-[48px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] text-[14px] md:text-[15px] font-medium transition-colors"
               >
                 <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
                 Choose File
@@ -1226,7 +1267,7 @@ export default function UploadDocument() {
               <button
                 type="button"
                 onClick={handleCameraClick}
-                className="w-full h-[42px] md:h-[52px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white text-[15px] md:text-[16px] font-semibold transition-colors"
+                className="w-full h-[40px] md:h-[48px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white text-[14px] md:text-[15px] font-semibold transition-colors"
               >
                 <HiOutlineCamera className="w-5 h-5" />
                 Take Photo
@@ -1235,7 +1276,7 @@ export default function UploadDocument() {
             <button
               type="button"
               onClick={() => router.push('/verify/upload-id-type')}
-              className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[13px] md:text-[14px] font-normal mt-4 md:mt-6 w-full hover:text-[#000000] transition-colors"
+              className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal mt-4 w-full hover:text-[#000000] transition-colors"
             >
               <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -1268,6 +1309,89 @@ export default function UploadDocument() {
 
         {!showIntroCard && (
         <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col md:flex-row md:items-center md:justify-center md:py-4">
+          {/* Single in-card camera (mobile + desktop) - not full screen; capture crops to frame */}
+          {(isCameraActive || isCameraLoading) ? (
+            <div className="w-full max-w-[680px] mx-auto px-4 flex flex-col justify-center py-4">
+              <div className="flex flex-col gap-4 w-full">
+                <div ref={cameraContainerRef} className="relative w-full aspect-[3/2] bg-black rounded-2xl overflow-hidden">
+                  {isCameraLoading ? (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <div className="w-14 h-14 border-4 border-white border-t-transparent rounded-full animate-spin mb-4" />
+                      <p className="text-white text-sm">Starting camera...</p>
+                    </div>
+                  ) : (
+                    <>
+                      <video
+                        ref={(el) => {
+                          if (el) {
+                            (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el
+                            if (stream) {
+                              el.srcObject = stream
+                              el.style.cssText = 'display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;position:absolute!important;inset:0!important;z-index:1!important;opacity:1!important;visibility:visible!important'
+                              el.play().catch(() => {})
+                            }
+                          }
+                        }}
+                        autoPlay
+                        playsInline
+                        muted
+                        className="absolute inset-0 w-full h-full object-cover z-[1]"
+                      />
+                      {!stream && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center z-[2]">
+                          <div className="w-14 h-14 border-4 border-white border-t-transparent rounded-full animate-spin mb-4" />
+                          <p className="text-white text-sm">Preparing camera...</p>
+                        </div>
+                      )}
+                      <canvas ref={canvasRef} className="hidden" />
+                      <div className="absolute inset-0 z-[20] flex items-center justify-center pointer-events-none">
+                        <div className="w-[85%] max-w-[340px] aspect-[3/2] rounded-2xl border-2 border-white/90 flex items-center justify-center relative overflow-visible">
+                          <div className="absolute top-3 left-3 w-8 h-8 border-l-4 border-t-4 border-white rounded-tl-lg" />
+                          <div className="absolute top-3 right-3 w-8 h-8 border-r-4 border-t-4 border-white rounded-tr-lg" />
+                          <div className="absolute bottom-3 left-3 w-8 h-8 border-l-4 border-b-4 border-white rounded-bl-lg" />
+                          <div className="absolute bottom-3 right-3 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-lg" />
+                          {/* ID card / document placeholder - left: photo, right: text lines */}
+                          <div className="flex items-center gap-4 px-5 py-4 w-full max-w-[88%]">
+                            <div className="flex-shrink-0 w-16 h-20 rounded-lg border-2 border-white/80 bg-white/10 flex items-center justify-center">
+                              <svg className="w-10 h-10 text-white/90" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="20" cy="14" r="6" />
+                                <path d="M8 36c0-7 5-12 12-12s12 5 12 12" />
+                              </svg>
+                            </div>
+                            <div className="flex-1 flex flex-col gap-2 min-w-0">
+                              <div className="h-2 w-full max-w-[72px] bg-white/80 rounded" />
+                              <div className="h-2 w-full max-w-[100%] bg-white/80 rounded" />
+                              <div className="h-2 w-full max-w-[84%] bg-white/80 rounded" />
+                              <div className="h-2 w-full max-w-[60%] bg-white/80 rounded" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={stopCamera}
+                    disabled={isCameraLoading}
+                    className="flex-1 h-11 rounded-full bg-white border-2 border-black text-black font-medium hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={capturePhoto}
+                    disabled={isCameraLoading || !stream}
+                    className="flex-1 h-11 rounded-full bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold disabled:opacity-50"
+                  >
+                    Capture Photo
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* Mobile Design - Full screen */}
           <div className="md:hidden h-full flex flex-col px-4 pt-4 pb-32 overflow-hidden min-h-0">
             {/* Title and Step Info */}
@@ -1319,83 +1443,7 @@ export default function UploadDocument() {
                     <p className="text-sm text-gray-600 font-medium">Processing document...</p>
                   </div>
                 ) : isCameraActive || isCameraLoading ? (
-                  <div className="flex flex-col gap-4 w-full">
-                    {/* Camera card: light gray, rounded, shadow - reference design */}
-                    <div className="bg-gray-200 rounded-2xl shadow-lg overflow-hidden">
-                      <div className="relative w-full aspect-[3/2] bg-black rounded-xl overflow-hidden">
-                        {isCameraLoading ? (
-                          <div className="w-full h-full flex flex-col items-center justify-center">
-                            <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-                            <p className="text-white text-sm">Starting camera...</p>
-                          </div>
-                        ) : (
-                          <>
-                            <video
-                              ref={(el) => {
-                                if (el) {
-                                  (videoRef as any).current = el
-                                  if (stream) {
-                                    el.srcObject = stream
-                                    el.style.cssText = `
-                                      display: block !important;
-                                      width: 100% !important;
-                                      height: 100% !important;
-                                      object-fit: cover !important;
-                                      background-color: #000 !important;
-                                      position: absolute !important;
-                                      top: 0 !important;
-                                      left: 0 !important;
-                                      z-index: 5 !important;
-                                      opacity: 1 !important;
-                                      visibility: visible !important;
-                                    `
-                                    el.play().catch(() => {})
-                                  }
-                                }
-                              }}
-                              autoPlay
-                              playsInline
-                              muted
-                            />
-                            {!stream && (
-                              <div className="w-full h-full flex flex-col items-center justify-center absolute inset-0 z-0">
-                                <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-                                <p className="text-white text-sm">Preparing camera...</p>
-                              </div>
-                            )}
-                            <canvas ref={canvasRef} className="hidden" />
-                          </>
-                        )}
-                        {/* Overlaid buttons - aligned, Capture same color as Continue */}
-                        <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 px-4 z-10">
-                          <button
-                            onClick={stopCamera}
-                            disabled={isCameraLoading}
-                            className="h-11 px-6 min-w-[120px] bg-white border-2 border-black text-black rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={capturePhoto}
-                            disabled={isCameraLoading}
-                            className="h-11 px-6 min-w-[140px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                          >
-                            Capture Photo
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Tips for best results - directly below camera card */}
-                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                      <h4 className="font-semibold text-gray-900 mb-2 text-sm">Tips for best results</h4>
-                      <ul className="text-xs text-gray-600 space-y-1.5">
-                        <li>• Ensure all information is clearly visible and readable</li>
-                        <li>• Use good lighting and avoid shadows or glare</li>
-                        <li>• Place document on a flat, contrasting surface</li>
-                        <li>• Capture the entire document within the frame</li>
-                      </ul>
-                    </div>
-                  </div>
+                  null
                 ) : currentImage ? (
                   <div className="relative w-full h-full">
                     <Image
@@ -1489,7 +1537,7 @@ export default function UploadDocument() {
 
           {/* Desktop Design - aligned like other verify pages */}
           <div className="hidden md:flex md:flex-1 md:min-h-0 md:items-center md:justify-center w-full md:px-6">
-            <div className="w-full max-w-[560px] bg-white rounded-[14px] border border-[#E8E8E9] shadow-md p-6 max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="w-full max-w-[680px] bg-white rounded-[14px] border border-[#E8E8E9] shadow-md px-5 py-4 max-h-[90vh] overflow-hidden flex flex-col scale-[0.97] origin-center">
               <div className="mb-4 md:mb-3">
                 <h1 className="text-[24px] font-bold text-[#000000] mb-2">
                   {idTypeLabel}
@@ -1543,80 +1591,7 @@ export default function UploadDocument() {
                       <p className="text-sm text-gray-600 font-medium">Processing document...</p>
                     </div>
                   ) : isCameraActive || isCameraLoading ? (
-                    <div className="flex flex-col gap-4 w-full">
-                      <div className="bg-gray-200 rounded-2xl shadow-lg overflow-hidden">
-                        <div className="relative w-full aspect-[3/2] bg-black rounded-xl overflow-hidden">
-                      {isCameraLoading ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center">
-                          <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-                          <p className="text-white text-sm">Starting camera...</p>
-                        </div>
-                      ) : (
-                        <>
-                          <video
-                            ref={(el) => {
-                              if (el) {
-                                (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el
-                                if (stream) {
-                                  el.srcObject = stream
-                                  el.style.cssText = `
-                                    display: block !important;
-                                    width: 100% !important;
-                                    height: 100% !important;
-                                    object-fit: cover !important;
-                                    background-color: #000 !important;
-                                    position: absolute !important;
-                                    top: 0 !important;
-                                    left: 0 !important;
-                                    z-index: 5 !important;
-                                    opacity: 1 !important;
-                                    visibility: visible !important;
-                                  `
-                                  el.play().catch(() => {})
-                                }
-                              }
-                            }}
-                            autoPlay
-                            playsInline
-                            muted
-                          />
-                          {!stream && (
-                            <div className="w-full h-full flex flex-col items-center justify-center absolute inset-0 z-0">
-                              <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mb-4"></div>
-                              <p className="text-white text-sm">Preparing camera...</p>
-                            </div>
-                          )}
-                          <canvas ref={canvasRef} className="hidden" />
-                        </>
-                      )}
-                      <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-4 px-4 z-10">
-                        <button
-                          onClick={stopCamera}
-                          disabled={isCameraLoading}
-                          className="h-11 px-6 min-w-[120px] bg-white border-2 border-black text-black rounded-full font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={capturePhoto}
-                          disabled={isCameraLoading}
-                          className="h-11 px-6 min-w-[140px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                        >
-                          Capture Photo
-                        </button>
-                      </div>
-                        </div>
-                      </div>
-                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 md:hidden">
-                        <h4 className="font-semibold text-gray-900 mb-2 text-sm">Tips for best results</h4>
-                        <ul className="text-sm text-gray-600 space-y-1.5">
-                          <li>• Ensure all information is clearly visible and readable</li>
-                          <li>• Use good lighting and avoid shadows or glare</li>
-                          <li>• Place document on a flat, contrasting surface</li>
-                          <li>• Capture the entire document within the frame</li>
-                        </ul>
-                      </div>
-                    </div>
+                    null
                   ) : currentImage ? (
                     <div className="relative w-full h-full group">
                       <Image
@@ -1706,6 +1681,7 @@ export default function UploadDocument() {
               </div>
             </div>
           </div>
+        </> )}
         </div>
         )}
       </main>

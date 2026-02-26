@@ -21,6 +21,14 @@ import { DetectedWallet, detectInstalledWallets } from '@/app/(public)/wallet/wa
 import { isMobileDevice } from '@/app/(public)/wallet/mobile-wallet'
 import '@/app/(public)/wallet/wagmi-config'
 
+/** Format id number as AID-XXXX-XXXX-XXXX-XXXX */
+function formatAnonymousId(idNumber: string | undefined): string {
+  if (!idNumber) return 'AID-0000-0000-0000-0000'
+  const digits = idNumber.replace(/\D/g, '').slice(0, 16)
+  const padded = digits.padEnd(16, '0')
+  return `AID-${padded.slice(0, 4)}-${padded.slice(4, 8)}-${padded.slice(8, 12)}-${padded.slice(12, 16)}`
+}
+
 export default function ReviewContent() {
   const router = useRouter()
   const { state, dispatch } = useAppContext()
@@ -42,6 +50,7 @@ export default function ReviewContent() {
   const [estimatedGasFee, setEstimatedGasFee] = useState<string>('0.0012 BNB')
   const [blockchainName, setBlockchainName] = useState<string>('Binance Chain')
   const [loadingTransactionData, setLoadingTransactionData] = useState(false)
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null)
 
   // Auto-reconnect wallet on page refresh
   useEffect(() => {
@@ -95,6 +104,15 @@ export default function ReviewContent() {
       localStorage.removeItem('kycSubmitted')
     }
   }, [])
+
+  // Generate QR code for transaction link when submission success
+  useEffect(() => {
+    if (!kycSubmitted || !transactionHash) return
+    const txUrl = `https://bscscan.com/tx/${transactionHash}`
+    import('qrcode').then((QRCode) => {
+      QRCode.toDataURL(txUrl, { width: 220, margin: 1 }).then(setQrCodeDataUrl).catch(() => {})
+    }).catch(() => {})
+  }, [kycSubmitted, transactionHash])
 
   // Update wallet address in context when connected
   useEffect(() => {
@@ -1337,65 +1355,106 @@ export default function ReviewContent() {
     }
   }
 
-  // Show under review screen if submitted
+  // Show Verification Pending success page when blockchain transaction succeeded (carbon copy of reference design)
   if (kycSubmitted) {
+    const idNum = state.personalInfo?.idNumber || state.idNumber || ''
+    const displayAid = formatAnonymousId(idNum)
+    const verifiedDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    const transactionUrl = transactionHash ? `https://bscscan.com/tx/${transactionHash}` : ''
+
+    const handleShare = () => {
+      if (transactionUrl && navigator.share) {
+        navigator.share({ title: 'KYC Transaction', url: transactionUrl, text: 'My KYC verification transaction' }).catch(() => {})
+      } else if (transactionUrl) {
+        navigator.clipboard.writeText(transactionUrl).then(() => alert('Link copied to clipboard'))
+      }
+    }
+    const handleDownload = () => {
+      if (qrCodeDataUrl) {
+        const a = document.createElement('a')
+        a.href = qrCodeDataUrl
+        a.download = 'kyc-transaction-qr.png'
+        a.click()
+      } else if (transactionUrl) {
+        const a = document.createElement('a')
+        a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(transactionUrl)
+        a.download = 'kyc-transaction-link.txt'
+        a.click()
+      }
+    }
+
     return (
-      <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">
-        <Header showClose />
-        <ProgressBar currentStep={5} totalSteps={5} />
-        <main className="flex-1 overflow-y-auto">
-          <div className="min-h-full md:flex md:items-center md:justify-center md:py-8">
-            <div className="md:hidden h-full flex flex-col px-4 pt-12 pb-32">
-              <div className="flex-1 flex flex-col justify-center items-center text-center">
-                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+      <div className="min-h-screen h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+        <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
+          <button type="button" aria-label="Go back" onClick={() => router.push('/verify/otp-verification')} className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
+          </button>
+        </div>
+        <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 md:py-4">
+          <section className="w-full max-w-[680px] text-center mb-4 flex-shrink-0">
+            <div className="flex justify-center mb-3">
+              <div className="relative inline-flex">
+                <div className="w-16 h-16 rounded-xl bg-[#6D3CCC] flex items-center justify-center shadow-md" style={{ transform: 'rotate(-5deg)' }}>
+                  <svg className="w-9 h-9 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="2" /><path d="M3 17l5-5 4 4 6-8 4 4" /></svg>
                 </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-4">
-                  Under Review
-                </h1>
-                <p className="text-gray-600 mb-2">
-                  Your KYC verification has been submitted successfully!
-                </p>
-                <p className="text-sm text-gray-500">
-                  Your application is now under review. You will be notified once the verification is complete.
-                </p>
-                {transactionHash && (
-                  <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                    <p className="text-xs text-gray-600 mb-1">Transaction Hash:</p>
-                    <p className="text-xs font-mono text-gray-800 break-all">{transactionHash}</p>
-                  </div>
-                )}
+                <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full bg-amber-400 flex items-center justify-center text-sm font-bold text-white shadow">1</div>
+              </div>
+            </div>
+            <h1 className="text-[22px] md:text-[26px] font-bold text-[#000000] mb-1">Verification pending</h1>
+            <p className="text-[14px] md:text-[15px] text-[#828282]">Your anonymous ID has been created</p>
+          </section>
+
+          <div className="w-full max-w-[680px] bg-[#F8F8F8] rounded-[14px] shadow-md border border-[#E8E8E9] md:px-5 md:py-4 p-4 flex-shrink-0">
+            <p className="text-[13px] md:text-[14px] font-medium text-[#000000] mb-3">Digital Identity</p>
+            <div className="flex items-start justify-between gap-2 mb-4">
+              <p className="text-[13px] md:text-[14px] text-[#000000]">Verified by Blockchain</p>
+              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-[#6D3CCC] flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              </span>
+            </div>
+            <div className="mb-2">
+              <p className="text-[12px] md:text-[13px] text-[#828282]">Anonymous ID</p>
+              <p className="text-[14px] md:text-[15px] font-semibold text-[#000000]">{displayAid}</p>
+            </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-2 mb-4">
+              <div>
+                <p className="text-[12px] md:text-[13px] text-[#828282]">Blockchain</p>
+                <p className="text-[14px] md:text-[15px] font-semibold text-[#000000]">Mira-20</p>
+              </div>
+              <div>
+                <p className="text-[12px] md:text-[13px] text-[#828282]">Verified</p>
+                <p className="text-[14px] md:text-[15px] font-semibold text-[#000000]">{verifiedDate}</p>
               </div>
             </div>
 
-            <div className="hidden md:block w-full max-w-md px-4">
-              <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200 text-center">
-                <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
-                  <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+            <div className="bg-white rounded-xl border border-[#E8E8E9] p-4 flex justify-center items-center min-h-[200px] mb-4">
+              {qrCodeDataUrl ? (
+                <img src={qrCodeDataUrl} alt="Transaction QR Code" className="w-[200px] h-[200px] object-contain" />
+              ) : (
+                <div className="w-[200px] h-[200px] flex items-center justify-center bg-[#F5F5F5] rounded-lg">
+                  <div className="w-8 h-8 border-2 border-[#6D3CCC] border-t-transparent rounded-full animate-spin" />
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                  Under Review
-                </h1>
-                <p className="text-gray-600 mb-4">
-                  Your KYC verification has been submitted successfully!
-                </p>
-                <p className="text-sm text-gray-500 mb-6">
-                  Your application is now under review. You will be notified once the verification is complete.
-                </p>
-                {transactionHash && (
-                  <div className="p-4 bg-gray-50 rounded-lg mb-4">
-                    <p className="text-xs text-gray-600 mb-1">Transaction Hash:</p>
-                    <p className="text-xs font-mono text-gray-800 break-all">{transactionHash}</p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
+
+            <div className="flex gap-3 mb-4">
+              <button type="button" onClick={handleShare} className="flex-1 h-[44px] md:h-[48px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] border border-[#d0d0d0] flex items-center justify-center gap-2 text-[#000000] font-medium text-[14px] md:text-[15px]">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                Share
+              </button>
+              <button type="button" onClick={handleDownload} className="flex-1 h-[44px] md:h-[48px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] flex items-center justify-center gap-2 text-white font-semibold text-[14px] md:text-[15px]">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                Download
+              </button>
+            </div>
+
+            <button type="button" onClick={() => router.push('/verify/otp-verification')} className="flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal w-full hover:text-[#000000] transition-colors mt-2">
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
+              Back to Previous
+            </button>
           </div>
         </main>
+        <PoweredBy />
       </div>
     )
   }

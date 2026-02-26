@@ -22,7 +22,7 @@ export default function UploadIdTypePage() {
     }
   }, [])
 
-  const handleSelect = (idType: 'national-id' | 'passport') => {
+  const handleSelect = (idType: 'national-id' | 'passport' | 'drivers-license') => {
     dispatch({ type: 'SET_ID_TYPE', payload: idType })
     router.push('/verify/upload-document?openCamera=1')
   }
@@ -43,67 +43,76 @@ export default function UploadIdTypePage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden px-4 pt-2 pb-6 md:py-5 md:pt-5">
+      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden px-4 pt-2 pb-6 md:py-4 md:pt-4">
         {/* Desktop: Tell us about yourself + subtitle (centered on page) */}
-        <section className="hidden md:block text-center mb-6 flex-shrink-0 w-full max-w-[560px]">
-          <h1 className="text-[34px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>
-          <p className="mt-1.5 text-[16px] leading-[1.5] font-normal text-[#828282]">
-            We&apos;re required to collect this verify your identity.
+        <section className="hidden md:block text-center mb-4 flex-shrink-0 w-full max-w-[680px]">
+          <h1 className="text-[28px] md:text-[30px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-1 text-[14px] md:text-[15px] leading-[1.5] font-normal text-[#828282]">
+            We&apos;re required to collect this to verify your identity.
           </p>
         </section>
 
-        {/* Card - all content left-aligned per reference */}
-        <div className="w-full max-w-[560px] flex flex-col md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-6 md:py-6 flex-shrink min-h-0">
-          <h2 className="text-[22px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1.5 md:mb-2 text-left w-full">
+        {/* Card - wider, slightly reduced height, unzoomed */}
+        <div className="w-full max-w-[680px] flex flex-col md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 flex-shrink min-h-0 md:scale-[0.97] md:origin-center">
+          <h2 className="text-[20px] md:text-[22px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left w-full">
             Upload a photo ID
           </h2>
-          <p className="text-[13px] md:text-[15px] leading-[1.5] font-normal text-[#828282] mb-5 text-left w-full">
+          <p className="text-[12px] md:text-[14px] leading-[1.5] font-normal text-[#828282] mb-4 text-left w-full">
             We require a photo of a government ID to verify your identity
           </p>
 
-          <div className="border-t border-[#E8E8E9] w-full mb-3" />
-          <p className="text-[13px] md:text-[14px] font-normal text-[#828282] mb-3 w-full text-left">
-            Choose 1 of the following options
-          </p>
-          <div className="border-t border-[#E8E8E9] w-full" />
-
-          {/* Options: thin divider lines between rows and below, per reference */}
-          <div className="w-full">
-            <button
-              type="button"
-              onClick={() => handleSelect('national-id')}
-              className="w-full flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <span className="flex-shrink-0 w-10 h-10 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
-                  <Image src="/Doc-icon1.png" alt="" width={40} height={40} className="w-full h-full object-contain object-center scale-150" />
-                </span>
-                <span className="text-[15px] md:text-[16px] font-normal text-[#000000]">National ID</span>
-              </div>
-              <span className="flex-shrink-0 text-[#828282] text-xl leading-none">&rsaquo;</span>
-            </button>
-            <div className="border-t border-[#E8E8E9] w-full" aria-hidden />
+          {/* Options: Passport, National ID, Driving License - order per reference */}
+          <div className="w-full border-t border-[#E8E8E9]">
             <button
               type="button"
               onClick={() => handleSelect('passport')}
-              className="w-full flex items-center justify-between gap-3 px-4 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="flex-shrink-0 w-10 h-10 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
-                  <Image src="/Doc-icon2.png" alt="" width={40} height={40} className="w-full h-full object-contain" />
+                <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
+                  <Image src="/Doc-icon2.png" alt="" width={36} height={36} className="w-full h-full object-contain" />
                 </span>
-                <span className="text-[15px] md:text-[16px] font-normal text-[#000000]">Passport</span>
+                <span className="text-[14px] md:text-[15px] font-normal text-[#000000]">Passport</span>
               </div>
-              <span className="flex-shrink-0 text-[#828282] text-xl leading-none">&rsaquo;</span>
+              <span className="flex-shrink-0 text-[#828282] text-lg leading-none">&rsaquo;</span>
             </button>
             <div className="border-t border-[#E8E8E9] w-full" aria-hidden />
+            <button
+              type="button"
+              onClick={() => handleSelect('national-id')}
+              className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/Doc-icon1.svg" alt="" className="w-full h-full object-contain object-center" />
+                </span>
+                <span className="text-[14px] md:text-[15px] font-normal text-[#000000]">National ID</span>
+              </div>
+              <span className="flex-shrink-0 text-[#828282] text-lg leading-none">&rsaquo;</span>
+            </button>
+            <div className="border-t border-[#E8E8E9] w-full" aria-hidden />
+            <button
+              type="button"
+              onClick={() => handleSelect('drivers-license')}
+              className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/Doc-icon3.svg" alt="" className="w-full h-full object-contain object-center" />
+                </span>
+                <span className="text-[14px] md:text-[15px] font-normal text-[#000000]">Driving License</span>
+              </div>
+              <span className="flex-shrink-0 text-[#828282] text-lg leading-none">&rsaquo;</span>
+            </button>
           </div>
 
           {/* Back to Previous - desktop only; mobile uses top back arrow */}
           <button
             type="button"
             onClick={() => router.push('/verify/documents')}
-            className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[14px] font-normal mt-6 w-full hover:text-[#000000] transition-colors"
+            className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal mt-4 w-full hover:text-[#000000] transition-colors"
           >
             <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
