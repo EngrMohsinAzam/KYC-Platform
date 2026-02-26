@@ -1386,7 +1386,7 @@ export default function ReviewContent() {
     return (
       <div className="min-h-screen h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
         <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
-          <button type="button" aria-label="Go back" onClick={() => router.push('/verify/otp-verification')} className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors">
+          <button type="button" aria-label="Go back" onClick={() => router.push('/verify/upload-selfie')} className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
           </button>
         </div>
@@ -1448,7 +1448,7 @@ export default function ReviewContent() {
               </button>
             </div>
 
-            <button type="button" onClick={() => router.push('/verify/otp-verification')} className="flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal w-full hover:text-[#000000] transition-colors mt-2">
+            <button type="button" onClick={() => router.push('/verify/upload-selfie')} className="flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal w-full hover:text-[#000000] transition-colors mt-2">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
               Back to Previous
             </button>
@@ -1479,7 +1479,7 @@ export default function ReviewContent() {
         <button
           type="button"
           aria-label="Go back"
-          onClick={() => router.push('/verify/otp-verification')}
+          onClick={() => router.push('/verify/upload-selfie')}
           className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -1603,7 +1603,7 @@ export default function ReviewContent() {
             )}
             <button
               type="button"
-              onClick={() => router.push('/verify/otp-verification')}
+              onClick={() => router.push('/verify/upload-selfie')}
               className="flex items-center justify-center gap-2 text-[#828282] text-[13px] mt-4 hover:text-[#000000] transition-colors"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

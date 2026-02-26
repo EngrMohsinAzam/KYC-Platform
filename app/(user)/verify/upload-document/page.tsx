@@ -476,14 +476,18 @@ export default function UploadDocument() {
     }
   }, [])
 
-  // When coming from upload-id-type (openCamera=1), open in-app camera for all devices so capture button shows (ID card, driving license, passport)
+  // When coming from upload-id-type (openCamera=1): on desktop open in-app camera; on mobile show intro page (Take Photo / Choose File) first
   useEffect(() => {
     const openCamera = searchParams.get('openCamera') === '1'
     if (!openCamera || frontImage || currentSide !== 'front') return
     if (hasAutoOpenedCameraRef.current) return
     hasAutoOpenedCameraRef.current = true
+    const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768
     const timer = setTimeout(() => {
-      // Try in-app camera first (mobile + desktop) so user sees capture button; startCamera() falls back to file input on mobile if getUserMedia fails
+      if (isMobileViewport) {
+        // Mobile: show intro card with "Take Photo" / "Choose File" – do not auto-open camera
+        return
+      }
       startCamera()
     }, 500)
     return () => clearTimeout(timer)

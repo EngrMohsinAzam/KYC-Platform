@@ -535,11 +535,12 @@ export default function UploadSelfie() {
     if (capturedImage) {
       console.log('✅ Continuing with selfie image saved')
       dispatch({ type: 'SET_SELFIE_IMAGE', payload: capturedImage })
-      // Identity page removed - go directly to OTP verification
+      // OTP verification is now on enter-email page; after selfie go to review
+      sessionStorage.setItem('justCompletedOTP', 'true')
       if (isUpdateMode && updateEmail) {
-        router.push(`/verify/otp-verification?update=true&email=${encodeURIComponent(updateEmail)}`)
+        router.push(`/verify/review?update=true&email=${encodeURIComponent(updateEmail)}`)
       } else {
-        router.push('/verify/otp-verification')
+        router.push('/verify/review')
       }
     }
   }

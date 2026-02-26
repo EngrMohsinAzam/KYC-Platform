@@ -68,11 +68,15 @@ export default function SelectIdType() {
     }
   }, [])
 
-  // Reset city when country changes
+  // Reset city when country changes; clear selectedCity if new country has no states
   useEffect(() => {
     if (country) {
       setCity('')
       dispatch({ type: 'SET_COUNTRY', payload: country })
+      const opts = getCitiesForCountry(country)
+      if (opts.length === 0) {
+        dispatch({ type: 'SET_CITY', payload: '' })
+      }
     }
   }, [country, dispatch])
 
@@ -86,13 +90,16 @@ export default function SelectIdType() {
   const handleNext = () => {
     if (pausedMessage) return
     dispatch({ type: 'SET_COUNTRY', payload: country })
-    if (city) {
+    if (cityOptions.length > 0 && city) {
       dispatch({ type: 'SET_CITY', payload: city })
+    } else if (cityOptions.length === 0) {
+      dispatch({ type: 'SET_CITY', payload: '' })
     }
     router.push('/verify/resident-selection')
   }
 
-  const canProceed = Boolean(country && city)
+  const hasStates = cityOptions.length > 0
+  const canProceed = Boolean(country && (!hasStates || city))
 
   return (
     <div className="min-h-screen h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
@@ -151,26 +158,27 @@ export default function SelectIdType() {
               </svg>
             </div>
 
-            <div className="relative">
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                disabled={!country}
-                className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#E8E8E9] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC] disabled:text-[#828282]"
-              >
-                <option value="" disabled>
-                  State
-                </option>
-                {cityOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+            {hasStates && (
+              <div className="relative">
+                <select
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#E8E8E9] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC]"
+                >
+                  <option value="" disabled>
+                    State
                   </option>
-                ))}
-              </select>
-              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#828282] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
+                  {cityOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#828282] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            )}
           </div>
 
           <div className="hidden md:block mt-12">
