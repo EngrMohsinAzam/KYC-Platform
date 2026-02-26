@@ -858,17 +858,11 @@ export default function UploadDocument() {
 
   const handleCameraClick = async () => {
     if (typeof window === 'undefined') return
-    // Use viewport width so dev-tools mobile view also uses camera input (not desktop file picker)
-    const isMobileViewport = window.innerWidth < 768
-    const cameraInput = document.getElementById('doc-camera-input') as HTMLInputElement | null
-    if (cameraInput && isMobileViewport) {
-      cameraInput.click()
-      return
-    }
-    // Desktop viewport: use web camera
+    // Use the new in-card camera design (frame, overlay, Capture Photo) on both mobile and desktop
     if (typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getUserMedia === 'function') {
       await startCamera()
     } else {
+      const cameraInput = document.getElementById('doc-camera-input') as HTMLInputElement | null
       cameraInput?.click()
     }
   };
