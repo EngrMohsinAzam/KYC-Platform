@@ -10,9 +10,9 @@ import { getKycPausedStatus } from '@/app/api/api'
 
 export default function SelectIdType() {
   const router = useRouter()
-  const { state, dispatch } = useAppContext()
-  const [country, setCountry] = useState(state.selectedCountry || '')
-  const [city, setCity] = useState(state.selectedCity || '')
+  const { dispatch } = useAppContext()
+  const [country, setCountry] = useState('')
+  const [city, setCity] = useState('')
   const [pausedMessage, setPausedMessage] = useState<string | null>(null)
 
   const countryOptions = getCountryOptions()
@@ -102,8 +102,8 @@ export default function SelectIdType() {
   const canProceed = Boolean(country && (!hasStates || city))
 
   return (
-    <div className="min-h-screen h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden px-4 pt-5">
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+      <div className="md:hidden pl-1 pr-4 pt-5">
         <button
           type="button"
           aria-label="Go back"
@@ -115,7 +115,7 @@ export default function SelectIdType() {
           </svg>
         </button>
       </div>
-      <main className="flex-1 w-full overflow-y-auto md:overflow-hidden flex flex-col items-center md:justify-center px-4 pt-3 pb-36 md:pt-2 md:pb-2">
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-3 pb-36 md:pt-2 md:pb-2">
         <section className="hidden md:block text-center mb-4">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -123,7 +123,7 @@ export default function SelectIdType() {
           </p>
         </section>
 
-        <div className="w-full max-w-[680px] md:border-2 md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4">
+        <div className="w-full max-w-[680px] border border-[#E8E8E9] md:border-2 md:border-[#E8E8E9] rounded-[14px] md:rounded-[14px] md:px-5 md:py-4 px-4 py-4">
           {pausedMessage && (
             <div className="mb-5 bg-yellow-50 border border-yellow-200 rounded-[10px] p-3">
               <p className="text-sm text-yellow-800">{pausedMessage}</p>

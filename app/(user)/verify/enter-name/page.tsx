@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
 
-const allowNameChar = (value: string) => value.replace(/[^a-zA-Z\s\-']/g, '')
+const allowNameChar = (value: string) => value.replace(/[^a-zA-Z\-']/g, '')
 
 export default function EnterNamePage() {
   const router = useRouter()
@@ -77,8 +77,8 @@ export default function EnterNamePage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden px-4 pt-5">
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+      <div className="md:hidden pl-1 pr-4 pt-5">
         <button
           type="button"
           aria-label="Go back"
@@ -91,7 +91,7 @@ export default function EnterNamePage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0">
+      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <section className="hidden md:block text-center mb-7">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -120,6 +120,10 @@ export default function EnterNamePage() {
                 setError(null)
               }}
               onKeyDown={(e) => {
+                if (e.key === ' ') {
+                  e.preventDefault()
+                  return
+                }
                 if (e.key === 'Enter' && canProceed && !loading) handleContinue()
               }}
               className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#E8E8E9] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0 focus:border-transparent"
@@ -133,6 +137,10 @@ export default function EnterNamePage() {
                 setError(null)
               }}
               onKeyDown={(e) => {
+                if (e.key === ' ') {
+                  e.preventDefault()
+                  return
+                }
                 if (e.key === 'Enter' && canProceed && !loading) handleContinue()
               }}
               className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#E8E8E9] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0 focus:border-transparent"

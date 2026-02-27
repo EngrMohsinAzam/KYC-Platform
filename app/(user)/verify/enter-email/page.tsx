@@ -172,7 +172,7 @@ export default function EnterEmailPage() {
     setError(null)
     const trimmed = email.trim()
     if (!trimmed) {
-      setError('Please enter your email address')
+      setError('Please enter your email')
       return
     }
     if (!validateEmail(trimmed)) {
@@ -238,7 +238,7 @@ export default function EnterEmailPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
+      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
         </main>
@@ -247,7 +247,7 @@ export default function EnterEmailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <div className="md:hidden flex justify-end px-4 pt-3">
         <button
           type="button"
@@ -261,7 +261,7 @@ export default function EnterEmailPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-6 pb-24 md:pt-6 md:pb-6 md:min-h-0">
+      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-6 pb-24 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <section className="hidden md:block text-center mb-4">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -284,11 +284,17 @@ export default function EnterEmailPage() {
                   placeholder="Email"
                   value={email}
                   onChange={(e) => {
-                    setEmail(e.target.value)
+                    const raw = e.target.value
+                    const noSpaces = raw.replace(/\s/g, '')
+                    setEmail(noSpaces)
                     setError(null)
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !loading && email.trim()) {
+                    if (e.key === ' ') {
+                      e.preventDefault()
+                      return
+                    }
+                    if (e.key === 'Enter' && !loading) {
                       void handleContinue()
                     }
                   }}
@@ -305,7 +311,7 @@ export default function EnterEmailPage() {
 
               <Button
                 onClick={() => void handleContinue()}
-                disabled={loading || !email.trim()}
+                disabled={loading}
                 className="hidden md:block h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
               >
                 {loading ? 'Checking...' : 'Continue'}
@@ -401,7 +407,7 @@ export default function EnterEmailPage() {
         <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
           <Button
             onClick={() => void handleContinue()}
-            disabled={loading || !email.trim()}
+            disabled={loading}
             className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
           >
             {loading ? 'Checking...' : 'Continue'}

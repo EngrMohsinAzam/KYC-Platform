@@ -78,8 +78,8 @@ export default function EnterDobPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden px-4 pt-5">
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+      <div className="md:hidden pl-1 pr-4 pt-5">
         <button
           type="button"
           aria-label="Go back"
@@ -92,7 +92,7 @@ export default function EnterDobPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0">
+      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <section className="hidden md:block text-center mb-7">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -123,7 +123,7 @@ export default function EnterDobPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && canProceed && !loading) handleContinue()
               }}
-              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#E8E8E9] text-[#000000] text-[14px] md:text-[16px] pl-4 pr-12 focus:outline-none focus:ring-0 focus:border-transparent [color-scheme:light] [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#E8E8E9] text-[#000000] text-[14px] md:text-[16px] pl-4 pr-12 focus:outline-none focus:ring-0 focus:border-transparent [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden"
             />
             <button
               type="button"

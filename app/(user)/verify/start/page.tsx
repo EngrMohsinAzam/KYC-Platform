@@ -4,11 +4,9 @@ import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
-import { ProgressBar } from '@/components/ui/ProgressBar'
 import { getKycPausedStatus } from '@/app/api/api'
 import { clearCompanyContext, setCompanyContext, getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
+import { Button } from '@/components/ui/Button'
 import { PoweredBy } from '@/components/verify/PoweredBy'
 
 function StartContent() {
@@ -28,7 +26,6 @@ function StartContent() {
       clearCompanyContext()
       return
     }
-    let redirected = false
     const validate = async () => {
       setError('')
       try {
@@ -39,15 +36,14 @@ function StartContent() {
         if (data?.success && data?.data?.valid) {
           const name = data.data.companyName || 'Company'
           setCompanyContext({ companyId: id!, companySlug: slug!, companyName: name })
-          router.replace('/verify/enter-email')
-          redirected = true
+          setLoading(false)
           return
         }
         setError(data?.message || 'Invalid or inactive company.')
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : 'Validation failed.')
       } finally {
-        if (!redirected) setLoading(false)
+        setLoading(false)
       }
     }
     validate()
@@ -68,86 +64,113 @@ function StartContent() {
   }, [])
 
   const handleStart = () => {
-    if (getCompanyContext()) {
-      router.push('/verify/enter-email')
-    } else {
-      router.push('/verify/select-id-type')
-    }
+    router.push('/verify/enter-email')
   }
 
   if (hasCompanyLink && loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header showBack onBack={() => router.push('/')} title="Start verification" />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
-        </main>
-        <Footer />
+      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#F8F8F8] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-primary" />
       </div>
     )
   }
 
   if (hasCompanyLink && error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Header showBack onBack={() => router.push('/')} title="Start verification" />
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-          <div className="text-center max-w-md">
-            <p className="text-red-600 mb-4">{error}</p>
-            <Link href="/" className="text-sm text-gray-600 hover:underline">Back to home</Link>
-          </div>
-        </main>
+      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#F8F8F8] flex flex-col items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-[640px] w-full text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <Link href="/" className="text-sm text-[#6B7280] hover:underline">X Close</Link>
+        </div>
         <PoweredBy />
-        <Footer />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <Header showBack onBack={() => router.push('/')} title="Start verification" />
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#F8F8F8] flex flex-col">
+      {/* Mobile: top-right close (X), desktop handled by layout header if needed */}
+      <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
+        <button
+          type="button"
+          aria-label="Close"
+          onClick={() => router.push('/')}
+          className="h-8 w-8 flex items-center justify-center text-[#4B5563] hover:text-[#111] transition-colors"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8 md:py-12">
-        <div className="w-full max-w-lg mx-auto text-center">
-          <div className="flex justify-center mb-6">
-            <Image src="/kyclogo.svg" alt="DigiPort" width={140} height={48} className="h-10 w-auto" />
+      {/* Main: full-width on mobile, card container only on desktop */}
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-1 pb-28 md:pt-6 md:pb-6 md:py-8 min-h-0">
+        <div className="w-full max-w-[680px] md:border-2 md:border-[#E8E8E9] md:rounded-[14px] md:bg-white md:px-5 md:py-4">
+          {/* 1. Title + Subtitle - top, centered */}
+          <div className="flex-shrink-0 w-full text-center">
+            <h1 className="text-2xl md:text-[28px] font-bold text-[#212121] mb-3">
+              Let&apos;s Get You Verified
+            </h1>
+            <p className="text-sm md:text-base text-[#6B7280] font-normal">
+              Fast, encrypted identity verification.
+            </p>
           </div>
 
-          <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-3">
-            Start KYC verification
-          </h1>
-          <p className="text-sm md:text-base text-gray-600 mb-8">
-            Verify your identity in a few steps. You&apos;ll need a government-issued ID and a selfie.
-          </p>
-
-          {paused && pausedMessage ? (
-            <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-              {pausedMessage}
+          {/* 2. Illustration - mobile: slightly zoomed and centered; desktop: same */}
+          <div className="flex-shrink-0 w-full flex items-center justify-center py-4 md:py-6 overflow-hidden">
+            <div className="relative w-[160px] h-[180px] md:w-[160px] md:h-[180px] mx-auto">
+              <Image
+                src="/Start-Page.gif"
+                alt="Identity verification"
+                fill
+                className="object-contain object-center"
+                unoptimized
+                priority
+                sizes="(max-width: 768px) 160px, 160px"
+              />
             </div>
-          ) : (
-            <>
-              <ProgressBar currentStep={0} totalSteps={1} />
-              <div className="mt-8">
-                <button
-                  onClick={handleStart}
-                  className="w-full md:w-auto min-w-[200px] px-6 py-3 rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold transition-colors flex items-center justify-center gap-2 mx-auto"
-                >
-                  Start verification
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </button>
+          </div>
+
+          {/* 3. Button - desktop only (mobile uses fixed bottom bar below) */}
+          <div className="hidden md:flex flex-shrink-0 w-full flex-col items-center mt-4">
+            {paused && pausedMessage ? (
+              <div className="w-full p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm mb-4 text-center">
+                {pausedMessage}
               </div>
-              <p className="mt-4 text-xs text-gray-500">
-                <Link href="/" className="text-gray-600 hover:underline">Back to home</Link>
-              </p>
-            </>
-          )}
+            ) : (
+              <Button
+                onClick={handleStart}
+                variant="primary"
+                className="w-full h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
+              >
+                Start KYC
+              </Button>
+            )}
+          </div>
         </div>
       </main>
 
+      {/* Mobile: fixed bottom bar with Start KYC button (same as other verify pages) */}
+      {!paused && !pausedMessage && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+          <Button
+            onClick={handleStart}
+            variant="primary"
+            className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
+          >
+            Start KYC
+          </Button>
+        </div>
+      )}
+      {paused && pausedMessage && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center">
+            {pausedMessage}
+          </div>
+        </div>
+      )}
+
       <PoweredBy />
-      <Footer />
     </div>
   )
 }
@@ -156,8 +179,8 @@ export default function StartVerificationPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
+        <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#F8F8F8] flex items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-primary" />
         </div>
       }
     >

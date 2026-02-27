@@ -43,7 +43,7 @@ export default function SelfieIntroPage() {
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
       {/* Mobile: back arrow */}
-      <div className="md:hidden flex-shrink-0 px-4 pt-1.5 pb-0">
+      <div className="md:hidden flex-shrink-0 pl-1 pr-4 pt-5 pb-0">
         <button
           type="button"
           aria-label="Go back"
@@ -57,7 +57,7 @@ export default function SelfieIntroPage() {
       </div>
 
       {/* Mobile: scrollable area with padding so content is not hidden under fixed button */}
-      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-0 pb-[88px] md:pb-4 md:py-4">
+      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden md:overflow-visible px-4 pt-0 pb-[88px] md:pb-4 md:py-4">
         {/* White card: compact on mobile, aligned to top */}
         <div className="w-full max-w-[500px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border md:border-[#E8E8E9] md:pt-5 md:px-6 md:pb-5 flex-shrink-0 pt-0">
           <h1 className="text-[20px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left md:text-center w-full">

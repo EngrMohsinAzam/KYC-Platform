@@ -17,8 +17,7 @@ function SelfieCircleFrame({ sizePx, paused = false }: { sizePx: number; paused?
   const ringR = 66
   const numBars = 28
   const barAngles = Array.from({ length: numBars }, (_, i) => {
-    const t = (i / (numBars - 1)) * 0.65 + 0.175
-    return (t - 0.5) * Math.PI * 2
+    return (i / numBars) * Math.PI * 2
   })
   const [heights, setHeights] = useState(() => barAngles.map(() => 4))
   const rafRef = useRef<number>()
@@ -92,6 +91,11 @@ function SelfieCircleFrame({ sizePx, paused = false }: { sizePx: number; paused?
 
 type LivenessStep = 'center' | 'left' | 'right' | 'up' | 'down' | 'complete'
 
+/** Video recording steps: 2s each. Order: straight, right (once), left, up, down = 10s */
+const VIDEO_STEPS: LivenessStep[] = ['center', 'right', 'left', 'up', 'down']
+const STEP_DURATION_MS = 2000
+const TOTAL_VIDEO_MS = VIDEO_STEPS.length * STEP_DURATION_MS
+
 export default function UploadSelfie() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -107,6 +111,7 @@ export default function UploadSelfie() {
   const [currentStep, setCurrentStep] = useState<LivenessStep>('center')
   const [progress, setProgress] = useState(0)
   const [capturedImage, setCapturedImage] = useState<string | null>(state.selfieImage || null)
+  const [isRecording, setIsRecording] = useState(false)
   const [animationData, setAnimationData] = useState<any>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const videoRefMobile = useRef<HTMLVideoElement>(null)
@@ -114,6 +119,9 @@ export default function UploadSelfie() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const animationFrameRef = useRef<number>()
   const isLivenessRunningRef = useRef(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = useRef<Blob[]>([])
+  const recordingStepTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cameraFrontRef = useRef<HTMLInputElement>(null)
   const [isMobile, setIsMobile] = useState(false)
   
@@ -504,11 +512,19 @@ export default function UploadSelfie() {
 
   const stopCamera = () => {
     console.log('🛑 Stopping camera...')
+    if (recordingStepTimerRef.current) {
+      clearTimeout(recordingStepTimerRef.current)
+      recordingStepTimerRef.current = null
+    }
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current)
       animationFrameRef.current = undefined
     }
     isLivenessRunningRef.current = false
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try { mediaRecorderRef.current.stop() } catch (_) {}
+      mediaRecorderRef.current = null
+    }
     
     if (stream) {
       stream.getTracks().forEach(track => track.stop())
@@ -518,6 +534,7 @@ export default function UploadSelfie() {
     setIsCameraActive(false)
     setIsCameraLoading(false)
     setIsVideoReady(false)
+    setIsRecording(false)
     
     // Clear all video refs
     if (videoRefMobile.current) {
@@ -590,6 +607,74 @@ export default function UploadSelfie() {
     }
   }
 
+  /** Start 10s video recording: straight 2s → right 2s → left 2s → right 2s → down 2s. Arrow prompts only. */
+  const startVideoRecording = () => {
+    if (!stream || isRecording) return
+    const video = videoRefMobile.current || videoRefDesktop.current || videoRef.current
+    if (!video || !video.srcObject) return
+
+    setIsRecording(true)
+    setCurrentStep(VIDEO_STEPS[0])
+    setProgress(0)
+    recordedChunksRef.current = []
+
+    try {
+      const options: MediaRecorderOptions = {}
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp8')) {
+        options.mimeType = 'video/webm;codecs=vp8'
+        options.videoBitsPerSecond = 2500000
+      }
+      const mediaRecorder = new MediaRecorder(stream, options)
+      mediaRecorderRef.current = mediaRecorder
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data)
+      }
+      mediaRecorder.onstop = () => {
+        const chunks = recordedChunksRef.current
+        const mime = mediaRecorderRef.current?.mimeType || 'video/webm'
+        mediaRecorderRef.current = null
+        if (chunks.length === 0) {
+          setIsRecording(false)
+          setCurrentStep('center')
+          return
+        }
+        const blob = new Blob(chunks, { type: mime })
+        const url = URL.createObjectURL(blob)
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64 = reader.result as string
+          setCapturedImage(base64)
+          dispatch({ type: 'SET_SELFIE_IMAGE', payload: base64 })
+          setCurrentStep('complete')
+          setProgress(100)
+          stopCamera()
+          setIsRecording(false)
+        }
+        reader.readAsDataURL(blob)
+        URL.revokeObjectURL(url)
+      }
+      mediaRecorder.start(500)
+    } catch (err) {
+      console.error('MediaRecorder failed:', err)
+      setIsRecording(false)
+      return
+    }
+
+    let stepIndex = 0
+    const advanceStep = () => {
+      stepIndex += 1
+      if (stepIndex >= VIDEO_STEPS.length) {
+        if (recordingStepTimerRef.current) clearTimeout(recordingStepTimerRef.current)
+        mediaRecorderRef.current?.stop()
+        return
+      }
+      setCurrentStep(VIDEO_STEPS[stepIndex])
+      setProgress((stepIndex / VIDEO_STEPS.length) * 100)
+      recordingStepTimerRef.current = setTimeout(advanceStep, STEP_DURATION_MS)
+    }
+    recordingStepTimerRef.current = setTimeout(advanceStep, STEP_DURATION_MS)
+  }
+
   const handleNativeCameraChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -652,7 +737,7 @@ export default function UploadSelfie() {
   }
 
     return (
-      <div className="min-h-screen h-screen bg-black flex flex-col overflow-hidden">
+      <div className="min-h-screen h-[100dvh] md:h-screen bg-black flex flex-col overflow-hidden">
         <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
           <button type="button" onClick={() => router.back()} className="p-2 text-white hover:opacity-80" aria-label="Go back">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -665,6 +750,38 @@ export default function UploadSelfie() {
             Centre your self on the screen
           </h1>
           <div className="relative flex-shrink-0 overflow-visible" style={{ width: 280, height: 280 }}>
+            {/* Arrow prompt overlay when recording - same design, only direction changes */}
+            {isRecording && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+                <p className="text-white text-sm font-medium mb-2">Move your face</p>
+                <div className="text-white/95 flex items-center justify-center" aria-hidden>
+                  {currentStep === 'center' && (
+                    <span className="w-4 h-4 rounded-full border-2 border-white" title="Face straight" />
+                  )}
+                  {currentStep === 'right' && (
+                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                    </svg>
+                  )}
+                  {currentStep === 'left' && (
+                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M18 19l-7-7 7-7" />
+                    </svg>
+                  )}
+                  {currentStep === 'down' && (
+                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  )}
+                  {currentStep === 'up' && (
+                    <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                    </svg>
+                  )}
+                </div>
+                <p className="text-white/80 text-xs mt-2">{Math.round(progress)}%</p>
+              </div>
+            )}
             <div className="absolute inset-0 rounded-full overflow-hidden bg-black">
               <video
                 ref={videoRefMobile}
@@ -691,14 +808,28 @@ export default function UploadSelfie() {
                 }}
               />
               {capturedImage && (
-                <Image
-                  src={capturedImage}
-                  alt="Selfie"
-                  fill
-                  className="object-cover"
-                  style={{ transform: 'scaleX(-1)' }}
-                  unoptimized
-                />
+                <>
+                  {capturedImage.startsWith('data:video/') ? (
+                    <video
+                      src={capturedImage}
+                      playsInline
+                      muted
+                      loop
+                      autoPlay
+                      className="w-full h-full object-cover"
+                      style={{ transform: 'scaleX(-1)' }}
+                    />
+                  ) : (
+                    <Image
+                      src={capturedImage}
+                      alt="Selfie"
+                      fill
+                      className="object-cover"
+                      style={{ transform: 'scaleX(-1)' }}
+                      unoptimized
+                    />
+                  )}
+                </>
               )}
               {isCameraLoading && !isVideoReady && !capturedImage && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black">
@@ -733,11 +864,11 @@ export default function UploadSelfie() {
             ) : (
               <>
                 <Button
-                  onClick={captureSelfie}
-                  disabled={!isVideoReady || !stream}
+                  onClick={startVideoRecording}
+                  disabled={!isVideoReady || !stream || isRecording}
                   className="w-full h-12 rounded-[14px] md:rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] disabled:opacity-50 text-white font-semibold text-base"
                 >
-                  Continue
+                  {isRecording ? `Recording... ${Math.round(progress)}%` : 'Continue'}
                 </Button>
                 <button
                   type="button"

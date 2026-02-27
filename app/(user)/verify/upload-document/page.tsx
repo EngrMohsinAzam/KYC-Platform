@@ -1230,7 +1230,7 @@ export default function UploadDocument() {
       </div>
       )}
 
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-4">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-4">
         {/* Intro card: carbon copy of reference images - when no image and camera not active */}
         {showIntroCard && (
           <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[680px] md:mx-auto py-2 md:py-0">
@@ -1342,28 +1342,17 @@ export default function UploadDocument() {
                         </div>
                       )}
                       <canvas ref={canvasRef} className="hidden" />
-                      <div className="absolute inset-0 z-[20] flex items-center justify-center pointer-events-none">
+                      <div className="absolute inset-0 z-[20] flex flex-col items-center justify-center pointer-events-none">
                         <div className="w-[85%] max-w-[340px] aspect-[3/2] rounded-2xl border-2 border-white/90 flex items-center justify-center relative overflow-visible">
                           <div className="absolute top-3 left-3 w-8 h-8 border-l-4 border-t-4 border-white rounded-tl-lg" />
                           <div className="absolute top-3 right-3 w-8 h-8 border-r-4 border-t-4 border-white rounded-tr-lg" />
                           <div className="absolute bottom-3 left-3 w-8 h-8 border-l-4 border-b-4 border-white rounded-bl-lg" />
                           <div className="absolute bottom-3 right-3 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-lg" />
-                          {/* ID card / document placeholder - left: photo, right: text lines */}
-                          <div className="flex items-center gap-4 px-5 py-4 w-full max-w-[88%]">
-                            <div className="flex-shrink-0 w-16 h-20 rounded-lg border-2 border-white/80 bg-white/10 flex items-center justify-center">
-                              <svg className="w-10 h-10 text-white/90" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="20" cy="14" r="6" />
-                                <path d="M8 36c0-7 5-12 12-12s12 5 12 12" />
-                              </svg>
-                            </div>
-                            <div className="flex-1 flex flex-col gap-2 min-w-0">
-                              <div className="h-2 w-full max-w-[72px] bg-white/80 rounded" />
-                              <div className="h-2 w-full max-w-[100%] bg-white/80 rounded" />
-                              <div className="h-2 w-full max-w-[84%] bg-white/80 rounded" />
-                              <div className="h-2 w-full max-w-[60%] bg-white/80 rounded" />
-                            </div>
-                          </div>
+                          {/* Same design for front and back: frame only, camera feed visible inside - no illustration */}
                         </div>
+                        <p className="mt-3 text-white text-sm font-medium text-center drop-shadow-md px-4">
+                          {cameraInstructionText}
+                        </p>
                       </div>
                     </>
                   )}

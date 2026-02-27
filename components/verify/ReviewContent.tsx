@@ -856,8 +856,8 @@ export default function ReviewContent() {
       setError('Front document image is invalid. Please upload a valid image.')
       return
     }
-    if (state.selfieImage && (!state.selfieImage.startsWith('data:image') || state.selfieImage.length < 100)) {
-      setError('Selfie image is invalid. Please upload a valid image.')
+    if (state.selfieImage && ((!state.selfieImage.startsWith('data:image') && !state.selfieImage.startsWith('data:video')) || state.selfieImage.length < 100)) {
+      setError('Selfie is invalid. Please record again.')
       return
     }
     
@@ -1384,13 +1384,13 @@ export default function ReviewContent() {
     }
 
     return (
-      <div className="min-h-screen h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+      <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
         <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
           <button type="button" aria-label="Go back" onClick={() => router.push('/verify/upload-selfie')} className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
           </button>
         </div>
-        <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-y-auto overflow-x-hidden px-4 py-3 md:py-4">
+        <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden md:overflow-y-auto md:overflow-x-hidden px-4 py-3 md:py-4">
           <section className="w-full max-w-[680px] text-center mb-4 flex-shrink-0">
             <div className="flex justify-center mb-3">
               <div className="relative inline-flex">
@@ -1473,7 +1473,7 @@ export default function ReviewContent() {
   }
 
   return (
-    <div className="min-h-screen h-screen bg-white flex flex-col overflow-hidden">
+    <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-hidden">
       {/* Mobile: back arrow only */}
       <div className="md:hidden px-4 pt-5 flex-shrink-0">
         <button
@@ -1488,7 +1488,7 @@ export default function ReviewContent() {
         </button>
       </div>
 
-      <main className="flex-1 w-full min-h-0 overflow-y-auto md:overflow-hidden flex flex-col items-center md:justify-center px-4 pt-3 pb-36 md:py-4">
+      <main className="flex-1 w-full min-h-0 overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-3 pb-36 md:py-4">
         {/* Page title - centered on desktop, left on mobile; compact on desktop */}
         <section className="w-full max-w-[560px] md:max-w-[520px] text-left md:text-center md:mb-2 flex-shrink-0">
           <h1 className="text-[24px] md:text-[20px] font-bold text-[#000000] mb-0.5 md:mb-0">

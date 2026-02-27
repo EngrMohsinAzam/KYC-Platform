@@ -28,9 +28,9 @@ export default function UploadIdTypePage() {
   }
 
   return (
-    <div className="h-screen min-h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+    <div className="h-screen min-h-[100dvh] md:min-h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       {/* Mobile: back chevron - tight to top */}
-      <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
+      <div className="md:hidden flex-shrink-0 pl-1 pr-4 pt-5 pb-1">
         <button
           type="button"
           aria-label="Go back"
