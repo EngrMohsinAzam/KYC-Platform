@@ -88,9 +88,9 @@ function StartContent() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#F8F8F8] flex flex-col">
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#F8F8F8] flex flex-col pt-10 pr-4 pb-1">
       {/* Mobile: top-right close (X), desktop handled by layout header if needed */}
-      <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
+      {/* <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
         <button
           type="button"
           aria-label="Close"
@@ -101,7 +101,7 @@ function StartContent() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      </div>
+      </div> */}
 
       {/* Main: full-width on mobile, card container only on desktop */}
       <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-1 pb-28 md:pt-6 md:pb-6 md:py-8 min-h-0">
@@ -117,8 +117,8 @@ function StartContent() {
           </div>
 
           {/* 2. Illustration - mobile: slightly zoomed and centered; desktop: same */}
-          <div className="flex-shrink-0 w-full flex items-center justify-center py-4 md:py-6 overflow-hidden">
-            <div className="relative w-[160px] h-[180px] md:w-[160px] md:h-[180px] mx-auto">
+          <div className="flex-shrink-0 w-full flex items-center justify-center py-4 md:py-6 overflow-hidden h-[400px] md:h-[200px]">
+            <div className="relative w-[160px] h-[180px] md:w-[160px] md:h-[180px]">
               <Image
                 src="/Start-Page.gif"
                 alt="Identity verification"
@@ -126,7 +126,7 @@ function StartContent() {
                 className="object-contain object-center"
                 unoptimized
                 priority
-                sizes="(max-width: 768px) 160px, 160px"
+                sizes=" (max-width: 768px) 160px,160px"
               />
             </div>
           </div>

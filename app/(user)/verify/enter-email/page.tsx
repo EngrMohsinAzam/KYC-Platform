@@ -248,16 +248,19 @@ export default function EnterEmailPage() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden flex justify-end px-4 pt-3">
+      <div className="md:hidden flex justify-start pl-1 pt-3">
         <button
           type="button"
-          aria-label="Close"
+          aria-label="Go back"
           onClick={() => router.push('/verify/start')}
           className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
         >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 18l-6-6 6-6" />
           </svg>
+          {/* <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+          </svg> */}
         </button>
       </div>
 
@@ -355,9 +358,8 @@ export default function EnterEmailPage() {
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
                       onPaste={handleOtpPaste}
                       disabled={otpLoading}
-                      className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-2 transition-colors focus:outline-none focus:border-[#6D3CCC] ${
-                        index === 0 ? 'border-[#6D3CCC] bg-[#E8E8E9] text-[#000000]' : 'border-[#E0E0E0] bg-[#E8E8E9] text-[#000000]'
-                      }`}
+                      className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-2 transition-colors focus:outline-none focus:border-[#6D3CCC] ${index === 0 ? 'border-[#6D3CCC] bg-[#E8E8E9] text-[#000000]' : 'border-[#E0E0E0] bg-[#E8E8E9] text-[#000000]'
+                        }`}
                     />
                   ))}
                 </div>
