@@ -196,14 +196,17 @@ export default function EnterEmailPage() {
 
       if (status === 'approved') {
         router.push('/decentralized-id/complete')
+        setLoading(false)
         return
       }
       if (status === 'pending' || status === 'submitted' || status === 'under_review' || status === 'underReview') {
         router.push('/verify/under-review')
+        setLoading(false)
         return
       }
       if (status === 'cancelled' || status === 'rejected') {
         router.push(`/verify/rejected?email=${encodeURIComponent(trimmed)}`)
+        setLoading(false)
         return
       }
     } catch (e: unknown) {
@@ -225,15 +228,19 @@ export default function EnterEmailPage() {
         address: '',
       },
     })
+
+    // Show OTP step immediately so the UI feels instant; send OTP in the background
     setLoading(false)
-    const sendResult = await sendOTP(trimmed)
-    if (sendResult.success) {
-      setResendTimer(60)
-      setStep('otp')
-      setError(null)
-    } else {
-      setError(sendResult.message ?? 'Failed to send verification code. Please try again.')
-    }
+    setStep('otp')
+    setError(null)
+
+    sendOTP(trimmed).then((sendResult) => {
+      if (sendResult.success) {
+        setResendTimer(60)
+      } else {
+        setError(sendResult.message ?? 'Failed to send verification code. You can try Resend code below.')
+      }
+    })
   }
 
   if (checking) {
@@ -261,7 +268,7 @@ export default function EnterEmailPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-6 pb-24 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+      <main className="flex-1 flex flex-col items-center justify-center md:justify-center px-4 pt-6 pb-24 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <section className="hidden md:block text-center mb-4">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -269,7 +276,7 @@ export default function EnterEmailPage() {
           </p>
         </section>
 
-        <div className="w-full max-w-[760px] md:max-w-[680px] md:bg-transparent md:border-2 md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6 md:scale-[0.97] md:origin-center">
+        <div className="w-full max-w-[760px] md:max-w-[680px] md:bg-transparent md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6 md:scale-[0.97] md:origin-center">
           {step === 'email' ? (
             <>
               <div className="mb-4">
@@ -299,7 +306,7 @@ export default function EnterEmailPage() {
                     }
                   }}
                   disabled={loading}
-                  className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[#6D3CCC] bg-[#E8E8E9] md:bg-[#E8E8E9] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
+                  className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[#6D3CCC] bg-[#14111C1A] md:bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
                 />
               </div>
 
@@ -312,7 +319,7 @@ export default function EnterEmailPage() {
               <Button
                 onClick={() => void handleContinue()}
                 disabled={loading}
-                className="hidden md:block h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+                className="hidden md:block w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
               >
                 {loading ? 'Checking...' : 'Continue'}
               </Button>
@@ -337,7 +344,7 @@ export default function EnterEmailPage() {
                 Enter the confirmation code sent to your email. This code will expire in two hours.
               </p>
 
-              <div className="inline-flex items-center gap-2 bg-[#E8E8E9] rounded-[12px] px-4 py-2 mb-4">
+              <div className="inline-flex items-center gap-2 bg-[#14111C1A] rounded-[12px] px-4 py-2 mb-4">
                 <span className="text-[13px] md:text-[14px] leading-none font-normal text-[#000000] truncate max-w-[200px] md:max-w-[280px]">{email.trim()}</span>
               </div>
 
@@ -356,7 +363,7 @@ export default function EnterEmailPage() {
                       onPaste={handleOtpPaste}
                       disabled={otpLoading}
                       className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-2 transition-colors focus:outline-none focus:border-[#6D3CCC] ${
-                        index === 0 ? 'border-[#6D3CCC] bg-[#E8E8E9] text-[#000000]' : 'border-[#E0E0E0] bg-[#E8E8E9] text-[#000000]'
+                        index === 0 ? 'border-[#6D3CCC] bg-[#14111C1A] text-[#000000]' : 'border-[#E0E0E0] bg-[#14111C1A] text-[#000000]'
                       }`}
                     />
                   ))}
@@ -376,7 +383,7 @@ export default function EnterEmailPage() {
                 <Button
                   onClick={() => void handleVerifyOtp()}
                   disabled={otpLoading || otp.join('').length !== 6}
-                  className="h-[44px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[14px] font-semibold"
+                  className="h-[54px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[14px] font-semibold w-full max-w-[670px]"
                 >
                   {otpLoading ? 'Verifying...' : 'Continue'}
                 </Button>
@@ -404,22 +411,22 @@ export default function EnterEmailPage() {
       </main>
       <PoweredBy />
       {step === 'email' ? (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
           <Button
             onClick={() => void handleContinue()}
             disabled={loading}
-            className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
+            className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
           >
             {loading ? 'Checking...' : 'Continue'}
           </Button>
         </div>
       ) : (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9]">
-          <div className="space-y-2">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9] flex flex-col items-center">
+          <div className="space-y-2 w-full max-w-[341px]">
             <Button
               onClick={() => void handleVerifyOtp()}
               disabled={otpLoading || otp.join('').length !== 6}
-              className="h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[15px] font-semibold"
+              className="h-[54px] w-full !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[15px] font-semibold"
             >
               {otpLoading ? 'Verifying...' : 'Continue'}
             </Button>

@@ -8,7 +8,7 @@ export default function VerifyLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#FFFFFF]">
       <CompanyBanner />
       <main className="flex-1 flex flex-col">
         {children}

@@ -670,7 +670,7 @@ export default function Rejected() {
 
   if (loading) {
     return (
-      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white md:bg-surface-gray flex items-center justify-center">
+      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex items-center justify-center">
         <div className="text-center">
           <LoadingDots size="lg" color="#2563eb" />
           <p className="mt-4 text-gray-600">Loading...</p>
@@ -685,10 +685,10 @@ export default function Rejected() {
     : documentModalFront
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white md:bg-surface-gray flex flex-col">
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <Header showClose />
       <main className="flex-1 px-4 md:px-0 pt-8 pb-24 md:flex md:items-center md:justify-center min-h-0 overflow-hidden md:overflow-visible">
-        <div className="w-full max-w-md md:bg-white p-4 rounded-2xl md:shadow-lg md:p-8 md:my-8 border-[2px] border-grey-400">
+        <div className="w-full max-w-md md:bg-white p-4 rounded-2xl md:shadow-lg md:p-8 md:my-8 border-[1.5px] border-[#E8E8E9]">
           <div className="text-center mb-8">
             <div className="w-24 h-24 mx-auto mb-6 bg-red-50 rounded-full flex items-center justify-center">
               <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

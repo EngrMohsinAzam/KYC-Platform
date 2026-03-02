@@ -107,6 +107,7 @@ export function getCountryCode(countryKey: string): string {
 }
 
 export function getMinPhoneLength(country: string): number {
+  const c = country.toLowerCase()
   const lengths: Record<string, number> = {
     us: 10, ca: 10, mx: 10,
     uk: 10, de: 10, fr: 9, it: 9, es: 9, nl: 9, pl: 9, ru: 10,
@@ -115,11 +116,18 @@ export function getMinPhoneLength(country: string): number {
     au: 9, nz: 8,
     br: 10, ar: 10, co: 10, cl: 9,
     eg: 10, za: 9, ng: 10, ke: 9,
+    af: 9, al: 9, dz: 9, ad: 6, ao: 9, ag: 10, am: 8, at: 10, az: 9,
+    bh: 8, by: 9, be: 9, ba: 8, bw: 7, bg: 9, cv: 7, hr: 8, cy: 8,
+    cz: 9, dk: 8, ee: 7, fi: 9, ge: 9, gh: 9, gr: 10, hk: 8, hu: 9,
+    is: 7, ie: 9, il: 9, kz: 10, kw: 8, lv: 8, lb: 7, lt: 8, lu: 9,
+    mt: 8, md: 8, ma: 9, no: 8, om: 8, pt: 9, qa: 8, ro: 10,
+    sk: 9, si: 8, se: 9, ch: 9, tw: 9, tz: 9, ua: 9, uy: 8, ve: 10,
   }
-  return lengths[country.toLowerCase()] ?? 7
+  return lengths[c] ?? 7
 }
 
 export function getMaxPhoneLength(country: string): number {
+  const c = country.toLowerCase()
   const lengths: Record<string, number> = {
     us: 10, ca: 10, mx: 10,
     uk: 10, de: 11, fr: 9, it: 10, es: 9, nl: 9, pl: 9, ru: 10,
@@ -128,8 +136,14 @@ export function getMaxPhoneLength(country: string): number {
     au: 9, nz: 9,
     br: 11, ar: 10, co: 10, cl: 9,
     eg: 10, za: 9, ng: 10, ke: 9,
+    af: 9, al: 9, dz: 9, ad: 9, ao: 9, ag: 10, am: 8, at: 13, az: 9,
+    bh: 8, by: 9, be: 9, ba: 8, bw: 7, bg: 9, cv: 7, hr: 8, cy: 8,
+    cz: 9, dk: 8, ee: 7, fi: 9, ge: 9, gh: 9, gr: 10, hk: 8, hu: 9,
+    is: 7, ie: 9, il: 9, kz: 10, kw: 8, lv: 8, lb: 7, lt: 8, lu: 9,
+    mt: 8, md: 8, ma: 9, no: 8, om: 8, pt: 9, qa: 8, ro: 10,
+    sk: 9, si: 8, se: 9, ch: 9, tw: 9, tz: 9, ua: 9, uy: 8, ve: 10,
   }
-  return lengths[country.toLowerCase()] ?? 15
+  return lengths[c] ?? 15
 }
 
 export function validatePhoneByCountry(phone: string, countryKey: string, dialCode?: string): string | null {
@@ -148,54 +162,156 @@ export function validatePhoneByCountry(phone: string, countryKey: string, dialCo
 
 export function formatByCountry(digits: string, country: string): string {
   const c = country.toLowerCase()
+  // US/Canada: (XXX) XXX-XXXX
   if (c === 'us' || c === 'ca') {
     if (digits.length <= 3) return digits
     if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
   }
+  // UK: XXXX XXX XXXX
   if (c === 'uk') {
     if (digits.length <= 4) return digits
     if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`
     return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`
   }
+  // Pakistan: 3XX-XXXXXXX (mobile prefix 3 digits, then 7 digits; hyphen after 3)
   if (c === 'pk') {
-    if (digits.length <= 4) return digits
-    return `${digits.slice(0, 4)}-${digits.slice(4)}`
+    if (digits.length <= 3) return digits
+    return `${digits.slice(0, 3)}-${digits.slice(3)}`
   }
+  // India: XXXXX XXXXX (5-5)
   if (c === 'in') {
     if (digits.length <= 5) return digits
     return `${digits.slice(0, 5)} ${digits.slice(5)}`
   }
+  // Brazil: (XX) XXXXX-XXXX or (XX) XXXX-XXXX
   if (c === 'br') {
     if (digits.length <= 2) return digits
     if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
   }
+  // Germany: XXXX XXXXXXX or grouped
   if (c === 'de') {
     if (digits.length <= 4) return digits
-    return `${digits.slice(0, 4)} ${digits.slice(4)}`
+    if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`
+    return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`
   }
+  // France: XX XX XX XX XX (pairs)
   if (c === 'fr') {
     if (digits.length <= 2) return digits
-    if (digits.length <= 4) return `${digits.slice(0, 2)} ${digits.slice(2)}`
-    if (digits.length <= 6) return `${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4)}`
-    if (digits.length <= 8) return `${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 6)} ${digits.slice(6)}`
-    return `${digits.slice(0, 2)} ${digits.slice(2, 4)} ${digits.slice(4, 6)} ${digits.slice(6, 8)} ${digits.slice(8)}`
+    const parts: string[] = []
+    for (let i = 0; i < digits.length; i += 2) {
+      if (i + 2 <= digits.length) parts.push(digits.slice(i, i + 2))
+      else parts.push(digits.slice(i))
+    }
+    return parts.join(' ')
   }
+  // Australia: XXXX XXX XXX
   if (c === 'au') {
     if (digits.length <= 4) return digits
     if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`
     return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`
   }
+  // China: XXX XXXX XXXX
   if (c === 'cn') {
     if (digits.length <= 3) return digits
     if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`
     return `${digits.slice(0, 3)} ${digits.slice(3, 7)} ${digits.slice(7)}`
   }
+  // Japan: XX-XXXX-XXXX
   if (c === 'jp') {
     if (digits.length <= 2) return digits
     if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`
     return `${digits.slice(0, 2)}-${digits.slice(2, 6)}-${digits.slice(6)}`
   }
-  return digits
+  // Bangladesh: XXXX-XXXXXX (4-6) for 10-digit mobile
+  if (c === 'bd') {
+    if (digits.length <= 4) return digits
+    return `${digits.slice(0, 4)}-${digits.slice(4)}`
+  }
+  // UAE: XX XXX XXXX
+  if (c === 'ae') {
+    if (digits.length <= 2) return digits
+    if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`
+    return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`
+  }
+  // Saudi Arabia: XX XXX XXXX
+  if (c === 'sa') {
+    if (digits.length <= 2) return digits
+    if (digits.length <= 5) return `${digits.slice(0, 2)} ${digits.slice(2)}`
+    return `${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`
+  }
+  // Mexico: XXX XXX XXXX (10 digits)
+  if (c === 'mx') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  }
+  // Turkey: XXX XXX XXXX
+  if (c === 'tr') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  }
+  // Egypt: XXX XXX XXXX (10 digits)
+  if (c === 'eg') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  }
+  // Nigeria: XXX XXX XXXX (10 digits)
+  if (c === 'ng') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  }
+  // Philippines: XXX XXX XXXX (10 digits)
+  if (c === 'ph') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  }
+  // Indonesia: XXX-XXXX-XXXX (9–10 digits)
+  if (c === 'id') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+  }
+  // Vietnam: XXX XXX XXXX (9–10 digits)
+  if (c === 'vn') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+  }
+  // Malaysia: XX-XXXX XXXX (9–10 digits)
+  if (c === 'my') {
+    if (digits.length <= 2) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 2)}-${digits.slice(2)}`
+    return `${digits.slice(0, 2)}-${digits.slice(2, 6)} ${digits.slice(6)}`
+  }
+  // Thailand: XX-XXX XXXX (9 digits)
+  if (c === 'th') {
+    if (digits.length <= 2) return digits
+    if (digits.length <= 5) return `${digits.slice(0, 2)}-${digits.slice(2)}`
+    return `${digits.slice(0, 2)}-${digits.slice(2, 5)} ${digits.slice(5)}`
+  }
+  // South Korea: XXX-XXXX-XXXX (9–10 digits)
+  if (c === 'kr') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 7) return `${digits.slice(0, 3)}-${digits.slice(3)}`
+    return `${digits.slice(0, 3)}-${digits.slice(3, 7)}-${digits.slice(7)}`
+  }
+  // Russia: XXX XXX-XX-XX (10 digits)
+  if (c === 'ru' || c === 'kz') {
+    if (digits.length <= 3) return digits
+    if (digits.length <= 6) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+    if (digits.length <= 8) return `${digits.slice(0, 3)} ${digits.slice(3, 6)}-${digits.slice(6)}`
+    return `${digits.slice(0, 3)} ${digits.slice(3, 6)}-${digits.slice(6, 8)}-${digits.slice(8)}`
+  }
+  // Generic: group in threes from the end for long numbers, or return as-is for short
+  if (digits.length <= 4) return digits
+  if (digits.length <= 7) return `${digits.slice(0, 3)} ${digits.slice(3)}`
+  const rest = digits.slice(0, -6)
+  const last = digits.slice(-6)
+  return `${rest} ${last.slice(0, 3)} ${last.slice(3)}`
 }

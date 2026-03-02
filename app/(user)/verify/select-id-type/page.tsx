@@ -115,7 +115,7 @@ export default function SelectIdType() {
           </svg>
         </button>
       </div>
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-3 pb-36 md:pt-2 md:pb-2">
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center md:justify-center px-4 pt-3 pb-36 md:pt-2 md:pb-2">
         <section className="hidden md:block text-center mb-4">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -123,7 +123,7 @@ export default function SelectIdType() {
           </p>
         </section>
 
-        <div className="w-full max-w-[680px] border border-[#E8E8E9] md:border-2 md:border-[#E8E8E9] rounded-[14px] md:rounded-[14px] md:px-5 md:py-4 px-4 py-4">
+        <div className="w-full max-w-[680px] border-[1.5px] border-[#E8E8E9] md:border-[1.5px] md:border-[#E8E8E9] rounded-[14px] md:rounded-[14px] md:px-5 md:py-4 px-4 py-4">
           {pausedMessage && (
             <div className="mb-5 bg-yellow-50 border border-yellow-200 rounded-[10px] p-3">
               <p className="text-sm text-yellow-800">{pausedMessage}</p>
@@ -142,7 +142,7 @@ export default function SelectIdType() {
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#E8E8E9] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC]"
+                className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC]"
               >
                 <option value="" disabled>
                   Country
@@ -163,7 +163,7 @@ export default function SelectIdType() {
                 <select
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#E8E8E9] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC]"
+                  className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC]"
                 >
                   <option value="" disabled>
                     State
@@ -189,7 +189,7 @@ export default function SelectIdType() {
             <Button
               onClick={handleNext}
               disabled={!canProceed || !!pausedMessage}
-              className="h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               Continue
             </Button>
@@ -208,14 +208,14 @@ export default function SelectIdType() {
         </div>
       </main>
       <PoweredBy />
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
-        <p className="text-[12px] text-[#828282] mb-3">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col items-center">
+        <p className="text-[12px] text-[#828282] mb-3 text-center max-w-[341px]">
           By continuing, you agree to the <a href="#" className="text-[#6D3CCC]">Terms of Service</a>, <a href="#" className="text-[#6D3CCC]">Privacy Policy</a>, and <a href="#" className="text-[#6D3CCC]">Biometrics Policy</a>
         </p>
         <Button
           onClick={handleNext}
           disabled={!canProceed || !!pausedMessage}
-          className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
         >
           Continue
         </Button>

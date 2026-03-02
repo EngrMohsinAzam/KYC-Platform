@@ -10,10 +10,10 @@ export default function UnderReview() {
   const router = useRouter()
 
   return (
-      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white md:bg-surface-gray flex flex-col">
+      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#FFFFFF] flex flex-col">
       <Header showClose />
       <main className="flex-1 px-4 md:px-0 pt-8 pb-24 md:flex md:items-center md:justify-center min-h-0 overflow-hidden md:overflow-visible">
-        <div className="w-full max-w-md md:bg-white p-4 rounded-2xl md:shadow-lg md:p-8 md:my-8 border-[2px] border-grey-400">
+        <div className="w-full max-w-md md:bg-white p-4 rounded-2xl md:shadow-lg md:p-8 md:my-8 border-[1.5px] border-[#E8E8E9]">
           <div className="text-center mb-8">
             <div className="w-24 h-24 mx-auto mb-6 bg-green-50 rounded-full flex items-center justify-center">
               <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,10 +31,10 @@ export default function UnderReview() {
             </p>
           </div>
 
-          <div className="md:block fixed md:relative bottom-0 left-0 right-0 p-4 bg-white md:bg-transparent border-t md:border-t-0 border-surface-light space-y-3">
+          <div className="md:block fixed md:relative bottom-0 left-0 right-0 p-4 bg-white md:bg-transparent border-t md:border-t-0 border-surface-light space-y-3 flex flex-col items-center">
             <Button
               onClick={() => router.push('/')}
-              className="w-full"
+              className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold"
             >
               Go to Home
             </Button>

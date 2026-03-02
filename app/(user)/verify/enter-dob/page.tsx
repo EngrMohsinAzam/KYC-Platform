@@ -14,6 +14,17 @@ export default function EnterDobPage() {
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  /** Returns age in full years as of today; null if date invalid. */
+  const getAge = (dateStr: string): number | null => {
+    const date = new Date(dateStr)
+    if (Number.isNaN(date.getTime())) return null
+    const today = new Date()
+    let age = today.getFullYear() - date.getFullYear()
+    const monthDiff = today.getMonth() - date.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) age -= 1
+    return age
+  }
+
   const handleContinue = () => {
     setError(null)
     const trimmed = dateOfBirth.trim()
@@ -24,6 +35,11 @@ export default function EnterDobPage() {
     const date = new Date(trimmed)
     if (Number.isNaN(date.getTime())) {
       setError('Please enter a valid date of birth')
+      return
+    }
+    const age = getAge(trimmed)
+    if (age !== null && age < 18) {
+      setError('You must be at least 18 years old to continue.')
       return
     }
     setLoading(true)
@@ -92,7 +108,7 @@ export default function EnterDobPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-start px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+      <main className="flex-1 flex flex-col items-center justify-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <section className="hidden md:block text-center mb-7">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -100,7 +116,7 @@ export default function EnterDobPage() {
           </p>
         </section>
 
-        <div className="w-full max-w-[760px] md:bg-transparent md:border-2 md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
+        <div className="w-full max-w-[760px] md:max-w-[680px] md:bg-transparent md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
           <h2 className="md:hidden text-[24px] leading-[1.3] font-bold text-[#000000] mb-2">
             Date of birth
           </h2>
@@ -123,7 +139,7 @@ export default function EnterDobPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && canProceed && !loading) handleContinue()
               }}
-              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#E8E8E9] text-[#000000] text-[14px] md:text-[16px] pl-4 pr-12 focus:outline-none focus:ring-0 focus:border-transparent [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden"
+              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#14111C1A] text-[#000000] text-[14px] md:text-[16px] pl-4 pr-12 focus:outline-none focus:ring-0 focus:border-transparent [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden"
             />
             <button
               type="button"
@@ -163,7 +179,7 @@ export default function EnterDobPage() {
             <Button
               onClick={() => void handleContinue()}
               disabled={loading || !canProceed}
-              className="h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               {loading ? 'Saving...' : 'Continue'}
             </Button>
@@ -181,11 +197,11 @@ export default function EnterDobPage() {
         </div>
       </main>
       <PoweredBy />
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
         <Button
           onClick={() => void handleContinue()}
           disabled={loading || !canProceed}
-          className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
+          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
         >
           {loading ? 'Saving...' : 'Continue'}
         </Button>

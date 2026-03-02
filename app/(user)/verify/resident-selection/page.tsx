@@ -17,10 +17,12 @@ export default function ResidentSelection() {
     router.push('/verify/enter-phone')
   }
 
-  // Do not restore prior choice. Require manual selection on each visit.
+  // Default selection from previous page: if user chose USA on select-id-type, pre-select "United States of America"; otherwise "All countries except USA"
   useEffect(() => {
-    setSelected('')
-  }, [])
+    const countryFromPrevious = (state.selectedCountry || '').toLowerCase().trim()
+    const isUSA = countryFromPrevious === 'us' || countryFromPrevious === 'usa'
+    setSelected(isUSA ? 'usa' : 'other')
+  }, [state.selectedCountry])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -75,7 +77,7 @@ export default function ResidentSelection() {
         </button>
       </div>
 
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-start px-4 pt-3 pb-32 md:pt-6 md:pb-6 md:min-h-0">
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center md:justify-center px-4 pt-3 pb-32 md:pt-6 md:pb-6 md:min-h-0">
         <section className="hidden md:block text-center mb-4">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -83,7 +85,7 @@ export default function ResidentSelection() {
           </p>
         </section>
 
-        <div className="w-full max-w-[680px] md:border-2 md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4">
+        <div className="w-full max-w-[680px] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4">
           <h2 className="text-[16px] md:text-[18px] leading-[1.35] font-semibold text-[#000000] mb-2">
             Country residency
           </h2>
@@ -125,7 +127,7 @@ export default function ResidentSelection() {
             <Button
               onClick={handleContinue}
               disabled={!selected}
-              className="h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               Continue
             </Button>
@@ -144,11 +146,11 @@ export default function ResidentSelection() {
         </div>
       </main>
       <PoweredBy />
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
         <Button
           onClick={handleContinue}
           disabled={!selected}
-          className="h-[48px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
         >
           Continue
         </Button>

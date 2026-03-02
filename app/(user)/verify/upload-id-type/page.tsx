@@ -43,7 +43,7 @@ export default function UploadIdTypePage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden px-4 pt-2 pb-6 md:py-4 md:pt-4">
+      <main className="flex-1 flex flex-col items-center justify-center md:justify-center min-h-0 overflow-hidden px-4 pt-2 pb-6 md:py-4 md:pt-4">
         {/* Desktop: Tell us about yourself + subtitle (centered on page) */}
         <section className="hidden md:block text-center mb-4 flex-shrink-0 w-full max-w-[680px]">
           <h1 className="text-[28px] md:text-[30px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>
@@ -53,7 +53,7 @@ export default function UploadIdTypePage() {
         </section>
 
         {/* Card - wider, slightly reduced height, unzoomed */}
-        <div className="w-full max-w-[680px] flex flex-col md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 flex-shrink min-h-0 md:scale-[0.97] md:origin-center">
+        <div className="w-full max-w-[680px] flex flex-col md:bg-white md:rounded-[14px] md:border-[1.5px] md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 flex-shrink min-h-0 md:scale-[0.97] md:origin-center">
           <h2 className="text-[20px] md:text-[22px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left w-full">
             Upload a photo ID
           </h2>
@@ -66,7 +66,7 @@ export default function UploadIdTypePage() {
             <button
               type="button"
               onClick={() => handleSelect('passport')}
-              className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between gap-3 px-3 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
@@ -80,7 +80,7 @@ export default function UploadIdTypePage() {
             <button
               type="button"
               onClick={() => handleSelect('national-id')}
-              className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between gap-3 px-3 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
@@ -95,7 +95,7 @@ export default function UploadIdTypePage() {
             <button
               type="button"
               onClick={() => handleSelect('drivers-license')}
-              className="w-full flex items-center justify-between gap-3 px-3 py-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between gap-3 px-3 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">

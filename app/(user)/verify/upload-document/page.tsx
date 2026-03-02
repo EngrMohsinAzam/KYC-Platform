@@ -452,7 +452,6 @@ export default function UploadDocument() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const cameraContainerRef = useRef<HTMLDivElement>(null)
-  const hasAutoOpenedCameraRef = useRef(false)
   const hasAutoOpenedCameraForBackRef = useRef(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showCaptureTips, setShowCaptureTips] = useState(false)
@@ -476,35 +475,17 @@ export default function UploadDocument() {
     }
   }, [])
 
-  // When coming from upload-id-type (openCamera=1): on desktop open in-app camera; on mobile show intro page (Take Photo / Choose File) first
-  useEffect(() => {
-    const openCamera = searchParams.get('openCamera') === '1'
-    if (!openCamera || frontImage || currentSide !== 'front') return
-    if (hasAutoOpenedCameraRef.current) return
-    hasAutoOpenedCameraRef.current = true
-    const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 768
-    const timer = setTimeout(() => {
-      if (isMobileViewport) {
-        // Mobile: show intro card with "Take Photo" / "Choose File" – do not auto-open camera
-        return
-      }
-      startCamera()
-    }, 500)
-    return () => clearTimeout(timer)
-  }, [searchParams, frontImage, currentSide])
+  // When coming from upload-id-type (openCamera=1): do NOT auto-open camera.
+  // Camera opens only when user explicitly clicks "Take Photo".
+  // (No effect body – prevents page from moving to camera without user action.)
   
-  // When user goes to back side (after capturing front), open camera directly instead of showing Take Photo / upload page
+  // When user goes to back side: show Choose File / Take Photo – do NOT auto-open camera.
+  // Camera opens only when user explicitly clicks "Take Photo".
   useEffect(() => {
     if (currentSide === 'front') {
       hasAutoOpenedCameraForBackRef.current = false
-      return
     }
-    if (currentSide !== 'back' || !needsBackSide || backImage || isCameraActive || isCameraLoading) return
-    if (hasAutoOpenedCameraForBackRef.current) return
-    hasAutoOpenedCameraForBackRef.current = true
-    const timer = setTimeout(() => startCamera(), 500)
-    return () => clearTimeout(timer)
-  }, [currentSide, needsBackSide, backImage, isCameraActive, isCameraLoading])
+  }, [currentSide])
   
   useEffect(() => {
     // Preload animation (optional, won't break if it fails)

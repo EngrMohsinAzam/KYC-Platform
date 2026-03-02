@@ -11,7 +11,15 @@ const CLEAR_FLAG_KEY = 'kyc_data_cleared'
 // Load state from localStorage
 function loadState(): Partial<AppState> {
   if (typeof window === 'undefined') return {}
-  
+  // When user is on verify start, do not restore any saved state so they always start with empty fields
+  try {
+    const pathname = window.location.pathname || ''
+    if (pathname === '/verify/start' || pathname.startsWith('/verify/start/')) {
+      return {}
+    }
+  } catch {
+    // ignore
+  }
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) {

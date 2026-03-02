@@ -102,10 +102,10 @@ export default function CheckStatus() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white md:bg-surface-gray flex flex-col">
+    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <Header showBack title="Check Verification Status" />
       <main className="flex-1 px-4 md:px-0 pt-6 pb-24 md:flex md:items-center md:justify-center min-h-0 overflow-hidden md:overflow-visible">
-        <div className="w-full max-w-md md:bg-white md:rounded-2xl md:p-8 md:my-8 md:border-[2px] md:border-grey-400">
+        <div className="w-full max-w-md md:bg-white md:rounded-2xl md:p-8 md:my-8 md:border-[1.5px] md:border-[#E8E8E9]">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-text-primary mb-4 text-center">
               Check Your Status
@@ -124,7 +124,7 @@ export default function CheckStatus() {
                 value={email}
                 onChange={handleEmailChange}
                 disabled={loading}
-                className="w-full"
+              className="w-full h-[48px] md:h-[54px] rounded-[12px] bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] border border-[#E8E8E9] focus:border-[#6D3CCC] focus:ring-1 focus:ring-[#6D3CCC]/20"
               />
             </div>
 
@@ -173,7 +173,7 @@ export default function CheckStatus() {
             <Button
               onClick={handleCheckStatus}
               disabled={loading || !email}
-              className="w-full bg-black hover:bg-black/80 text-white font-semibold rounded-full py-3 flex items-center justify-center gap-2"
+              className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold flex items-center justify-center gap-2 mx-auto"
             >
               {loading ? (
                 <>

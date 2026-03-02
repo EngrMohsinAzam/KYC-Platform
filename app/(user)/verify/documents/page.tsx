@@ -13,7 +13,7 @@ function DocumentsIllustration() {
       <img
         src="/Upload-Doc.svg"
         alt=""
-        className="max-w-[180px] md:max-w-[220px] w-full h-full object-contain"
+        className="max-w-[180px] md:max-w-[280px] w-full h-full object-contain"
       />
     </div>
   )
@@ -39,7 +39,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen bg-[#F5F5F5] flex flex-col overflow-hidden">
+    <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       <div className="md:hidden flex-shrink-0 pl-1 pr-4 pt-5 pb-0">
         <button
           type="button"
@@ -55,21 +55,21 @@ export default function DocumentsPage() {
 
       {/* Mobile: scrollable area with padding so content is not hidden under fixed button */}
       <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden md:overflow-visible px-4 pt-0 pb-[88px] md:pb-4 md:py-4">
-        {/* White card: compact on mobile, aligned to top */}
-        <div className="w-full max-w-[500px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border md:border-[#E8E8E9] md:pt-5 md:px-6 md:pb-5 flex-shrink-0 pt-0">
-          <h1 className="text-[20px] md:text-[24px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left md:text-center w-full">
+        {/* White card: ~60% width on desktop, full width on mobile */}
+        <div className="w-full md:w-[60%] md:max-w-[800px] md:min-w-[400px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border-[1.5px] md:border-[#E8E8E9] md:pt-6 md:px-8 md:pb-6 flex-shrink-0 pt-0">
+          <h1 className="text-[20px] md:text-[26px] leading-tight font-bold text-[#000000] mb-1 md:mb-2 text-left md:text-center w-full">
             Upload a photo ID
           </h1>
-          <p className="text-[13px] md:text-[15px] leading-[1.4] font-normal text-[#828282] mb-2 md:mb-3 text-left md:text-center w-full">
+          <p className="text-[13px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-2 md:mb-4 text-left md:text-center w-full">
             A valid, government-issued photo ID is required to verify your identity.
           </p>
 
-          <div className="flex justify-center w-full mb-2 md:mb-4 self-center">
+          <div className="flex justify-center w-full mb-2 md:mb-5 self-center">
             <DocumentsIllustration />
           </div>
 
-          <div className="w-full mb-2 md:mb-4">
-            <p className="text-[11px] md:text-[12px] leading-[1.45] font-normal text-[#828282] text-left max-w-full break-words">
+          <div className="w-full mb-2 md:mb-5 max-w-[90%] md:max-w-[85%] mx-auto">
+            <p className="text-[11px] md:text-[13px] leading-[1.45] font-normal text-[#828282] text-left md:text-center break-words">
               By clicking the button below, you consent to Persona, our vendor, collecting, using, and
               utilizing its service providers to process your biometric information to verify your
               identity, identify fraud, and improve Persona&apos;s platform in accordance with its{' '}
@@ -85,17 +85,17 @@ export default function DocumentsPage() {
             </p>
           </div>
 
-          <div className="hidden md:flex flex-col items-center w-full">
+          <div className="hidden md:flex flex-col items-center w-full gap-1">
             <Button
               onClick={handleContinue}
-              className="w-full h-[48px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
+              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
             >
               Continue
             </Button>
             <button
               type="button"
               onClick={() => router.push('/verify/enter-address')}
-              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] font-normal mt-4 w-full hover:text-[#000000] transition-colors"
+              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] font-normal mt-5 w-full hover:text-[#000000] transition-colors"
             >
               <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -107,10 +107,10 @@ export default function DocumentsPage() {
       </main>
       <PoweredBy />
       {/* Mobile: fixed to bottom so Continue is always visible on real devices */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#F5F5F5] border-t border-[#E8E8E9] z-10">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#FFFFFF] border-t border-[#E8E8E9] z-10 flex justify-center">
         <Button
           onClick={handleContinue}
-          className="h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white font-semibold text-[16px] w-full"
+          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white font-semibold text-[16px]"
         >
           Continue
         </Button>
