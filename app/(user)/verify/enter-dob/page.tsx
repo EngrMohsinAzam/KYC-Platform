@@ -139,7 +139,9 @@ export default function EnterDobPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && canProceed && !loading) handleContinue()
               }}
-              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#14111C1A] text-[#000000] text-[14px] md:text-[16px] pl-4 pr-12 focus:outline-none focus:ring-0 focus:border-transparent [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden"
+              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border pl-4 pr-12 focus:outline-none focus:ring-0 bg-[#14111C1A] text-[#000000] text-[14px] md:text-[16px] [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden ${
+                error ? 'border-red-500' : 'border-transparent'
+              }`}
             />
             <button
               type="button"
@@ -164,7 +166,7 @@ export default function EnterDobPage() {
           </div>
 
           {error && (
-            <div className="mb-4 mt-2">
+            <div className="mt-2">
               <p className="text-sm md:text-base text-red-600">{error}</p>
             </div>
           )}
@@ -178,7 +180,7 @@ export default function EnterDobPage() {
           <div className="hidden md:block mt-6">
             <Button
               onClick={() => void handleContinue()}
-              disabled={loading || !canProceed}
+              disabled={loading}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               {loading ? 'Saving...' : 'Continue'}

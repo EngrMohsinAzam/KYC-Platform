@@ -35,7 +35,9 @@ export default function EnterAddressPage() {
   const [postalCode, setPostalCode] = useState('')
   const [suggestions, setSuggestions] = useState<GeocodeSuggestion[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [errorAddress, setErrorAddress] = useState<string | null>(null)
+  const [errorCity, setErrorCity] = useState<string | null>(null)
+  const [errorPostalCode, setErrorPostalCode] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const searchSuggestions = useCallback(async (query: string) => {
@@ -88,20 +90,22 @@ export default function EnterAddressPage() {
   }
 
   const handleContinue = () => {
-    setError(null)
+    setErrorAddress(null)
+    setErrorCity(null)
+    setErrorPostalCode(null)
     const line1 = addressLine1.trim()
     const line3 = city.trim()
     const line4 = postalCode.trim()
     if (!line1) {
-      setError('Please enter your address')
+      setErrorAddress('Please enter your address')
       return
     }
     if (!line3) {
-      setError('Please enter your city')
+      setErrorCity('Please enter your city')
       return
     }
     if (!line4) {
-      setError('Please enter your postal code')
+      setErrorPostalCode('Please enter your postal code')
       return
     }
     setLoading(true)
@@ -165,7 +169,7 @@ export default function EnterAddressPage() {
   }, [])
 
   const inputClass =
-    'w-full h-[48px] md:h-[46px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0 focus:border-transparent'
+    'w-full h-[48px] md:h-[46px] rounded-[12px] md:rounded-[10px] border bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0'
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
@@ -209,16 +213,17 @@ export default function EnterAddressPage() {
                 value={addressLine1}
                 onChange={(e) => {
                   setAddressLine1(e.target.value.replace(/^\s+/, ''))
-                  setError(null)
+                  setErrorAddress(null)
                 }}
                 onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && canProceed && !loading) handleContinue()
+                  if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={inputClass}
+                className={`${inputClass} ${errorAddress ? 'border-red-500' : 'border-transparent'}`}
                 autoComplete="off"
               />
+              {errorAddress && <p className="text-sm text-red-600 mt-1">{errorAddress}</p>}
               {showSuggestions && suggestions.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-white border border-[#E8E8E9] rounded-[10px] shadow-lg max-h-60 overflow-y-auto">
                   {suggestions.map((s, i) => (
@@ -243,49 +248,49 @@ export default function EnterAddressPage() {
                 value={addressLine2}
                 onChange={(e) => setAddressLine2(e.target.value.replace(/^\s+/, ''))}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && canProceed && !loading) handleContinue()
+                  if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} pr-14`}
+                className={`${inputClass} pr-14 border-transparent`}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] md:text-[11px] text-[#828282] pointer-events-none">
                 Optional
               </span>
             </div>
 
-            <input
-              type="text"
-              placeholder="City"
-              value={city}
-              onChange={(e) => {
-                setCity(e.target.value.replace(/^\s+/, ''))
-                setError(null)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && canProceed && !loading) handleContinue()
-              }}
-              className={inputClass}
-            />
-
-            <input
-              type="text"
-              placeholder="Postal code"
-              value={postalCode}
-              onChange={(e) => {
-                setPostalCode(e.target.value.replace(/^\s+/, ''))
-                setError(null)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && canProceed && !loading) handleContinue()
-              }}
-              className={inputClass}
-            />
-          </div>
-
-          {error && (
-            <div className="mb-2 mt-2 md:mb-1 md:mt-1">
-              <p className="text-sm md:text-base text-red-600">{error}</p>
+            <div>
+              <input
+                type="text"
+                placeholder="City"
+                value={city}
+                onChange={(e) => {
+                  setCity(e.target.value.replace(/^\s+/, ''))
+                  setErrorCity(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !loading) handleContinue()
+                }}
+                className={`${inputClass} ${errorCity ? 'border-red-500' : 'border-transparent'}`}
+              />
+              {errorCity && <p className="text-sm text-red-600 mt-1">{errorCity}</p>}
             </div>
-          )}
+
+            <div>
+              <input
+                type="text"
+                placeholder="Postal code"
+                value={postalCode}
+                onChange={(e) => {
+                  setPostalCode(e.target.value.replace(/^\s+/, ''))
+                  setErrorPostalCode(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !loading) handleContinue()
+                }}
+                className={`${inputClass} ${errorPostalCode ? 'border-red-500' : 'border-transparent'}`}
+              />
+              {errorPostalCode && <p className="text-sm text-red-600 mt-1">{errorPostalCode}</p>}
+            </div>
+          </div>
 
           <div className="md:hidden mt-6">
             <p className="text-[14px] leading-[1.5] font-normal text-[#828282]">
@@ -296,7 +301,7 @@ export default function EnterAddressPage() {
           <div className="hidden md:block mt-4">
             <Button
               onClick={() => void handleContinue()}
-              disabled={loading || !canProceed}
+              disabled={loading}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               {loading ? 'Saving...' : 'Continue'}

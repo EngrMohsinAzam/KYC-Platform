@@ -11,8 +11,14 @@ export default function ResidentSelection() {
   const { state, dispatch } = useAppContext()
   
   const [selected, setSelected] = useState<string>('')
+  const [error, setError] = useState<string | null>(null)
 
   const handleContinue = () => {
+    if (!selected) {
+      setError('Please select where you reside')
+      return
+    }
+    setError(null)
     dispatch({ type: 'SET_RESIDENT_USA', payload: selected === 'usa' })
     router.push('/verify/enter-phone')
   }
@@ -60,6 +66,7 @@ export default function ResidentSelection() {
 
   const handleSelect = (value: string) => {
     setSelected(value)
+    setError(null)
   }
 
   return (
@@ -123,10 +130,14 @@ export default function ResidentSelection() {
             </button>
           </div>
 
+          {error && (
+            <p className="text-sm text-red-600 mt-2">{error}</p>
+          )}
+
           <div className="hidden md:block mt-6">
             <Button
               onClick={handleContinue}
-              disabled={!selected}
+              disabled={false}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               Continue
@@ -149,7 +160,7 @@ export default function ResidentSelection() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
         <Button
           onClick={handleContinue}
-          disabled={!selected}
+          disabled={false}
           className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
         >
           Continue

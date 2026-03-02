@@ -13,19 +13,21 @@ export default function EnterNamePage() {
   const { state, dispatch } = useAppContext()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [errorFirst, setErrorFirst] = useState<string | null>(null)
+  const [errorLast, setErrorLast] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const handleContinue = () => {
-    setError(null)
+    setErrorFirst(null)
+    setErrorLast(null)
     const first = firstName.trim()
     const last = lastName.trim()
     if (!first) {
-      setError('Please enter your legal first name')
+      setErrorFirst('Please enter your legal first name')
       return
     }
     if (!last) {
-      setError('Please enter your legal last name (surname)')
+      setErrorLast('Please enter your legal last name (surname)')
       return
     }
     setLoading(true)
@@ -117,41 +119,41 @@ export default function EnterNamePage() {
               value={firstName}
               onChange={(e) => {
                 setFirstName(allowNameChar(e.target.value))
-                setError(null)
+                setErrorFirst(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === ' ') {
                   e.preventDefault()
                   return
                 }
-                if (e.key === 'Enter' && canProceed && !loading) handleContinue()
+                if (e.key === 'Enter' && !loading) handleContinue()
               }}
-              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0 focus:border-transparent"
+              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border px-4 focus:outline-none focus:ring-0 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
+                errorFirst ? 'border-red-500' : 'border-transparent'
+              }`}
             />
+            {errorFirst && <p className="text-sm text-red-600 mt-1">{errorFirst}</p>}
             <input
               type="text"
               placeholder="Legal last name (surname)"
               value={lastName}
               onChange={(e) => {
                 setLastName(allowNameChar(e.target.value))
-                setError(null)
+                setErrorLast(null)
               }}
               onKeyDown={(e) => {
                 if (e.key === ' ') {
                   e.preventDefault()
                   return
                 }
-                if (e.key === 'Enter' && canProceed && !loading) handleContinue()
+                if (e.key === 'Enter' && !loading) handleContinue()
               }}
-              className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0 focus:border-transparent"
+              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border px-4 focus:outline-none focus:ring-0 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
+                errorLast ? 'border-red-500' : 'border-transparent'
+              }`}
             />
+            {errorLast && <p className="text-sm text-red-600 mt-1">{errorLast}</p>}
           </div>
-
-          {error && (
-            <div className="mb-4 mt-2">
-              <p className="text-sm md:text-base text-red-600">{error}</p>
-            </div>
-          )}
 
           <div className="md:hidden mt-6">
             <p className="text-[14px] leading-[1.5] font-normal text-[#828282]">
@@ -162,7 +164,7 @@ export default function EnterNamePage() {
           <div className="hidden md:block mt-6">
             <Button
               onClick={() => void handleContinue()}
-              disabled={loading || !canProceed}
+              disabled={loading}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               {loading ? 'Saving...' : 'Continue'}

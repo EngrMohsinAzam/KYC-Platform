@@ -256,19 +256,19 @@ export default function EnterEmailPage() {
   return (
   <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white flex flex-col">
     
-    {/* Mobile Close Button */}
-    <div className="md:hidden flex justify-end px-4 pt-3">
-      <button
-        type="button"
-        aria-label="Close"
-        onClick={() => router.push('/verify/start')}
-        className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-black transition-colors"
-      >
-        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
-        </svg>
-      </button>
-    </div>
+    {/* Mobile back Button */}
+    <div className="md:hidden pl-1 pr-4 pt-5">
+        <button
+          type="button"
+          aria-label="Go back"
+          onClick={() => router.back()}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
 
     {/* Main Content */}
     <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-6 pb-24 md:pb-6 overflow-hidden">
@@ -306,7 +306,9 @@ export default function EnterEmailPage() {
                   if (e.key === 'Enter' && !loading) void handleContinue()
                 }}
                 disabled={loading}
-                className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[#6D3CCC] bg-[#14111C1A] placeholder:text-[#828282] text-black text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
+                className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-2 bg-[#14111C1A] placeholder:text-[#828282] text-black text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 ${
+                  error ? 'border-red-500 focus:border-red-500' : 'border-[#6D3CCC] focus:border-[#6D3CCC]'
+                }`}
               />
             </div>
 

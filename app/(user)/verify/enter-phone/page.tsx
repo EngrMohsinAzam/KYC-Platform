@@ -138,25 +138,24 @@ export default function EnterPhonePage() {
             >
               {phoneCountryLabel}
             </div>
-            <input
-              type="tel"
-              inputMode="numeric"
-              placeholder="Phone number"
-              value={displayValue}
-              onChange={(e) => handlePhoneChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && canProceed && !loading) handleContinue()
-              }}
-              maxLength={maxLen + 8}
-              className="flex-1 min-w-0 h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border border-transparent bg-[#14111C1A] md:bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0 focus:border-transparent"
-            />
-          </div>
-
-          {error && (
-            <div className="mb-4 mt-2">
-              <p className="text-sm md:text-base text-red-600">{error}</p>
+            <div className="flex-1 min-w-0">
+              <input
+                type="tel"
+                inputMode="numeric"
+                placeholder="Phone number"
+                value={displayValue}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !loading) handleContinue()
+                }}
+                maxLength={maxLen + 8}
+                className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border px-4 focus:outline-none focus:ring-0 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
+                  error ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-transparent'
+                }`}
+              />
+              {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
             </div>
-          )}
+          </div>
 
           <div className="md:hidden mt-6">
             <p className="text-[14px] leading-[1.5] font-normal text-[#828282]">
@@ -167,7 +166,7 @@ export default function EnterPhonePage() {
           <div className="hidden md:block mt-6">
             <Button
               onClick={() => void handleContinue()}
-              disabled={loading || !canProceed}
+              disabled={loading}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
               {loading ? 'Saving...' : 'Continue'}
@@ -189,7 +188,7 @@ export default function EnterPhonePage() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
         <Button
           onClick={() => void handleContinue()}
-          disabled={loading || !canProceed}
+          disabled={loading}
           className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
         >
           {loading ? 'Saving...' : 'Continue'}

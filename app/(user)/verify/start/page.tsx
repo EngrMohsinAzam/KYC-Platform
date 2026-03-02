@@ -99,7 +99,7 @@ function StartContent() {
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       {/* Mobile: top-right close (X), desktop handled by layout header if needed */}
-      <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
+      {/* <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
         <button
           type="button"
           aria-label="Close"
@@ -110,7 +110,7 @@ function StartContent() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      </div>
+      </div> */}
 
       {/* Main: full-width on mobile, card container only on desktop */}
       <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center px-4 pt-1 pb-28 md:pt-6 md:pb-6 md:py-8 min-h-0">
