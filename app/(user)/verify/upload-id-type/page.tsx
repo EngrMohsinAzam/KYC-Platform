@@ -43,7 +43,7 @@ export default function UploadIdTypePage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center md:justify-center min-h-0 overflow-hidden px-4 pt-2 pb-6 md:py-4 md:pt-4">
+      <main className="flex-1 flex flex-col items-center md:justify-center md:justify-center min-h-0 overflow-hidden px-4 pt-2 pb-6 md:py-4 md:pt-4">
         {/* Desktop: Tell us about yourself + subtitle (centered on page) */}
         <section className="hidden md:block text-center mb-4 flex-shrink-0 w-full max-w-[680px]">
           <h1 className="text-[28px] md:text-[30px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>

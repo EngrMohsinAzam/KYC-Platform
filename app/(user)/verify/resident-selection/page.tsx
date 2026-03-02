@@ -77,7 +77,7 @@ export default function ResidentSelection() {
         </button>
       </div>
 
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center md:justify-center px-4 pt-3 pb-32 md:pt-6 md:pb-6 md:min-h-0">
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center md:justify-center px-4 pt-3 pb-32 md:pt-6 md:pb-6 md:min-h-0">
         <section className="hidden md:block text-center mb-4">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">

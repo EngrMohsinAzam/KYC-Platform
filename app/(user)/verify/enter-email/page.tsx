@@ -254,192 +254,197 @@ export default function EnterEmailPage() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden flex justify-end px-4 pt-3">
-        <button
-          type="button"
-          aria-label="Close"
-          onClick={() => router.push('/verify/start')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
-          </svg>
-        </button>
-      </div>
+  <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white flex flex-col">
+    
+    {/* Mobile Close Button */}
+    <div className="md:hidden flex justify-end px-4 pt-3">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={() => router.push('/verify/start')}
+        className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-black transition-colors"
+      >
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      </button>
+    </div>
 
-      <main className="flex-1 flex flex-col items-center justify-center md:justify-center px-4 pt-6 pb-24 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
-        <section className="hidden md:block text-center mb-4">
-          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
-          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
-            We&apos;re required to collect this verify your identity.
-          </p>
-        </section>
+    {/* Main Content */}
+    <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-6 pb-24 md:pb-6 overflow-hidden">
+      
+      {/* Desktop Heading */}
+      <section className="hidden md:block text-center mb-4">
+        <h1 className="text-[34px] leading-[1.2] font-bold text-black">Tell us about yourself</h1>
+        <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
+          We&apos;re required to collect this to verify your identity.
+        </p>
+      </section>
 
-        <div className="w-full max-w-[760px] md:max-w-[680px] md:bg-transparent md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6 md:scale-[0.97] md:origin-center">
-          {step === 'email' ? (
-            <>
-              <div className="mb-4">
-                <label className="block text-[16px] md:text-[18px] leading-[1.4] font-semibold text-[#000000] mb-2">
-                  Email
-                </label>
-                <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3">
-                  Enter the email address you&apos;d like to use
-                </p>
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => {
-                    const raw = e.target.value
-                    const noSpaces = raw.replace(/\s/g, '')
-                    setEmail(noSpaces)
-                    setError(null)
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === ' ') {
-                      e.preventDefault()
-                      return
-                    }
-                    if (e.key === 'Enter' && !loading) {
-                      void handleContinue()
-                    }
-                  }}
-                  disabled={loading}
-                  className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[#6D3CCC] bg-[#14111C1A] md:bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
-                />
-              </div>
-
-              {error && (
-                <div className="mb-4">
-                  <p className="text-sm md:text-base text-red-600">{error}</p>
-                </div>
-              )}
-
-              <Button
-                onClick={() => void handleContinue()}
+      {/* Card */}
+      <div className="w-full max-w-[760px] md:max-w-[680px] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
+        
+        {step === 'email' ? (
+          <>
+            <div className="mb-4">
+              <label className="block text-[16px] md:text-[18px] leading-[1.4] font-semibold text-black mb-2">
+                Email
+              </label>
+              <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3">
+                Enter the email address you&apos;d like to use
+              </p>
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => {
+                  setEmail(e.target.value.replace(/\s/g, ''))
+                  setError(null)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === ' ') e.preventDefault()
+                  if (e.key === 'Enter' && !loading) void handleContinue()
+                }}
                 disabled={loading}
-                className="hidden md:block w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
-              >
-                {loading ? 'Checking...' : 'Continue'}
-              </Button>
+                className="w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[#6D3CCC] bg-[#14111C1A] placeholder:text-[#828282] text-black text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
+              />
+            </div>
 
+            {error && <p className="text-sm md:text-base text-red-600 mb-4">{error}</p>}
+
+            {/* Desktop Continue Button */}
+            <Button
+              onClick={() => void handleContinue()}
+              disabled={loading}
+              className="hidden md:block w-full h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[16px] font-semibold"
+            >
+              {loading ? 'Checking...' : 'Continue'}
+            </Button>
+
+            {/* Desktop Back Button */}
+            <button
+              type="button"
+              onClick={() => router.push('/verify/start')}
+              className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[14px] font-normal mt-7 mx-auto hover:text-black transition-colors"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+              </svg>
+              Back to Previous
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 className="text-[20px] md:text-[22px] leading-tight font-bold text-black mb-1.5">
+              Verify your email
+            </h2>
+            <p className="text-[13px] md:text-[14px] leading-[1.35] font-normal text-[#828282] mb-3 md:mb-4">
+              Enter the confirmation code sent to your email. This code will expire in two hours.
+            </p>
+
+            <div className="inline-flex items-center gap-2 bg-[#14111C1A] rounded-[12px] px-4 py-2 mb-4">
+              <span className="text-[13px] md:text-[14px] font-normal text-black truncate max-w-[200px] md:max-w-[280px]">
+                {email.trim()}
+              </span>
+            </div>
+
+            <div className="mb-3">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(el) => { inputRefs.current[index] = el }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(index, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                    onPaste={handleOtpPaste}
+                    disabled={otpLoading}
+                    className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-2 transition-colors focus:outline-none focus:border-[#6D3CCC] ${
+                      index === 0
+                        ? 'border-[#6D3CCC] bg-[#14111C1A] text-black'
+                        : 'border-[#E0E0E0] bg-[#14111C1A] text-black'
+                    }`}
+                  />
+                ))}
+              </div>
+              {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => void handlePasteFromClipboard()}
+              className="text-[13px] md:text-[14px] font-normal text-black hover:text-[#6D3CCC] transition-colors"
+            >
+              Paste from clipboard
+            </button>
+
+            {/* Desktop OTP Buttons */}
+            <div className="hidden md:flex flex-col mt-4 space-y-2">
+              <Button
+                onClick={() => void handleVerifyOtp()}
+                disabled={otpLoading || otp.join('').length !== 6}
+                className="h-[54px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[14px] font-semibold w-full"
+              >
+                {otpLoading ? 'Verifying...' : 'Continue'}
+              </Button>
+              <Button
+                onClick={() => void handleSendOTP()}
+                disabled={sendingOTP || resendTimer > 0 || otpLoading}
+                className="h-[44px] !rounded-[10px] !bg-[#E8E8E9] hover:!bg-[#E0E0E0] !text-black text-[14px] font-semibold"
+              >
+                {resendTimer > 0 ? `Resend code (${resendTimer}s)` : 'Resend code'}
+              </Button>
               <button
                 type="button"
-                onClick={() => router.push('/verify/start')}
-                className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-7 mx-auto hover:text-[#000000] transition-colors"
+                onClick={() => { setStep('email'); setError(null); setOtp(['', '', '', '', '', '']) }}
+                className="flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal mt-4 hover:text-black transition-colors"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
                 </svg>
                 Back to Previous
               </button>
-            </>
-          ) : (
-            <>
-              <h2 className="text-[20px] md:text-[22px] leading-tight font-bold text-[#000000] mb-1.5">
-                Verify your email
-              </h2>
-              <p className="text-[13px] md:text-[14px] leading-[1.35] font-normal text-[#828282] mb-3 md:mb-4">
-                Enter the confirmation code sent to your email. This code will expire in two hours.
-              </p>
+            </div>
+          </>
+        )}
+      </div>
+    </main>
 
-              <div className="inline-flex items-center gap-2 bg-[#14111C1A] rounded-[12px] px-4 py-2 mb-4">
-                <span className="text-[13px] md:text-[14px] leading-none font-normal text-[#000000] truncate max-w-[200px] md:max-w-[280px]">{email.trim()}</span>
-              </div>
+    <PoweredBy />
 
-              <div className="mb-3">
-                <div className="flex items-center gap-1.5 md:gap-2">
-                  {otp.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={(el) => { inputRefs.current[index] = el }}
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleOtpChange(index, e.target.value)}
-                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      onPaste={handleOtpPaste}
-                      disabled={otpLoading}
-                      className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-2 transition-colors focus:outline-none focus:border-[#6D3CCC] ${
-                        index === 0 ? 'border-[#6D3CCC] bg-[#14111C1A] text-[#000000]' : 'border-[#E0E0E0] bg-[#14111C1A] text-[#000000]'
-                      }`}
-                    />
-                  ))}
-                </div>
-                {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
-              </div>
-
-              <button
-                type="button"
-                onClick={() => void handlePasteFromClipboard()}
-                className="text-[13px] md:text-[14px] font-normal text-[#000000] hover:text-[#6D3CCC] transition-colors"
-              >
-                Paste from clipboard
-              </button>
-
-              <div className="hidden md:flex flex-col mt-4 space-y-2">
-                <Button
-                  onClick={() => void handleVerifyOtp()}
-                  disabled={otpLoading || otp.join('').length !== 6}
-                  className="h-[54px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[14px] font-semibold w-full max-w-[670px]"
-                >
-                  {otpLoading ? 'Verifying...' : 'Continue'}
-                </Button>
-                <Button
-                  onClick={() => void handleSendOTP()}
-                  disabled={sendingOTP || resendTimer > 0 || otpLoading}
-                  className="h-[44px] !rounded-[10px] !bg-[#E8E8E9] hover:!bg-[#E0E0E0] !text-[#000000] text-[14px] font-semibold"
-                >
-                  {resendTimer > 0 ? `Resend code (${resendTimer}s)` : 'Resend code'}
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => { setStep('email'); setError(null); setOtp(['', '', '', '', '', '']) }}
-                  className="flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal mt-4 hover:text-[#000000] transition-colors"
-                >
-                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-                  </svg>
-                  Back to Previous
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </main>
-      <PoweredBy />
-      {step === 'email' ? (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
+    {/* Mobile Fixed Bottom Buttons */}
+    {step === 'email' ? (
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-white to-transparent flex justify-center">
+        <Button
+          onClick={() => void handleContinue()}
+          disabled={loading}
+          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold text-[16px]"
+        >
+          {loading ? 'Checking...' : 'Continue'}
+        </Button>
+      </div>
+    ) : (
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9] flex flex-col items-center">
+        <div className="space-y-2 w-full max-w-[341px]">
           <Button
-            onClick={() => void handleContinue()}
-            disabled={loading}
-            className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
+            onClick={() => void handleVerifyOtp()}
+            disabled={otpLoading || otp.join('').length !== 6}
+            className="h-[54px] w-full !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[15px] font-semibold"
           >
-            {loading ? 'Checking...' : 'Continue'}
+            {otpLoading ? 'Verifying...' : 'Continue'}
+          </Button>
+          <Button
+            onClick={() => void handleSendOTP()}
+            disabled={sendingOTP || resendTimer > 0 || otpLoading}
+            className="h-[48px] !rounded-[14px] !bg-[#E8E8E9] hover:!bg-[#E0E0E0] !text-black text-[14px] font-medium"
+          >
+            {resendTimer > 0 ? `Resend code (${resendTimer}s)` : 'Resend code'}
           </Button>
         </div>
-      ) : (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9] flex flex-col items-center">
-          <div className="space-y-2 w-full max-w-[341px]">
-            <Button
-              onClick={() => void handleVerifyOtp()}
-              disabled={otpLoading || otp.join('').length !== 6}
-              className="h-[54px] w-full !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[15px] font-semibold"
-            >
-              {otpLoading ? 'Verifying...' : 'Continue'}
-            </Button>
-            <Button
-              onClick={() => void handleSendOTP()}
-              disabled={sendingOTP || resendTimer > 0 || otpLoading}
-              className="h-[48px] !rounded-[14px] !bg-[#E8E8E9] hover:!bg-[#E0E0E0] !text-[#000000] text-[14px] font-medium"
-            >
-              {resendTimer > 0 ? `Resend code (${resendTimer}s)` : 'Resend code'}
-            </Button>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+      </div>
+    )}
+  </div>
+)}

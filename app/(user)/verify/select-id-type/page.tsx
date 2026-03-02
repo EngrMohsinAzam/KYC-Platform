@@ -115,7 +115,7 @@ export default function SelectIdType() {
           </svg>
         </button>
       </div>
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center md:justify-center px-4 pt-3 pb-36 md:pt-2 md:pb-2">
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center md:justify-center px-4 pt-3 pb-36 md:pt-2 md:pb-2">
         <section className="hidden md:block text-center mb-4">
           <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
@@ -123,7 +123,7 @@ export default function SelectIdType() {
           </p>
         </section>
 
-        <div className="w-full max-w-[680px] border-[1.5px] border-[#E8E8E9] md:border-[1.5px] md:border-[#E8E8E9] rounded-[14px] md:rounded-[14px] md:px-5 md:py-4 px-4 py-4">
+        <div className="w-full max-w-[680px] md:rounded-[14px] md:px-5 md:py-4 px-4 py-4">
           {pausedMessage && (
             <div className="mb-5 bg-yellow-50 border border-yellow-200 rounded-[10px] p-3">
               <p className="text-sm text-yellow-800">{pausedMessage}</p>
