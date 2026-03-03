@@ -103,7 +103,7 @@ export default function ResidentSelection() {
           <div className="space-y-2">
             <button
               onClick={() => handleSelect('other')}
-              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border text-left flex items-center justify-between transition-colors ${
+              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border-[1.5px] text-left flex items-center justify-between transition-colors ${
                 selected === 'other'
                   ? 'border-[#6D3CCC] bg-[#E8E8E9]'
                   : 'border-transparent bg-[#E8E8E9]'
@@ -117,7 +117,7 @@ export default function ResidentSelection() {
 
             <button
               onClick={() => handleSelect('usa')}
-              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border text-left flex items-center justify-between transition-colors ${
+              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border-[1.5px] text-left flex items-center justify-between transition-colors ${
                 selected === 'usa'
                   ? 'border-[#6D3CCC] bg-[#E8E8E9]'
                   : 'border-transparent bg-[#E8E8E9]'

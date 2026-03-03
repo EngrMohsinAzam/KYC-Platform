@@ -112,22 +112,23 @@ function StartContent() {
         </button>
       </div> */}
 
-      {/* Main: full-width on mobile, card container only on desktop */}
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center px-4 pt-1 pb-28 md:pt-6 md:pb-6 md:py-8 min-h-0">
-        <div className="w-full max-w-[680px] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:bg-white md:px-5 md:py-4">
-          {/* 1. Title + Subtitle - top, centered */}
-          <div className="flex-shrink-0 w-full text-center">
-            <h1 className="text-2xl md:text-[28px] font-bold text-[#212121] mb-3">
-              Let&apos;s Get You Verified
-            </h1>
-            <p className="text-sm md:text-base text-[#6B7280] font-normal">
-              Fast, encrypted identity verification.
-            </p>
-          </div>
+      {/* Main: heading outside card, then card ~60% of viewport */}
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-start md:justify-center px-4 pt-4 md:pt-6 pb-28 md:pb-6 md:py-8 min-h-0">
+        {/* Title + Subtitle outside card - on mobile at top */}
+        <section className="flex-shrink-0 w-full max-w-[680px] text-center mb-3 md:mb-4">
+          <h1 className="text-xl md:text-[26px] leading-tight font-bold text-[#212121] mb-1.5 md:mb-2">
+            Let&apos;s Get You Verified
+          </h1>
+          <p className="text-xs md:text-sm text-[#6B7280] font-normal">
+            Fast, encrypted identity verification.
+          </p>
+        </section>
 
-          {/* 2. Illustration - mobile: slightly zoomed and centered; desktop: same */}
-          <div className="flex-shrink-0 w-full flex items-center justify-center py-4 md:py-6 overflow-hidden">
-            <div className="relative w-[160px] h-[180px] md:w-[160px] md:h-[180px] mx-auto">
+        {/* Card: on mobile flex-1 so illustration centers in remaining space; desktop min-h card */}
+        <div className="flex-1 min-h-0 w-full max-w-[680px] flex flex-col items-center justify-center md:min-h-[50vh] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:bg-white md:px-5 md:py-5 md:flex md:flex-col md:justify-center">
+          {/* Illustration - centered on mobile (only this block); desktop normal flow */}
+          <div className="flex-shrink-0 w-full flex items-center justify-center py-2 md:py-6 overflow-hidden">
+            <div className="relative w-[220px] h-[240px] md:w-[200px] md:h-[220px] mx-auto">
               <Image
                 src="/Start-Page.gif"
                 alt="Identity verification"
@@ -135,12 +136,12 @@ function StartContent() {
                 className="object-contain object-center"
                 unoptimized
                 priority
-                sizes="(max-width: 768px) 160px, 160px"
+                sizes="(max-width: 768px) 220px, 200px"
               />
             </div>
           </div>
 
-          {/* 3. Button - desktop only (mobile uses fixed bottom bar below) */}
+          {/* Button - desktop only (mobile uses fixed bottom bar below) */}
           <div className="hidden md:flex flex-shrink-0 w-full flex-col items-center mt-4">
             {paused && pausedMessage ? (
               <div className="w-full p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm mb-4 text-center">

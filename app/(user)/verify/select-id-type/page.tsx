@@ -123,7 +123,7 @@ export default function SelectIdType() {
           </p>
         </section>
 
-        <div className="w-full max-w-[680px] md:rounded-[14px] md:px-5 md:py-4 px-4 py-4">
+        <div className="w-full max-w-[680px] px-4 py-4 md:bg-white md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-5">
           {pausedMessage && (
             <div className="mb-5 bg-yellow-50 border border-yellow-200 rounded-[10px] p-3">
               <p className="text-sm text-yellow-800">{pausedMessage}</p>
@@ -133,16 +133,16 @@ export default function SelectIdType() {
           <h2 className="text-[16px] md:text-[18px] leading-[1.35] font-semibold text-[#000000] mb-2">
             Country of residence
           </h2>
-          <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3">
+          <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3 md:mb-6">
             Select the country you primarily reside in
           </p>
 
-          <div className="space-y-1">
+          <div className="space-y-1 md:space-y-4">
             <div className="relative">
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC]"
+                className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border-[1.5px] border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
               >
                 <option value="" disabled>
                   Country
@@ -163,7 +163,7 @@ export default function SelectIdType() {
                 <select
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-1 focus:ring-[#6D3CCC]"
+                  className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border-[1.5px] border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
                 >
                   <option value="" disabled>
                     State
@@ -181,8 +181,8 @@ export default function SelectIdType() {
             )}
           </div>
 
-          <div className="hidden md:block mt-12">
-            <p className="text-[14px] text-[#828282] mb-4">
+          <div className="hidden md:block mt-12 md:mt-16">
+            <p className="text-[14px] text-[#828282] mb-3 md:mb-4">
               By continuing, you agree to the <a href="#" className="text-[#6D3CCC]">Terms of Service</a>, <a href="#" className="text-[#6D3CCC]">Privacy Policy</a>, and <a href="#" className="text-[#6D3CCC]">Biometrics Policy</a>
             </p>
 
@@ -197,7 +197,7 @@ export default function SelectIdType() {
             <button
               type="button"
               onClick={() => router.push('/verify/enter-email')}
-              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-7 mx-auto hover:text-[#000000] transition-colors"
+              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-4 md:mt-5 mx-auto hover:text-[#000000] transition-colors"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />

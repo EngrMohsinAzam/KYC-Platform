@@ -124,7 +124,7 @@ export default function CheckStatus() {
                 value={email}
                 onChange={handleEmailChange}
                 disabled={loading}
-              className="w-full h-[48px] md:h-[54px] rounded-[12px] bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] border border-[#E8E8E9] focus:border-[#6D3CCC] focus:ring-1 focus:ring-[#6D3CCC]/20"
+              className="w-full h-[48px] md:h-[54px] rounded-[12px] bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] border-[1.5px] border-[#E8E8E9] focus:border-[#6D3CCC] focus:ring-2 focus:ring-[#6D3CCC]/20"
               />
             </div>
 

@@ -306,7 +306,7 @@ export default function EnterEmailPage() {
                   if (e.key === 'Enter' && !loading) void handleContinue()
                 }}
                 disabled={loading}
-                className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-2 bg-[#14111C1A] placeholder:text-[#828282] text-black text-[14px] md:text-[16px] px-4 focus:ring-[#6D3CCC]/20 ${
+                className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] bg-[#14111C1A] placeholder:text-[#828282] text-black text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 ${
                   error ? 'border-red-500 focus:border-red-500' : 'border-[#6D3CCC] focus:border-[#6D3CCC]'
                 }`}
               />
@@ -364,7 +364,7 @@ export default function EnterEmailPage() {
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                     onPaste={handleOtpPaste}
                     disabled={otpLoading}
-                    className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-2 transition-colors focus:outline-none focus:border-[#6D3CCC] ${
+                    className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-[1.5px] transition-colors focus:outline-none focus:border-[#6D3CCC] ${
                       index === 0
                         ? 'border-[#6D3CCC] bg-[#14111C1A] text-black'
                         : 'border-[#E0E0E0] bg-[#14111C1A] text-black'

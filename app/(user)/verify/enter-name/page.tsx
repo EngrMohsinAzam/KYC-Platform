@@ -128,8 +128,8 @@ export default function EnterNamePage() {
                 }
                 if (e.key === 'Enter' && !loading) handleContinue()
               }}
-              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border px-4 focus:outline-none focus:ring-0 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
-                errorFirst ? 'border-red-500' : 'border-transparent'
+              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] px-4 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
+                errorFirst ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-[#6D3CCC]'
               }`}
             />
             {errorFirst && <p className="text-sm text-red-600 mt-1">{errorFirst}</p>}
@@ -148,8 +148,8 @@ export default function EnterNamePage() {
                 }
                 if (e.key === 'Enter' && !loading) handleContinue()
               }}
-              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border px-4 focus:outline-none focus:ring-0 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
-                errorLast ? 'border-red-500' : 'border-transparent'
+              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] px-4 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
+                errorLast ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-[#6D3CCC]'
               }`}
             />
             {errorLast && <p className="text-sm text-red-600 mt-1">{errorLast}</p>}

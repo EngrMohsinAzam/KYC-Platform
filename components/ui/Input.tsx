@@ -16,9 +16,9 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
       <div className="relative">
         <input
           className={`
-            w-full px-4 py-3 rounded-lg border border-gray-300
+            w-full px-4 py-3 rounded-lg border-[1.5px] border-gray-300
             bg-white md:bg-surface-light text-text-primary placeholder:text-gray-400
-            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+            focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]
             transition-all duration-300
             ${error ? 'border-red-500' : ''}
             ${className}

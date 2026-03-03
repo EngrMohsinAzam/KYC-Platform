@@ -134,7 +134,7 @@ export default function EnterPhonePage() {
           <div className="flex gap-2">
             <div
               aria-label={`Country code ${phoneCountryLabel}`}
-              className="flex-shrink-0 w-[120px] md:w-[140px] h-[48px] md:h-[52px] flex items-center justify-center rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border border-transparent text-[#000000] text-[14px] md:text-[16px] font-medium cursor-not-allowed select-none"
+              className="flex-shrink-0 w-[120px] md:w-[140px] h-[48px] md:h-[52px] flex items-center justify-center rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border-[1.5px] border-transparent text-[#000000] text-[14px] md:text-[16px] font-medium cursor-not-allowed select-none"
             >
               {phoneCountryLabel}
             </div>
@@ -149,8 +149,8 @@ export default function EnterPhonePage() {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
                 maxLength={maxLen + 8}
-                className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border px-4 focus:outline-none focus:ring-0 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
-                  error ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-transparent'
+                className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] px-4 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] ${
+                  error ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-[#6D3CCC]'
                 }`}
               />
               {error && <p className="text-sm text-red-600 mt-1">{error}</p>}

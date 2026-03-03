@@ -169,7 +169,7 @@ export default function EnterAddressPage() {
   }, [])
 
   const inputClass =
-    'w-full h-[48px] md:h-[46px] rounded-[12px] md:rounded-[10px] border bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-0'
+    'w-full h-[48px] md:h-[46px] rounded-[12px] md:rounded-[10px] border-[1.5px] bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]'
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
@@ -220,7 +220,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} ${errorAddress ? 'border-red-500' : 'border-transparent'}`}
+                className={`${inputClass} ${errorAddress ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-transparent'}`}
                 autoComplete="off"
               />
               {errorAddress && <p className="text-sm text-red-600 mt-1">{errorAddress}</p>}
@@ -250,7 +250,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} pr-14 border-transparent`}
+                className={`${inputClass} pr-14 border-transparent focus:border-[#6D3CCC]`}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] md:text-[11px] text-[#828282] pointer-events-none">
                 Optional
@@ -269,7 +269,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} ${errorCity ? 'border-red-500' : 'border-transparent'}`}
+                className={`${inputClass} ${errorCity ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-transparent'}`}
               />
               {errorCity && <p className="text-sm text-red-600 mt-1">{errorCity}</p>}
             </div>
@@ -286,7 +286,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} ${errorPostalCode ? 'border-red-500' : 'border-transparent'}`}
+                className={`${inputClass} ${errorPostalCode ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-transparent'}`}
               />
               {errorPostalCode && <p className="text-sm text-red-600 mt-1">{errorPostalCode}</p>}
             </div>
