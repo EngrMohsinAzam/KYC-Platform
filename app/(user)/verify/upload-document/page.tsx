@@ -391,10 +391,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 
 const idTypeLabels: Record<string, string> = {
   'passport': 'Passport',
@@ -402,20 +405,8 @@ const idTypeLabels: Record<string, string> = {
   'drivers-license': "Driver's License",
 }
 
-/** Document upload illustration - smaller on mobile so both buttons fit on screen */
-function HandPhoneIllustration() {
-  return (
-    <div className="flex justify-center items-center w-full flex-shrink-0 my-2 md:my-6">
-      <Image
-        src="/Doc3.png"
-        alt="Upload or capture your document"
-        width={180}
-        height={120}
-        className="max-w-[100px] md:max-w-[180px] w-full h-auto object-contain"
-      />
-    </div>
-  )
-}
+/** Passport / document Lottie animation (hand + phone with green screen) - per reference */
+const PASSPORT_ANIMATION_PATH = '/animations/digiport%20animations/passport%20animation%20green%20theme.json'
 
 export default function UploadDocument() {
   const router = useRouter()
@@ -456,7 +447,19 @@ export default function UploadDocument() {
   const [isMobile, setIsMobile] = useState(false)
   const [showCaptureTips, setShowCaptureTips] = useState(false)
   const [flashOn, setFlashOn] = useState(false)
-  
+  const [passportAnimationData, setPassportAnimationData] = useState<object | null>(null)
+  const [isReadyToCapture, setIsReadyToCapture] = useState(false)
+  const [capturedCameraPreview, setCapturedCameraPreview] = useState<string | null>(null)
+  const [isReviewingCapture, setIsReviewingCapture] = useState(false)
+
+  // Load passport Lottie animation (reference: hand + phone with green screen)
+  useEffect(() => {
+    fetch(PASSPORT_ANIMATION_PATH)
+      .then(res => res.json())
+      .then(data => setPassportAnimationData(data))
+      .catch(() => {})
+  }, [])
+
   // Instruction for camera overlay
   const cameraInstructionText = currentSide === 'front'
     ? "Place the front of your ID in the frame"
@@ -614,6 +617,10 @@ export default function UploadDocument() {
     try {
       setIsCameraLoading(true)
       setIsCameraActive(false) // Reset to ensure clean state
+      // Reset premium camera flow state (so front always starts at "Continue" with before-continue frame)
+      setIsReadyToCapture(false)
+      setIsReviewingCapture(false)
+      setCapturedCameraPreview(null)
       
       // Stop any existing stream first
       if (stream) {
@@ -776,6 +783,9 @@ export default function UploadDocument() {
     }
     setIsCameraActive(false)
     setIsCameraLoading(false)
+    setIsReadyToCapture(false)
+    setIsReviewingCapture(false)
+    setCapturedCameraPreview(null)
     if (videoRef.current) {
       videoRef.current.srcObject = null
     }
@@ -804,11 +814,16 @@ export default function UploadDocument() {
         const scaledH = vh * scale
         const offsetX = (scaledW - cw) / 2
         const offsetY = (scaledH - ch) / 2
-        let frameW = 0.85 * cw
-        let frameH = frameW / (3 / 2)
-        if (frameH > ch) {
-          frameH = ch
-          frameW = frameH * (3 / 2)
+        // Desktop: crop to an inner frame. Mobile premium camera: crop to the full visible window.
+        let frameW = cw
+        let frameH = ch
+        if (!isMobile) {
+          frameW = 0.85 * cw
+          frameH = frameW / (3 / 2)
+          if (frameH > ch) {
+            frameH = ch
+            frameW = frameH * (3 / 2)
+          }
         }
         const frameLeft = (cw - frameW) / 2
         const frameTop = (ch - frameH) / 2
@@ -834,7 +849,8 @@ export default function UploadDocument() {
       setBackImage(imageData)
       dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: imageData })
     }
-    stopCamera()
+    setCapturedCameraPreview(imageData)
+    setIsReviewingCapture(true)
   };
 
   const handleCameraClick = async () => {
@@ -1187,82 +1203,81 @@ export default function UploadDocument() {
   // Intro state: no image yet, not in camera - show carbon-copy design from reference images
   const showIntroCard = !currentImage && !isCameraActive && !isCameraLoading && !isUploading;
   const sideLabel = currentSide === 'front' ? 'Front Side' : 'Back Side';
-  const pageTitle = `${idTypeLabel} (${sideLabel})`;
-  const instructionLine1 = currentSide === 'front'
-    ? "Upload a clear image of your ID's front side to continue or"
-    : "Upload a clear image of your ID's back side to continue or";
-  const instructionLine2 = 'Capture a live photo of your document.';
+  const pageTitle = idTypeLabel;
+  const instructionText = "Upload a clear image of your ID's both side to continue or Capture a live photo of your document.";
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       {/* Mobile: back chevron - hide when camera is open in card */}
-      {!isCameraActive && !isCameraLoading && (
-      <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => router.push('/verify/upload-id-type')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
-      )}
+      {!isCameraActive && !isCameraLoading ? (
+        <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
+          <button
+            type="button"
+            aria-label="Go back"
+            onClick={() => router.push('/verify/upload-id-type')}
+            className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+        </div>
+      ) : null}
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-4">
         {/* Intro card: carbon copy of reference images - when no image and camera not active */}
         {showIntroCard && (
           <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[680px] md:mx-auto py-2 md:py-0">
-          <div className="w-full max-w-[680px] flex flex-col flex-shrink-0 md:flex-1 md:min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 md:max-h-[90vh] md:overflow-hidden md:scale-[0.97] md:origin-center">
-            {/* Top: title + instructions - compact on mobile */}
-            <div className="flex-shrink-0 text-center md:text-left">
-              <h1 className="text-[17px] md:text-[22px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 w-full">
+          <div className="w-full max-w-[680px] flex flex-col flex-shrink-0 flex-1 min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 md:max-h-[90vh] md:overflow-hidden md:scale-[0.97] md:origin-center">
+            {/* Title - per reference: bold, centered on mobile */}
+            <div className="flex-shrink-0 text-left">
+              <h1 className="text-[20px] md:text-[22px] leading-tight font-bold text-[#000000] mb-2 md:mb-1.5 w-full font-sans">
                 {pageTitle}
               </h1>
-              <p className="text-[11px] md:text-[15px] leading-[1.35] font-normal text-[#828282] mb-0.5 text-center md:text-center w-full md:hidden">
-                {instructionLine1}
-              </p>
-              <p className="text-[11px] md:text-[15px] leading-[1.35] font-normal text-[#828282] mb-0 text-center md:text-center w-full md:hidden">
-                {instructionLine2}
+              <p className="font-sans font-normal text-[16px] leading-[100%] tracking-[0%] text-[#545454] mb-4 md:mb-4 text-left w-full">
+                {instructionText}
               </p>
             </div>
-            {/* Middle: illustration - no flex-grow on mobile so buttons stay visible */}
-            <div className="flex-shrink-0 flex items-center justify-center py-1.5 md:flex-1 md:min-h-0 md:py-3">
-              <HandPhoneIllustration />
+            {/* Middle: Lottie animation - centered + larger on mobile (match reference) */}
+            <div className="flex-1 min-h-0 flex items-center justify-center py-2 md:flex-1 md:min-h-0 md:py-4">
+              {passportAnimationData ? (
+                <div className="w-[260px] max-w-[260px] md:max-w-[280px] aspect-square flex items-center justify-center">
+                  <Lottie animationData={passportAnimationData} loop className="w-full h-full" />
+                </div>
+              ) : (
+                <div className="w-[260px] max-w-[260px] md:max-w-[280px] aspect-square flex items-center justify-center bg-[#F5F5F5] rounded-2xl">
+                  <Image src="/Doc3.png" alt="" width={120} height={80} className="w-3/4 h-auto object-contain opacity-70" />
+                </div>
+              )}
             </div>
-            {/* Bottom: both buttons - always visible on mobile */}
-            <div className="flex-shrink-0 flex flex-col w-full pt-1 pb-4 md:pt-2 md:pb-0">
-            <div className="flex flex-col gap-2 w-full">
+            {/* Buttons - mobile: pinned to bottom like reference */}
+            <div className="flex-shrink-0 flex flex-col w-full gap-3 mt-auto pt-2 pb-2 md:pt-4 md:pb-0">
               <button
                 type="button"
                 onClick={handleFileClick}
-                className="w-full h-[40px] md:h-[48px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] text-[14px] md:text-[15px] font-medium transition-colors"
+                className="w-full h-[56px] md:h-[71px] flex items-center justify-center gap-3 rounded-[12px] md:rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[16px] font-medium transition-colors font-sans"
               >
-                <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
+                <HiOutlinePhotograph className="w-5 h-5 md:w-6 md:h-6 text-[#545454] flex-shrink-0" />
                 Choose File
               </button>
               <button
                 type="button"
                 onClick={handleCameraClick}
-                className="w-full h-[40px] md:h-[48px] flex items-center justify-center gap-2 rounded-[12px] md:rounded-[14px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white text-[14px] md:text-[15px] font-semibold transition-colors"
+                className="w-full h-[56px] md:h-[71px] flex items-center justify-center gap-3 rounded-[12px] md:rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors font-sans"
               >
-                <HiOutlineCamera className="w-5 h-5" />
+                <HiOutlineCamera className="w-5 h-5 md:w-6 md:h-6 flex-shrink-0" />
                 Take Photo
               </button>
             </div>
+            {/* Back to Previous - per reference, at bottom of card */}
             <button
               type="button"
               onClick={() => router.push('/verify/upload-id-type')}
-              className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal mt-4 w-full hover:text-[#000000] transition-colors"
+              className="hidden md:flex items-center justify-center gap-2 text-[#545454] text-[14px] font-normal mt-4 md:mt-6 w-full hover:text-[#000000] transition-colors font-sans"
             >
-              <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-              </svg>
+              <span aria-hidden>←</span>
               Back to Previous
             </button>
-            </div>
             {/* Hidden inputs for intro card - camera input has id so Take Photo always opens camera on mobile */}
             <input
               ref={fileInputRef}
@@ -1290,399 +1305,163 @@ export default function UploadDocument() {
         <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col md:flex-row md:items-center md:justify-center md:py-4">
           {/* Single in-card camera (mobile + desktop) - not full screen; capture crops to frame */}
           {(isCameraActive || isCameraLoading) ? (
-            <div className="w-full max-w-[680px] mx-auto px-4 flex flex-col justify-center py-4">
-              <div className="flex flex-col gap-4 w-full">
-                <div ref={cameraContainerRef} className="relative w-full aspect-[3/2] bg-black rounded-2xl overflow-hidden">
-                  {isCameraLoading ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <div className="w-14 h-14 border-4 border-white border-t-transparent rounded-full animate-spin mb-4" />
-                      <p className="text-white text-sm">Starting camera...</p>
-                    </div>
-                  ) : (
-                    <>
-                      <video
-                        ref={(el) => {
-                          if (el) {
-                            (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el
-                            if (stream) {
-                              el.srcObject = stream
-                              el.style.cssText = 'display:block!important;width:100%!important;height:100%!important;object-fit:cover!important;position:absolute!important;inset:0!important;z-index:1!important;opacity:1!important;visibility:visible!important'
-                              el.play().catch(() => {})
-                            }
-                          }
-                        }}
-                        autoPlay
-                        playsInline
-                        muted
-                        className="absolute inset-0 w-full h-full object-cover z-[1]"
-                      />
-                      {!stream && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center z-[2]">
-                          <div className="w-14 h-14 border-4 border-white border-t-transparent rounded-full animate-spin mb-4" />
-                          <p className="text-white text-sm">Preparing camera...</p>
-                        </div>
-                      )}
-                      <canvas ref={canvasRef} className="hidden" />
-                      <div className="absolute inset-0 z-[20] flex flex-col items-center justify-center pointer-events-none">
-                        <div className="w-[85%] max-w-[340px] aspect-[3/2] rounded-2xl border-2 border-white/90 flex items-center justify-center relative overflow-visible">
-                          <div className="absolute top-3 left-3 w-8 h-8 border-l-4 border-t-4 border-white rounded-tl-lg" />
-                          <div className="absolute top-3 right-3 w-8 h-8 border-r-4 border-t-4 border-white rounded-tr-lg" />
-                          <div className="absolute bottom-3 left-3 w-8 h-8 border-l-4 border-b-4 border-white rounded-bl-lg" />
-                          <div className="absolute bottom-3 right-3 w-8 h-8 border-r-4 border-b-4 border-white rounded-br-lg" />
-                          {/* Same design for front and back: frame only, camera feed visible inside - no illustration */}
-                        </div>
-                        <p className="mt-3 text-white text-sm font-medium text-center drop-shadow-md px-4">
-                          {cameraInstructionText}
-                        </p>
-                      </div>
-                    </>
-                  )}
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={stopCamera}
-                    disabled={isCameraLoading}
-                    className="flex-1 h-11 rounded-full bg-white border-2 border-black text-black font-medium hover:bg-gray-50 disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={capturePhoto}
-                    disabled={isCameraLoading || !stream}
-                    className="flex-1 h-11 rounded-full bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold disabled:opacity-50"
-                  >
-                    Capture Photo
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-          <>
-          {/* Mobile Design - Full screen */}
-          <div className="md:hidden h-full flex flex-col px-4 pt-4 pb-32 overflow-hidden min-h-0">
-            {/* Title and Step Info */}
-            <div className="mb-6">
-              <h1 className="text-xl font-semibold text-gray-900 mb-2">
-                {idTypeLabel}
-              </h1>
-              {needsBackSide && (
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-900 mb-1">
-                    {currentSide === 'front' ? 'Step 1 of 2: Front Side' : 'Step 2 of 2: Back Side'}
-                  </p>
-                  {currentSide === 'back' && frontImage && (
-                    <p className="text-xs text-green-600 font-semibold">
-                      ✓ Front side uploaded! Now take a photo of the BACK side.
-                    </p>
-                  )}
-                </div>
-              )}
-              
-              {/* Progress indicator */}
-              {needsBackSide && (
-                <div className="flex gap-2 mb-4">
-                  <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${frontImage ? 'bg-gray-900' : 'bg-gray-200'}`} />
-                  <div className={`flex-1 h-1.5 rounded-full transition-all duration-500 ${backImage ? 'bg-gray-900' : 'bg-gray-200'}`} />
-                </div>
-              )}
-            </div>
+            <>
+              {/* Mobile: premium camera screen (match reference) */}
+              <div className="md:hidden fixed inset-0 z-50 bg-black">
+                {/* Premium dark blurred background (no camera feed) */}
+                <div className="absolute inset-0 bg-[#0B0B0B]" />
+                <div
+                  className="absolute inset-0 opacity-80"
+                  style={{
+                    background:
+                      'radial-gradient(70% 55% at 50% 35%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.06) 28%, rgba(0,0,0,0.0) 60%)',
+                    filter: 'blur(18px)',
+                  }}
+                />
+                <div className="absolute inset-0 bg-black/35" />
 
-            {/* Upload Area */}
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-              <div 
-                className={`
-                  relative w-full rounded-2xl overflow-hidden mb-4 transition-all duration-300
-                  ${isCameraActive || isCameraLoading ? 'min-h-0' : 'aspect-[3/2]'}
-                  ${currentImage ? 'bg-white border border-gray-200' : isCameraActive || isCameraLoading ? 'bg-transparent' : 'bg-gray-50 border-2 border-dashed border-gray-300'}
-                `}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                {isUploading ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-white">
-                    <div className="scanning-animation mb-4">
-                      <svg className="w-16 h-16 text-gray-900 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-sm text-gray-600 font-medium">Processing document...</p>
-                  </div>
-                ) : isCameraActive || isCameraLoading ? (
-                  null
-                ) : currentImage ? (
-                  <div className="relative w-full h-full">
-                    <Image
-                      src={currentImage}
-                      alt={`ID Document ${currentSide}`}
-                      fill
-                      className="object-contain"
-                      unoptimized
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6">
-                    <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                {/* Top back arrow */}
+                <div className="absolute top-0 left-0 right-0 px-4 pt-3 z-[60]">
+                  <button
+                    type="button"
+                    aria-label="Go back"
+                    onClick={() => {
+                      stopCamera()
+                      router.push('/verify/upload-id-type')
+                    }}
+                    className="h-10 w-10 inline-flex items-center justify-center text-white/90 hover:text-white transition-colors"
+                  >
+                    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
                     </svg>
-                    <p className="text-sm text-gray-500 text-center mb-6">
-                      Make sure all information is visible and easy to read
-                    </p>
+                  </button>
+                </div>
 
-                    <div className="flex flex-col gap-3 w-full">
-                      {isMobile ? (
-                        <>
-                          <button
-                            onClick={handleNativeCamera}
-                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-[15px] transition-all"
-                          >
-                            <HiOutlineCamera className="w-5 h-5" />
-                            <span>Take Photo</span>
-                          </button>
-                          <button
-                            onClick={handleFileClick}
-                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[15px] transition-all"
-                          >
-                            <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
-                            <span>Choose File</span>
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={handleCameraClick}
-                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-[15px] transition-all"
-                          >
-                            <HiOutlineCamera className="w-5 h-5" />
-                            <span>Take Photo</span>
-                          </button>
-                          <button
-                            onClick={handleFileClick}
-                            className="flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[15px] transition-all"
-                          >
-                            <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
-                            <span>Choose File</span>
-                          </button>
-                        </>
-                      )}
+                {/* Center: only the ID window shows live camera (unblurred), rest stays blurred */}
+                <div className="absolute inset-0 flex items-center justify-center px-6 z-[60]">
+                  <div className="w-full max-w-[360px] relative">
+                    {/* Unblurred live camera, clipped to the ID area inside the overlay image */}
+                    <div
+                      ref={cameraContainerRef}
+                      className="absolute left-[4%] right-[4%] top-[7%] bottom-[28%] rounded-[22px] overflow-hidden"
+                    >
+                      {isReviewingCapture && capturedCameraPreview ? (
+                        <Image
+                          src={capturedCameraPreview}
+                          alt=""
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                      ) : isReadyToCapture ? (
+                        <video
+                          autoPlay
+                          playsInline
+                          muted
+                          className="absolute inset-0 w-full h-full object-cover"
+                          ref={(el) => {
+                            if (el) {
+                              (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = el
+                              if (stream) {
+                                el.srcObject = stream
+                                el.play().catch(() => {})
+                              }
+                            }
+                          }}
+                        />
+                      ) : null}
+                      <canvas ref={canvasRef} className="hidden" />
                     </div>
 
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                    <input
-                      id="doc-camera-input"
-                      ref={cameraInputRef}
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      aria-label="Take photo with camera"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Tips */}
-              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-4">
-                <h4 className="font-medium text-gray-900 mb-2 text-sm">Tips for best results</h4>
-                <ul className="text-xs text-gray-600 space-y-1">
-                  <li>• Ensure all information is clearly visible</li>
-                  <li>• Use good lighting, avoid shadows</li>
-                  <li>• Place document on flat surface</li>
-                  <li>• Capture entire document in frame</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          {/* Desktop Design - aligned like other verify pages */}
-          <div className="hidden md:flex md:flex-1 md:min-h-0 md:items-center md:justify-center w-full md:px-6">
-            <div className="w-full max-w-[680px] bg-white rounded-[14px] border border-[#E8E8E9] shadow-md px-5 py-4 max-h-[90vh] overflow-hidden flex flex-col scale-[0.97] origin-center">
-              <div className="mb-4 md:mb-3">
-                <h1 className="text-[24px] font-bold text-[#000000] mb-2">
-                  {idTypeLabel}
-                </h1>
-                {needsBackSide && (
-                  <div className="mb-4">
-                    <p className="text-sm text-gray-600 mb-4">
-                      {currentSide === 'front' ? 'Step 1 of 2: Front Side' : 'Step 2 of 2: Back Side'}
-                    </p>
-                    
-                    <div className="flex gap-2 mb-3">
-                      <div className={`flex-1 h-1.5 rounded-full transition-all duration-700 ${frontImage ? 'bg-gray-900' : 'bg-gray-200'}`} />
-                      <div className={`flex-1 h-1.5 rounded-full transition-all duration-700 ${backImage ? 'bg-gray-900' : 'bg-gray-200'}`} />
-                    </div>
-                  </div>
-                )}
-
-                {currentSide === 'back' && frontImage && (
-                  <div className="mb-6 p-4 bg-green-50 border-2 border-green-200 rounded-xl">
-                    <p className="text-sm font-semibold text-green-800 mb-3">✓ Front side uploaded! Now take a photo of the BACK side.</p>
+                    {/* Overlay frame: pre-capture = before-continue, ready = frame-document-camra */}
                     <Image
-                      src={frontImage}
-                      alt="Front side preview"
-                      width={320}
-                      height={213}
-                      className="w-full max-w-xs mx-auto rounded-lg border border-gray-200 shadow-sm"
-                      unoptimized
+                      src={
+                        isReadyToCapture
+                          ? (currentSide === 'back'
+                              ? '/document-camra/back-frame-document.png'
+                              : '/document-camra/frame-document-camra.png')
+                          : (currentSide === 'back'
+                              ? '/document-camra/forback-before-continue.png'
+                              : '/document-camra/before-continue.png')
+                      }
+                      alt=""
+                      width={672}
+                      height={672}
+                      className="w-full h-auto object-contain drop-shadow-[0_18px_40px_rgba(0,0,0,0.55)]"
+                      priority
                     />
                   </div>
-                )}
-              </div>
+                </div>
 
-              <div className="mb-4 flex-1 min-h-0 flex flex-col">
-                <div 
-                  className={`
-                    relative w-full rounded-2xl overflow-hidden mb-4 transition-all
-                    ${isCameraActive || isCameraLoading ? 'min-h-0' : 'aspect-[3/2]'}
-                    ${currentImage ? 'bg-white border border-gray-200' : isCameraActive || isCameraLoading ? 'bg-transparent' : 'bg-gray-50 border-2 border-dashed border-gray-300'}
-                  `}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                >
-                  {isUploading ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center bg-white">
-                      <div className="mb-6">
-                        <svg className="w-20 h-20 text-gray-900 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-gray-600 font-medium">Processing document...</p>
-                    </div>
-                  ) : isCameraActive || isCameraLoading ? (
-                    null
-                  ) : currentImage ? (
-                    <div className="relative w-full h-full group">
-                      <Image
-                        src={currentImage}
-                        alt={`ID Document ${currentSide}`}
-                        fill
-                        className="object-contain"
-                        unoptimized
-                      />
-                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-300 flex items-center justify-center">
-                        <button
-                          onClick={handleRetake}
-                          className="opacity-0 group-hover:opacity-100 transform scale-90 group-hover:scale-100 transition-all duration-300 bg-white text-gray-900 px-6 py-3 rounded-full font-medium shadow-lg"
-                        >
-                          Retake Photo
-                        </button>
-                      </div>
+                {/* Bottom: Continue (pre-capture) → Capture (ready to take photo) */}
+                <div className="absolute bottom-0 left-0 right-0 px-6 pb-8 z-[60]">
+                  {isReviewingCapture ? (
+                    <div className="w-full flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCapturedCameraPreview(null)
+                          setIsReviewingCapture(false)
+                          setIsReadyToCapture(true)
+                        }}
+                        className="flex-1 h-[56px] rounded-[14px] bg-transparent border-2 border-white text-white text-[16px] font-semibold transition-colors"
+                      >
+                        Retake photo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Front side approved and a back side is required → switch to back capture flow
+                          if (needsBackSide && currentSide === 'front') {
+                            setIsReviewingCapture(false)
+                            setCapturedCameraPreview(null)
+                            setIsReadyToCapture(false)
+                            setCurrentSide('back')
+                            setBackImage(null)
+                            dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: '' })
+                            return
+                          }
+                          // Otherwise (passport or back side approved) → close camera overlay and proceed
+                          stopCamera()
+                          // Avoid showing the old intermediate screen; continue flow immediately
+                          setTimeout(() => {
+                            handleContinue()
+                          }, 0)
+                        }}
+                        className="flex-1 h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors"
+                      >
+                        Use this photo
+                      </button>
                     </div>
                   ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-6">
-                      <svg className="w-24 h-24 text-gray-400 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                        Upload {currentSide} side
-                      </h3>
-                      <p className="text-sm text-gray-500 mb-6 text-center max-w-xs">
-                        Drag & drop your document or choose a method below
-                      </p>
-
-                      <div className="flex gap-3 w-full max-w-sm">
-                        <button
-                          onClick={handleCameraClick}
-                          className="flex-1 flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-[15px] transition-all"
-                        >
-                          <HiOutlineCamera className="w-5 h-5" />
-                          <span>Take Photo</span>
-                        </button>
-                        <button
-                          onClick={handleFileClick}
-                          className="flex-1 flex items-center justify-center gap-2 h-[48px] rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[15px] transition-all"
-                        >
-                          <HiOutlinePhotograph className="w-5 h-5 text-[#6B6B6B]" />
-                          <span>Choose File</span>
-                        </button>
-                      </div>
-
-                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                      <input 
-                        ref={cameraInputRef} 
-                        type="file" 
-                        accept="image/*" 
-                        capture="environment" 
-                        onChange={handleFileChange} 
-                        className="hidden"
-                        aria-label="Take photo with camera"
-                      />
-                    </div>
+                    <button
+                      type="button"
+                      onClick={isReadyToCapture ? capturePhoto : () => setIsReadyToCapture(true)}
+                      disabled={isCameraLoading || !stream}
+                      className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      {isReadyToCapture ? 'Capture' : 'Continue'}
+                    </button>
                   )}
                 </div>
 
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 md:hidden">
-                  <h4 className="font-medium text-gray-900 mb-3">Tips for best results</h4>
-                  <ul className="text-sm text-gray-600 space-y-2">
-                    <li>• Ensure all information is clearly visible and readable</li>
-                    <li>• Use good lighting and avoid shadows or glare</li>
-                    <li>• Place document on a flat, contrasting surface</li>
-                    <li>• Capture the entire document within the frame</li>
-                  </ul>
-                </div>
+                {/* Loading state overlay */}
+                {isCameraLoading && (
+                  <div className="absolute inset-0 z-[70] flex flex-col items-center justify-center bg-black/40">
+                    <div className="w-14 h-14 border-4 border-white border-t-transparent rounded-full animate-spin mb-4" />
+                    <p className="text-white text-sm">Starting camera...</p>
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-3">
-                <Button 
-                  onClick={handleContinue} 
-                  disabled={!canContinue}
-                  className="w-full h-[48px] md:h-[52px] !rounded-[12px] md:!rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] text-white font-semibold text-[16px] disabled:!bg-[#E8E8E9] disabled:!text-[#828282] disabled:cursor-not-allowed"
-                >
-                  {currentSide === 'front' && needsBackSide && frontImage 
-                    ? 'Continue to Back Side →' 
-                    : currentSide === 'back' && backImage && frontImage
-                    ? 'Continue'
-                    : currentSide === 'back' && !backImage
-                    ? 'Upload Back Side to Continue'
-                    : 'Continue'}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </> )}
+              {/* Desktop camera UI removed for this flow (use only premium camera design) */}
+            </>
+          ) : (
+          null)}
         </div>
         )}
       </main>
       <PoweredBy />
-      {/* Mobile Fixed Button */}
-      {/* Mobile Fixed Button - only when not on intro and not in camera */}
-      {!isCameraActive && !showIntroCard && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-[#E8E8E9] shadow-lg">
-          <div className="space-y-2">
-            <Button 
-              onClick={handleContinue} 
-              disabled={!canContinue}
-              className="w-full h-[52px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] text-white font-semibold text-[16px] disabled:!bg-[#E8E8E9] disabled:!text-[#828282] disabled:cursor-not-allowed"
-            >
-              {currentSide === 'front' && needsBackSide && frontImage 
-                ? 'Continue to Back Side →' 
-                : currentSide === 'back' && backImage && frontImage
-                ? 'Continue'
-                : currentSide === 'back' && !backImage
-                ? 'Upload Back Side to Continue'
-                : 'Continue'}
-            </Button>
-            {currentImage && (
-              <button 
-                onClick={handleRetake}
-                className="w-full h-[48px] !rounded-[14px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#000000] font-medium text-[16px]"
-              >
-                Retake Photo
-              </button>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

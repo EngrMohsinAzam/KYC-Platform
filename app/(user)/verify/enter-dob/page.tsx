@@ -108,16 +108,16 @@ export default function EnterDobPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <section className="hidden md:block text-center mb-7">
-          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
-          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
+          <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-2 font-sans text-[16px] leading-[100%] font-normal text-[#545454]">
             We&apos;re required to collect this verify your identity.
           </p>
         </section>
 
         <div className="w-full max-w-[760px] md:max-w-[680px] md:bg-transparent md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
-          <h2 className="md:hidden text-[24px] leading-[1.3] font-bold text-[#000000] mb-2">
+          <h2 className="md:hidden font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-2">
             Date of birth
           </h2>
           <label className="hidden md:block text-[16px] md:text-[18px] leading-[1.4] font-semibold text-[#000000] mb-2">
@@ -139,7 +139,7 @@ export default function EnterDobPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && canProceed && !loading) handleContinue()
               }}
-              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 bg-[#14111C1A] text-[#000000] text-[14px] md:text-[16px] [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden ${
+              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 bg-[#14111C1A] text-[#000000] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden ${
                 error ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-[#6D3CCC]'
               }`}
             />
@@ -171,12 +171,6 @@ export default function EnterDobPage() {
             </div>
           )}
 
-          <div className="md:hidden mt-6">
-            <p className="text-[14px] leading-[1.5] font-normal text-[#828282]">
-              We&apos;re required to collect this verify your identity.
-            </p>
-          </div>
-
           <div className="hidden md:block mt-6">
             <Button
               onClick={() => void handleContinue()}
@@ -199,14 +193,19 @@ export default function EnterDobPage() {
         </div>
       </main>
       <PoweredBy />
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
-        <Button
+      {/* Mobile: helper text + bottom Continue button, lime with black text */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+        <p className="mb-3 font-sans text-[14px] leading-[1.4] font-normal text-center text-[#545454]">
+          We&apos;re required to collect this verify your identity.
+        </p>
+        <button
+          type="button"
           onClick={() => void handleContinue()}
           disabled={loading || !canProceed}
-          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
+          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Saving...' : 'Continue'}
-        </Button>
+        </button>
       </div>
     </div>
   )

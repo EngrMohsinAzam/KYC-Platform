@@ -131,7 +131,7 @@ export default function EnterAddressPage() {
       },
     })
     setLoading(false)
-    router.push('/verify/documents')
+    router.push('/verify/employment-status')
   }
 
   const canProceed =
@@ -168,17 +168,18 @@ export default function EnterAddressPage() {
     }
   }, [])
 
-  const inputClass =
-    'w-full h-[48px] md:h-[46px] rounded-[12px] md:rounded-[10px] border-[1.5px] bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]'
+  const inputBase =
+    'w-full h-[51px] bg-[#EBEBEB] md:bg-[#14111C1A] placeholder:text-[#828282] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] px-4 border border-transparent focus:outline-none focus:ring-0'
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden pl-1 pr-4 pt-5">
+      {/* Mobile: back arrow only (left) */}
+      <div className="md:hidden pl-4 pt-5 pb-1">
         <button
           type="button"
           aria-label="Go back"
           onClick={() => router.push('/verify/enter-dob')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -186,27 +187,32 @@ export default function EnterAddressPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+        {/* Desktop heading */}
         <section className="hidden md:block text-center mb-3 md:mb-4">
-          <h1 className="text-[34px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>
-          <p className="mt-1 text-[16px] leading-[1.5] font-normal text-[#828282]">
+          <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-1 font-sans text-[16px] leading-[100%] font-normal text-[#545454]">
             We&apos;re required to collect this verify your identity.
           </p>
         </section>
 
         <div className="w-full max-w-[760px] md:max-w-[680px] md:bg-transparent md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4">
-          <h2 className="md:hidden text-[24px] leading-[1.3] font-bold text-[#000000] mb-2">
+          {/* Mobile heading */}
+          <h2 className="md:hidden font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-2">
             Address
           </h2>
-          <label className="hidden md:block text-[16px] md:text-[18px] leading-[1.4] font-semibold text-[#000000] mb-1">
+          {/* Desktop label */}
+          <label className="hidden md:block font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-1">
             Address
           </label>
-          <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3">
+          <p className="font-sans text-[16px] md:text-[16px] leading-[1.4] font-normal text-[#545454] mb-3">
             What is your residential address?
           </p>
 
-          <div className="space-y-3 md:space-y-2">
-            <div className="relative">
+          {/* Inputs styled like select-id-type (stacked, light gray, small gap, focus border lime) */}
+          <div className="space-y-1">
+            {/* Address: top 12, bottom 5 */}
+            <div className="relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] flex items-center px-0 border border-transparent bg-transparent focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <input
                 type="text"
                 placeholder="Address"
@@ -220,7 +226,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} ${errorAddress ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-transparent'}`}
+                className={`${inputBase} rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] ${errorAddress ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
                 autoComplete="off"
               />
               {errorAddress && <p className="text-sm text-red-600 mt-1">{errorAddress}</p>}
@@ -232,7 +238,7 @@ export default function EnterAddressPage() {
                       type="button"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectSuggestion(s)}
-                      className="w-full px-4 py-3 text-left hover:bg-[#E8E8E9] text-[14px] md:text-[16px] text-[#000000] border-b border-[#E8E8E9] last:border-b-0"
+                      className="w-full px-4 py-3 text-left hover:bg-[#E8E8E9] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] border-b border-[#E8E8E9] last:border-b-0"
                     >
                       {s.display_name}
                     </button>
@@ -241,7 +247,8 @@ export default function EnterAddressPage() {
               )}
             </div>
 
-            <div className="relative">
+            {/* Apt/Suite: middle field, small radius all around */}
+            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 border border-transparent bg-transparent focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <input
                 type="text"
                 placeholder="Apt, Suite, Unit, Building"
@@ -250,14 +257,15 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} pr-14 border-transparent focus:border-[#6D3CCC]`}
+                className={`${inputBase} rounded-[5px] pr-14`}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] md:text-[11px] text-[#828282] pointer-events-none">
                 Optional
               </span>
             </div>
 
-            <div>
+            {/* City: middle field */}
+            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 border border-transparent bg-transparent focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <input
                 type="text"
                 placeholder="City"
@@ -269,12 +277,13 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} ${errorCity ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-transparent'}`}
+                className={`${inputBase} rounded-[5px] ${errorCity ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
               />
               {errorCity && <p className="text-sm text-red-600 mt-1">{errorCity}</p>}
             </div>
 
-            <div>
+            {/* Postal code: bottom field, top 5, bottom 12 */}
+            <div className="relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] flex items-center px-0 border border-transparent bg-transparent focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <input
                 type="text"
                 placeholder="Postal code"
@@ -286,23 +295,18 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !loading) handleContinue()
                 }}
-                className={`${inputClass} ${errorPostalCode ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-transparent'}`}
+                className={`${inputBase} rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] ${errorPostalCode ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : ''}`}
               />
               {errorPostalCode && <p className="text-sm text-red-600 mt-1">{errorPostalCode}</p>}
             </div>
           </div>
 
-          <div className="md:hidden mt-6">
-            <p className="text-[14px] leading-[1.5] font-normal text-[#828282]">
-              We&apos;re required to collect this verify your identity.
-            </p>
-          </div>
-
+          {/* Desktop Continue + Back */}
           <div className="hidden md:block mt-4">
             <Button
               onClick={() => void handleContinue()}
-              disabled={loading}
-              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+              disabled={loading || !canProceed}
+              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#000000] hover:!opacity-90 active:!opacity-80 focus:!ring-2 focus:!ring-[#000000] focus:!ring-offset-2 !text-white text-[16px] font-semibold disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Continue'}
             </Button>
@@ -320,14 +324,19 @@ export default function EnterAddressPage() {
         </div>
       </main>
       <PoweredBy />
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
-        <Button
+      {/* Mobile: helper text + bottom Continue button, lime with black text */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+        <p className="mb-3 font-sans text-[14px] leading-[1.4] font-normal text-center text-[#545454]">
+          We&apos;re required to collect this verify your identity.
+        </p>
+        <button
+          type="button"
           onClick={() => void handleContinue()}
           disabled={loading || !canProceed}
-          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white font-semibold text-[16px]"
+          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Saving...' : 'Continue'}
-        </Button>
+        </button>
       </div>
     </div>
   )

@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { useAppContext } from '@/context/useAppContext'
 import { getCompanyContext } from '@/app/(public)/utils/kyc-company-context'
 import { checkStatusByEmail } from '@/app/api/api'
@@ -256,44 +254,45 @@ export default function EnterEmailPage() {
   return (
   <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white flex flex-col">
     
-    {/* Mobile back Button */}
-    <div className="md:hidden pl-1 pr-4 pt-5">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => router.back()}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
+    {/* Mobile: close X only (no back arrow) */}
+    <div className="md:hidden flex justify-end pr-4 pt-5 pb-1">
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={() => router.push('/')}
+        className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
 
-    {/* Main Content */}
-    <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-6 pb-24 md:pb-6 overflow-hidden">
+    {/* Main Content - mobile: left-aligned; desktop: centered */}
+    <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 md:pt-6 pb-28 md:pb-6 overflow-hidden">
       
-      {/* Desktop Heading */}
+      {/* Desktop: Tell us about yourself - same typography as previous (Inter 20px/700 #000, 16px/400 #545454) */}
       <section className="hidden md:block text-center mb-4">
-        <h1 className="text-[34px] leading-[1.2] font-bold text-black">Tell us about yourself</h1>
-        <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
+        <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
+        <p className="mt-2 font-sans text-[16px] font-normal leading-[100%] text-[#545454]">
           We&apos;re required to collect this to verify your identity.
         </p>
       </section>
 
-      {/* Card */}
+      {/* Card - full width on mobile, bordered on desktop */}
       <div className="w-full max-w-[760px] md:max-w-[680px] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
         
         {step === 'email' ? (
           <>
+            {/* Email heading + helper: same as Confirm Email page (Inter 20px/700 #000, 16px/400 #545454) */}
             <div className="mb-4">
-              <label className="block text-[16px] md:text-[18px] leading-[1.4] font-semibold text-black mb-2">
+              <label className="block font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-2">
                 Email
               </label>
-              <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3">
+              <p className="font-sans text-[16px] font-normal leading-[100%] text-[#545454] mb-3">
                 Enter the email address you&apos;d like to use
               </p>
-              <Input
+              <input
                 type="email"
                 placeholder="Email"
                 value={email}
@@ -306,52 +305,68 @@ export default function EnterEmailPage() {
                   if (e.key === 'Enter' && !loading) void handleContinue()
                 }}
                 disabled={loading}
-                className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] bg-[#14111C1A] placeholder:text-[#828282] text-black text-[14px] md:text-[16px] px-4 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 ${
-                  error ? 'border-red-500 focus:border-red-500' : 'border-[#6D3CCC] focus:border-[#6D3CCC]'
+                className={`w-full h-[52px] rounded-[12px] border-[1.5px] bg-[#E8E8E9] placeholder:text-[#545454] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] px-4 focus:outline-none focus:ring-2 focus:ring-[#A7D80D]/20 focus:border-[#A7D80D] transition-colors ${
+                  error ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20' : 'border-[#A7D80D]'
                 }`}
               />
             </div>
 
             {error && <p className="text-sm md:text-base text-red-600 mb-4">{error}</p>}
 
-            {/* Desktop Continue Button */}
-            <Button
-              onClick={() => void handleContinue()}
-              disabled={loading}
-              className="hidden md:block w-full h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[16px] font-semibold"
-            >
-              {loading ? 'Checking...' : 'Continue'}
-            </Button>
-
-            {/* Desktop Back Button */}
-            <button
-              type="button"
-              onClick={() => router.push('/verify/start')}
-              className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[14px] font-normal mt-7 mx-auto hover:text-black transition-colors"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-              </svg>
-              Back to Previous
-            </button>
+            {/* Desktop Continue + Back to Previous */}
+            <div className="hidden md:block">
+              <button
+                type="button"
+                onClick={() => void handleContinue()}
+                disabled={loading}
+                className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? 'Checking...' : 'Continue'}
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/verify/start')}
+                className="flex items-center justify-center gap-2 font-sans text-[16px] font-normal text-[#545454] mt-6 hover:text-[#000000] transition-colors mx-auto"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+                </svg>
+                Back to Previous
+              </button>
+            </div>
           </>
         ) : (
           <>
-            <h2 className="text-[20px] md:text-[22px] leading-tight font-bold text-black mb-1.5">
-              Verify your email
+            {/* Confirm Email heading: Inter 700, 20px, #000000, left-aligned */}
+            <h2 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-2">
+              Confirm Email
             </h2>
-            <p className="text-[13px] md:text-[14px] leading-[1.35] font-normal text-[#828282] mb-3 md:mb-4">
-              Enter the confirmation code sent to your email. This code will expire in two hours.
+            {/* Instructions: Inter 400, 16px, #545454, left-aligned */}
+            <p className="font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#545454] mb-4 md:max-w-[317px]">
+              Please enter the confirmation code sent to your email. This code will expire in two hours.
             </p>
 
-            <div className="inline-flex items-center gap-2 bg-[#14111C1A] rounded-[12px] px-4 py-2 mb-4">
-              <span className="text-[13px] md:text-[14px] font-normal text-black truncate max-w-[200px] md:max-w-[280px]">
-                {email.trim()}
+            {/* Email display field: light grey bg, rounded, dark grey text + pencil icon */}
+            <div className="flex items-center justify-between gap-2 bg-[#E8E8E9] rounded-[12px] px-4 py-3 mb-5">
+              <span className="text-[14px] md:text-[16px] font-normal text-[#545454] truncate flex-1 min-w-0">
+                {email.trim() || 'youremail@gmail.com'}
               </span>
+              <button
+                type="button"
+                aria-label="Change email"
+                onClick={() => { setStep('email'); setError(null); setOtp(['', '', '', '', '', '']) }}
+                className="flex-shrink-0 p-1 text-[#545454] hover:text-[#000000] transition-colors"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                </svg>
+              </button>
             </div>
 
+            {/* OTP inputs: 6 boxes, light grey interior; focused = green border */}
             <div className="mb-3">
-              <div className="flex items-center gap-1.5 md:gap-2">
+              <div className="flex items-center justify-center gap-2 md:gap-2">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -364,45 +379,44 @@ export default function EnterEmailPage() {
                     onKeyDown={(e) => handleOtpKeyDown(index, e)}
                     onPaste={handleOtpPaste}
                     disabled={otpLoading}
-                    className={`w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center text-[20px] md:text-[18px] font-semibold rounded-[10px] md:rounded-[8px] border-[1.5px] transition-colors focus:outline-none focus:border-[#6D3CCC] ${
-                      index === 0
-                        ? 'border-[#6D3CCC] bg-[#14111C1A] text-black'
-                        : 'border-[#E0E0E0] bg-[#14111C1A] text-black'
-                    }`}
+                    className="w-[42px] h-[52px] md:w-[44px] md:h-[48px] text-center font-sans text-[16px] font-normal leading-[100%] tracking-[0%] rounded-[10px] border-[1.5px] bg-[#E8E8E9] text-[#000000] transition-colors focus:outline-none focus:border-[#A7D80D] focus:ring-2 focus:ring-[#A7D80D]/20 border-[#E0E0E0]"
                   />
                 ))}
               </div>
-              {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+              {error && <p className="text-sm text-red-600 mt-2 text-center md:text-left">{error}</p>}
             </div>
 
+            {/* Paste from clipboard - centered on mobile, dark grey */}
             <button
               type="button"
               onClick={() => void handlePasteFromClipboard()}
-              className="text-[13px] md:text-[14px] font-normal text-black hover:text-[#6D3CCC] transition-colors"
+              className="block w-full text-center font-sans text-[14px] font-normal text-[#545454] hover:text-[#000000] transition-colors mb-6 md:mb-4"
             >
               Paste from clipboard
             </button>
 
-            {/* Desktop OTP Buttons */}
+            {/* Desktop OTP Buttons: Go to email (lime), Resend email (gray) */}
             <div className="hidden md:flex flex-col mt-4 space-y-2">
-              <Button
+              <button
+                type="button"
                 onClick={() => void handleVerifyOtp()}
                 disabled={otpLoading || otp.join('').length !== 6}
-                className="h-[54px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[14px] font-semibold w-full"
+                className="h-[54px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-white text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {otpLoading ? 'Verifying...' : 'Continue'}
-              </Button>
-              <Button
+                {otpLoading ? 'Verifying...' : 'Go to email'}
+              </button>
+              <button
+                type="button"
                 onClick={() => void handleSendOTP()}
                 disabled={sendingOTP || resendTimer > 0 || otpLoading}
-                className="h-[44px] !rounded-[10px] !bg-[#E8E8E9] hover:!bg-[#E0E0E0] !text-black text-[14px] font-semibold"
+                className="h-[54px] w-full rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-black text-[16px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {resendTimer > 0 ? `Resend code (${resendTimer}s)` : 'Resend code'}
-              </Button>
+                {resendTimer > 0 ? `Resend email (${resendTimer}s)` : 'Resend email'}
+              </button>
               <button
                 type="button"
                 onClick={() => { setStep('email'); setError(null); setOtp(['', '', '', '', '', '']) }}
-                className="flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal mt-4 hover:text-black transition-colors"
+                className="flex items-center justify-center gap-2 text-[#545454] text-[14px] font-normal mt-4 hover:text-[#000000] transition-colors"
               >
                 <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -417,34 +431,37 @@ export default function EnterEmailPage() {
 
     <PoweredBy />
 
-    {/* Mobile Fixed Bottom Buttons */}
+    {/* Mobile: button same width as input (px-4 = main content padding) */}
     {step === 'email' ? (
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-white to-transparent flex justify-center">
-        <Button
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-white to-transparent">
+        <button
+          type="button"
           onClick={() => void handleContinue()}
           disabled={loading}
-          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold text-[16px]"
+          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Checking...' : 'Continue'}
-        </Button>
+        </button>
       </div>
     ) : (
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9] flex flex-col items-center">
-        <div className="space-y-2 w-full max-w-[341px]">
-          <Button
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-white to-transparent flex flex-col">
+        <div className="space-y-2 w-full">
+          <button
+            type="button"
             onClick={() => void handleVerifyOtp()}
             disabled={otpLoading || otp.join('').length !== 6}
-            className="h-[54px] w-full !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[15px] font-semibold"
+            className="h-[54px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-white text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {otpLoading ? 'Verifying...' : 'Continue'}
-          </Button>
-          <Button
+            {otpLoading ? 'Verifying...' : 'Go to email'}
+          </button>
+          <button
+            type="button"
             onClick={() => void handleSendOTP()}
             disabled={sendingOTP || resendTimer > 0 || otpLoading}
-            className="h-[48px] !rounded-[14px] !bg-[#E8E8E9] hover:!bg-[#E0E0E0] !text-black text-[14px] font-medium"
+            className="h-[54px] w-full rounded-[12px] bg-[#E8E8E9] hover:bg-[#E0E0E0] text-[#545454] text-[16px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {resendTimer > 0 ? `Resend code (${resendTimer}s)` : 'Resend code'}
-          </Button>
+            {resendTimer > 0 ? `Resend email (${resendTimer}s)` : 'Resend email'}
+          </button>
         </div>
       </div>
     )}

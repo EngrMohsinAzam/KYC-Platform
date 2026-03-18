@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/Button'
+import Link from 'next/link'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
 import { getCountryOptions, getCitiesForCountry } from '@/app/(public)/utils/countries'
@@ -18,14 +18,13 @@ export default function SelectIdType() {
   const countryOptions = getCountryOptions()
   const cityOptions = country ? getCitiesForCountry(country) : []
 
-  // Guard: prevent entering KYC flow if paused
   useEffect(() => {
     const checkPaused = async () => {
       try {
         const res = await getKycPausedStatus()
         const paused = !!(res?.data?.kycPaused ?? (res as any)?.kycPaused)
         if (paused) {
-          setPausedMessage('KYC process has been stopped for a specific reason. We’ll let you know when you can come back.')
+          setPausedMessage("KYC process has been stopped for a specific reason. We'll let you know when you can come back.")
         }
       } catch {
         // don't hard-block on network error
@@ -36,11 +35,9 @@ export default function SelectIdType() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-
     const mql = window.matchMedia('(min-width: 768px)')
     const prevHtmlOverflow = document.documentElement.style.overflowY
     const prevBodyOverflow = document.body.style.overflowY
-
     const applyDesktopScrollLock = () => {
       if (mql.matches) {
         document.documentElement.style.overflowY = 'hidden'
@@ -50,9 +47,7 @@ export default function SelectIdType() {
         document.body.style.overflowY = prevBodyOverflow
       }
     }
-
     applyDesktopScrollLock()
-
     if (mql.addEventListener) {
       mql.addEventListener('change', applyDesktopScrollLock)
       return () => {
@@ -61,14 +56,12 @@ export default function SelectIdType() {
         document.body.style.overflowY = prevBodyOverflow
       }
     }
-
     return () => {
       document.documentElement.style.overflowY = prevHtmlOverflow
       document.body.style.overflowY = prevBodyOverflow
     }
   }, [])
 
-  // Reset city when country changes; clear selectedCity if new country has no states
   useEffect(() => {
     if (country) {
       setCity('')
@@ -80,7 +73,6 @@ export default function SelectIdType() {
     }
   }, [country, dispatch])
 
-  // Update city in context when it changes
   useEffect(() => {
     if (city) {
       dispatch({ type: 'SET_CITY', payload: city })
@@ -103,49 +95,60 @@ export default function SelectIdType() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden pl-1 pr-4 pt-5">
+      {/* Mobile: back button only (left) */}
+      <div className="md:hidden pl-4 pt-5 pb-1">
         <button
           type="button"
           aria-label="Go back"
           onClick={() => router.back()}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
           </svg>
         </button>
       </div>
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center md:justify-center px-4 pt-3 pb-36 md:pt-2 md:pb-2">
+
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-start md:items-center md:justify-center px-4 pt-4 md:pt-6 pb-32 md:pb-6">
+        {/* Desktop: Tell us about yourself */}
         <section className="hidden md:block text-center mb-4">
-          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
-          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
-            We&apos;re required to collect this verify your identity.
+          <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
+            Tell us about yourself
+          </h1>
+          <p className="mt-2 font-sans text-[16px] font-normal leading-[100%] text-[#545454]">
+            We&apos;re required to collect this to verify your identity.
           </p>
         </section>
 
-        <div className="w-full max-w-[680px] px-4 py-4 md:bg-white md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-5">
+        {/* Card - mobile: exact layout from second screen */}
+        <div className="w-full max-w-[680px] md:bg-white md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
           {pausedMessage && (
-            <div className="mb-5 bg-yellow-50 border border-yellow-200 rounded-[10px] p-3">
-              <p className="text-sm text-yellow-800">{pausedMessage}</p>
+            <div className="mb-5 bg-amber-50 border border-amber-200 rounded-[10px] p-3">
+              <p className="text-sm text-amber-800">{pausedMessage}</p>
             </div>
           )}
 
-          <h2 className="text-[16px] md:text-[18px] leading-[1.35] font-semibold text-[#000000] mb-2">
+          {/* Heading: Country of residence - bold black, large */}
+          <h2 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-1.5">
             Country of residence
           </h2>
-          <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-3 md:mb-6">
-            Select the country you primarily reside in
+          {/* Subtitle: dark grey, just under heading */}
+          <p className="font-sans text-[16px] font-normal leading-[1.4] text-[#545454] mb-4">
+            Select the country recorded on your legal documents
           </p>
 
-          <div className="space-y-1 md:space-y-4">
-            <div className="relative">
+          {/* Input fields - mobile: light gray, very small gap; desktop: keep existing */}
+          <div className="space-y-1">
+            {/* Country: light gray bg, top rounded 12px, bottom rounded 5px */}
+            <div className="relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] md:rounded-tl-[12px] md:rounded-tr-[12px] md:rounded-br-[5px] md:rounded-bl-[5px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] pl-4 pr-10 py-2 flex flex-col justify-center focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
+              <span className="font-sans text-[11px] leading-tight text-[#888888]">Country</span>
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border-[1.5px] border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
+                className="mt-0.5 w-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer"
               >
-                <option value="" disabled>
-                  Country
+                <option value="" className="text-[#888888]">
+                  {' '}
                 </option>
                 {countryOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -153,19 +156,26 @@ export default function SelectIdType() {
                   </option>
                 ))}
               </select>
-              <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#828282] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#545454] pointer-events-none"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
 
             {hasStates && (
-              <div className="relative">
+              /* State: opposite radii from spec (top 5, bottom 12) */
+              <div className="relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] pl-4 pr-10 flex items-center focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
                 <select
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full h-[48px] md:h-[52px] pl-3 pr-10 rounded-[12px] md:rounded-[10px] bg-[#14111C1A] border-[1.5px] border-transparent text-[#000000] text-[14px] md:text-[16px] appearance-none focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 focus:border-[#6D3CCC]"
+                  className="w-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
+                  style={{ color: city ? '#000000' : '#545454' }}
                 >
-                  <option value="" disabled>
+                  <option value="" className="text-[#545454]">
                     State
                   </option>
                   {cityOptions.map((option) => (
@@ -174,51 +184,59 @@ export default function SelectIdType() {
                     </option>
                   ))}
                 </select>
-                <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#828282] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#545454] pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             )}
           </div>
 
-          <div className="hidden md:block mt-12 md:mt-16">
-            <p className="text-[14px] text-[#828282] mb-3 md:mb-4">
-              By continuing, you agree to the <a href="#" className="text-[#6D3CCC]">Terms of Service</a>, <a href="#" className="text-[#6D3CCC]">Privacy Policy</a>, and <a href="#" className="text-[#6D3CCC]">Biometrics Policy</a>
-            </p>
-
-            <Button
-              onClick={handleNext}
-              disabled={!canProceed || !!pausedMessage}
-              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
-            >
-              Continue
-            </Button>
-
+          {/* Desktop: Continue (black button) */}
+          <div className="hidden md:block">
             <button
               type="button"
-              onClick={() => router.push('/verify/enter-email')}
-              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] leading-none font-normal mt-4 md:mt-5 mx-auto hover:text-[#000000] transition-colors"
+              onClick={handleNext}
+              disabled={!canProceed || !!pausedMessage}
+              className="w-full h-[54px] rounded-[12px] bg-[#000000] hover:opacity-90 active:opacity-80 text-white text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#000000] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-              </svg>
-              Back to Previous
+              Continue
             </button>
           </div>
         </div>
       </main>
+
       <PoweredBy />
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col items-center">
-        <p className="text-[12px] text-[#828282] mb-3 text-center max-w-[341px]">
-          By continuing, you agree to the <a href="#" className="text-[#6D3CCC]">Terms of Service</a>, <a href="#" className="text-[#6D3CCC]">Privacy Policy</a>, and <a href="#" className="text-[#6D3CCC]">Biometrics Policy</a>
+
+      {/* Mobile: legal text + Continue (same width as input, px-4) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+        <p className="font-sans text-[14px] font-normal leading-[100%] tracking-[0] text-[#545454] mb-3 text-center">
+          By continuing, you agree to the{' '}
+          <Link href="/terms" className="text-[#A7D80D] font-medium hover:underline">
+            Terms of Service
+          </Link>
+          ,{' '}
+          <Link href="/privacy" className="text-[#A7D80D] font-medium hover:underline">
+            Privacy Policy
+          </Link>
+          , and{' '}
+          <Link href="/privacy#biometrics" className="text-[#A7D80D] font-medium hover:underline">
+            Biometrics Policy
+          </Link>
+          .
         </p>
-        <Button
+        <button
+          type="button"
           onClick={handleNext}
           disabled={!canProceed || !!pausedMessage}
-          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Continue
-        </Button>
+        </button>
       </div>
     </div>
   )

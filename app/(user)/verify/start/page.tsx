@@ -8,7 +8,6 @@ import { getKycPausedStatus } from '@/app/api/api'
 import { clearCompanyContext, setCompanyContext } from '@/app/(public)/utils/kyc-company-context'
 import { clearAllKYCCaches } from '@/app/(public)/utils/kyc-cache'
 import { useAppContext } from '@/context/useAppContext'
-import { Button } from '@/components/ui/Button'
 import { PoweredBy } from '@/components/verify/PoweredBy'
 
 function StartContent() {
@@ -98,78 +97,87 @@ function StartContent() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      {/* Mobile: top-right close (X), desktop handled by layout header if needed */}
-      {/* <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
+      {/* Mobile: top-right X close */}
+      <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
         <button
           type="button"
           aria-label="Close"
           onClick={() => router.push('/')}
-          className="h-8 w-8 flex items-center justify-center text-[#4B5563] hover:text-[#111] transition-colors"
+          className="h-8 w-8 flex items-center justify-center text-[#111] hover:opacity-80 transition-opacity"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-      </div> */}
+      </div>
 
-      {/* Main: heading outside card, then card ~60% of viewport */}
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-start md:justify-center px-4 pt-4 md:pt-6 pb-28 md:pb-6 md:py-8 min-h-0">
-        {/* Title + Subtitle outside card - on mobile at top */}
-        <section className="flex-shrink-0 w-full max-w-[680px] text-center mb-3 md:mb-4">
-          <h1 className="text-xl md:text-[26px] leading-tight font-bold text-[#212121] mb-1.5 md:mb-2">
-            Let&apos;s Get You Verified
-          </h1>
-          <p className="text-xs md:text-sm text-[#6B7280] font-normal">
-            Fast, encrypted identity verification.
-          </p>
-        </section>
+      {/* Main: mobile = center illustration in middle; desktop = card 723×623, top 96px, left 279px */}
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:items-start md:pl-[279px] px-4 pt-2 md:pt-[96px] pb-32 md:pb-8 min-h-0">
+        <div
+          className="w-full max-w-[680px] md:w-[723px] md:max-w-[min(723px,calc(100vw-318px))] md:max-h-[min(623px,calc(100dvh-128px))] md:min-h-0 flex flex-col items-center md:bg-white md:rounded-[14px] md:shadow-[0_4px_24px_rgba(0,0,0,0.08)] md:border md:border-[#E8E8E9] md:px-8 md:pt-6 md:pb-6 md:flex md:overflow-y-auto flex-1 md:flex-initial min-h-0"
+          style={{ opacity: 1 }}
+        >
+          {/* Title + Subtitle - centered: Inter 24px/700 #000, 16px/400 #545454 */}
+          <section className="w-full flex-shrink-0 text-center mb-3 md:mb-4">
+            <h1 className="font-sans text-[24px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-1.5 md:mb-2">
+              Let&apos;s Get You Verified
+            </h1>
+            <p className="font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#545454]">
+              Fast, encrypted identity verification.
+            </p>
+          </section>
 
-        {/* Card: on mobile flex-1 so illustration centers in remaining space; desktop min-h card */}
-        <div className="flex-1 min-h-0 w-full max-w-[680px] flex flex-col items-center justify-center md:min-h-[50vh] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:bg-white md:px-5 md:py-5 md:flex md:flex-col md:justify-center">
-          {/* Illustration - centered on mobile (only this block); desktop normal flow */}
-          <div className="flex-shrink-0 w-full flex items-center justify-center py-2 md:py-6 overflow-hidden">
-            <div className="relative w-[220px] h-[240px] md:w-[200px] md:h-[220px] mx-auto">
+          {/* Illustration - vertically centered on mobile; flexible on desktop */}
+          <div className="w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden py-4 md:py-0">
+            <div className="relative w-full max-w-[320px] aspect-[320/240] md:max-w-[340px] md:aspect-[340/255]">
               <Image
-                src="/Start-Page.gif"
-                alt="Identity verification"
+                src="/Start-page.png"
+                alt="Identity verification - padlock, shield and form"
                 fill
                 className="object-contain object-center"
-                unoptimized
                 priority
-                sizes="(max-width: 768px) 220px, 200px"
+                sizes="(max-width: 768px) 320px, 340px"
               />
             </div>
           </div>
 
-          {/* Button - desktop only (mobile uses fixed bottom bar below) */}
-          <div className="hidden md:flex flex-shrink-0 w-full flex-col items-center mt-4">
+          {/* Desktop: button 670x54, 12px radius, #A7D80D + X Close */}
+          <div className="hidden md:flex flex-col flex-shrink-0 w-full items-center mt-4">
             {paused && pausedMessage ? (
-              <div className="w-full p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm mb-4 text-center">
+              <div className="w-full max-w-[670px] p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm text-center">
                 {pausedMessage}
               </div>
             ) : (
-              <Button
-                onClick={handleStart}
-                variant="primary"
-                className="w-full max-w-[670px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
-              >
-                Start KYC
-              </Button>
+              <>
+                <button
+                  type="button"
+                  onClick={handleStart}
+                  className="w-full max-w-[670px] h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-base font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
+                >
+                  Continue
+                </button>
+                <Link
+                  href="/"
+                  className="mt-4 text-sm text-[#6B7280] hover:text-[#374151] transition-colors"
+                >
+                  X Close
+                </Link>
+              </>
             )}
           </div>
         </div>
       </main>
 
-      {/* Mobile: fixed bottom bar with Start KYC button (same as other verify pages) */}
+      {/* Mobile: fixed bottom - button 341px width, 54px height, 17px horizontal padding; raised a bit from bottom */}
       {!paused && !pausedMessage && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
-          <Button
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-[17px] pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
+          <button
+            type="button"
             onClick={handleStart}
-            variant="primary"
-            className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
+            className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
           >
             Start KYC
-          </Button>
+          </button>
         </div>
       )}
       {paused && pausedMessage && (

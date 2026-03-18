@@ -1,23 +1,10 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/Button'
+import Link from 'next/link'
 import { PoweredBy } from '@/components/verify/PoweredBy'
-
-/** Illustration: upload document graphic from Upload-Doc.svg */
-function DocumentsIllustration() {
-  return (
-    <div className="flex justify-center items-center w-full h-[64px] md:h-[100px] flex-shrink-0">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/Upload-Doc.svg"
-        alt=""
-        className="max-w-[180px] md:max-w-[280px] w-full h-full object-contain"
-      />
-    </div>
-  )
-}
 
 export default function DocumentsPage() {
   const router = useRouter()
@@ -35,17 +22,18 @@ export default function DocumentsPage() {
   }, [])
 
   const handleContinue = () => {
-    router.push('/verify/upload-id-type')
+    router.push('/verify/id-issuing-country')
   }
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
-      <div className="md:hidden flex-shrink-0 pl-1 pr-4 pt-5 pb-0">
+      {/* Mobile: back arrow only (left) */}
+      <div className="md:hidden pl-4 pt-5 pb-1 flex-shrink-0">
         <button
           type="button"
           aria-label="Go back"
-          onClick={() => router.push('/verify/enter-address')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          onClick={() => router.push('/verify/former-name')}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -53,51 +41,63 @@ export default function DocumentsPage() {
         </button>
       </div>
 
-      {/* Mobile: scrollable area with padding so content is not hidden under fixed button */}
-      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden md:overflow-visible px-4 pt-0 pb-[88px] md:pb-4 md:py-4">
-        {/* White card: ~60% width on desktop, full width on mobile */}
-        <div className="w-full md:w-[60%] md:max-w-[800px] md:min-w-[400px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border-[1.5px] md:border-[#E8E8E9] md:pt-6 md:px-8 md:pb-6 flex-shrink-0 pt-0">
-          <h1 className="text-[20px] md:text-[26px] leading-tight font-bold text-[#000000] mb-1 md:mb-2 text-left md:text-center w-full">
-            Upload a photo ID
+      <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-3 pb-[104px] md:pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
+        {/* Card: flex column so illustration can sit in center, consent at bottom */}
+        <div className="w-full max-w-[760px] md:max-w-[680px] h-full md:h-auto md:min-h-0 flex flex-col md:justify-start md:bg-[#FFFFFF] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4 md:flex-shrink-0">
+          {/* Heading - Inter 20px bold */}
+          <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-2 text-left md:text-center w-full flex-shrink-0">
+            Submit Identity Verification
           </h1>
-          <p className="text-[13px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-2 md:mb-4 text-left md:text-center w-full">
+          {/* Subtitle - Inter 18px regular */}
+          <p className="font-sans text-[18px] font-normal leading-[100%] tracking-[0%] text-[#545454] mb-4 md:mb-5 text-left md:text-center w-full flex-shrink-0">
             A valid, government-issued photo ID is required to verify your identity.
           </p>
 
-          <div className="flex justify-center w-full mb-2 md:mb-5 self-center">
-            <DocumentsIllustration />
+          {/* PNG image - centered in the middle of the page */}
+          <div className="flex-1 flex items-center justify-center min-h-[200px] md:min-h-[220px] w-full flex-shrink-0">
+            <div className="relative w-full max-w-[280px] md:max-w-[320px] aspect-[320/240]">
+              <Image
+                src="/Documents-first-page.png"
+                alt="Identity verification - secure document submission"
+                fill
+                className="object-contain object-center"
+                priority
+                sizes="(max-width: 768px) 280px, 320px"
+              />
+            </div>
           </div>
 
-          <div className="w-full mb-2 md:mb-5 max-w-[90%] md:max-w-[85%] mx-auto">
-            <p className="text-[11px] md:text-[13px] leading-[1.45] font-normal text-[#828282] text-left md:text-center break-words">
-              By clicking the button below, you consent to Persona, our vendor, collecting, using, and
-              utilizing its service providers to process your biometric information to verify your
-              identity, identify fraud, and improve Persona&apos;s platform in accordance with its{' '}
-              <a
-                href="/privacy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#6D3CCC] font-semibold underline hover:text-[#8558D9] transition-colors"
-              >
-                Privacy Policy
-              </a>
-              . Your biometric information will be stored for no more than 3 years.
-            </p>
-          </div>
-
-          <div className="hidden md:flex flex-col items-center w-full gap-1">
-            <Button
-              onClick={handleContinue}
-              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
+          {/* Consent text - at bottom, above button; Inter 12px, 117% line-height */}
+          <p className="font-sans text-[12px] font-normal leading-[117%] tracking-[0%] text-[#545454] mb-[18px] text-left w-full flex-shrink-0 md:max-w-none max-w-[95%] mx-auto">
+            By clicking the button below, you consent to Persona, our vendor, collecting, using, and
+            utilizing its service providers to process your biometric information to verify your
+            identity, identify fraud, and improve Persona&apos;s platform in accordance with its{' '}
+            <Link
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#A7D80D] font-normal underline hover:opacity-90 transition-opacity"
             >
-              Continue
-            </Button>
+              Privacy Policy
+            </Link>
+            . Your biometric information will be stored for no more than 3 years.
+          </p>
+
+          {/* Desktop: Continue + Back to Previous */}
+          <div className="hidden md:block flex-shrink-0">
             <button
               type="button"
-              onClick={() => router.push('/verify/enter-address')}
-              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] font-normal mt-5 w-full hover:text-[#000000] transition-colors"
+              onClick={handleContinue}
+              className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
             >
-              <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              Continue
+            </button>
+            <button
+              type="button"
+              onClick={() => router.push('/verify/former-name')}
+              className="flex items-center justify-center gap-2 text-[#545454] text-[14px] leading-none font-normal mt-4 mx-auto hover:text-[#000000] transition-colors"
+            >
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
               </svg>
               Back to Previous
@@ -105,15 +105,18 @@ export default function DocumentsPage() {
           </div>
         </div>
       </main>
+
       <PoweredBy />
-      {/* Mobile: fixed to bottom so Continue is always visible on real devices */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#FFFFFF] border-t border-[#E8E8E9] z-10 flex justify-center">
-        <Button
+
+      {/* Mobile: fixed Continue at bottom - lime, black text */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent">
+        <button
+          type="button"
           onClick={handleContinue}
-          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white font-semibold text-[16px]"
+          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
         >
           Continue
-        </Button>
+        </button>
       </div>
     </div>
   )

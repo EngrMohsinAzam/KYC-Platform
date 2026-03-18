@@ -6,6 +6,15 @@ import Image from 'next/image'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
 
+/* White card wrapper for each icon (per reference design) - icons from id-type-select */
+function IconCard({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex-shrink-0 w-10 h-10 rounded-lg bg-white border border-[#E8E8E9] flex items-center justify-center shadow-sm">
+      {children}
+    </span>
+  )
+}
+
 export default function UploadIdTypePage() {
   const router = useRouter()
   const { dispatch } = useAppContext()
@@ -34,7 +43,7 @@ export default function UploadIdTypePage() {
         <button
           type="button"
           aria-label="Go back"
-          onClick={() => router.push('/verify/documents')}
+          onClick={() => router.push('/verify/id-issuing-country')}
           className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -43,7 +52,7 @@ export default function UploadIdTypePage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-center md:justify-center min-h-0 overflow-hidden px-4 pt-2 pb-6 md:py-4 md:pt-4">
+      <main className="flex-1 flex flex-col items-center md:justify-center min-h-0 overflow-hidden pl-[25px] pr-4 pt-2 pb-6 md:px-4 md:py-4 md:pt-4">
         {/* Desktop: Tell us about yourself + subtitle (centered on page) */}
         <section className="hidden md:block text-center mb-4 flex-shrink-0 w-full max-w-[680px]">
           <h1 className="text-[28px] md:text-[30px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>
@@ -57,61 +66,59 @@ export default function UploadIdTypePage() {
           <h2 className="text-[20px] md:text-[22px] leading-tight font-bold text-[#000000] mb-1 md:mb-1.5 text-left w-full">
             Upload a photo ID
           </h2>
-          <p className="text-[12px] md:text-[14px] leading-[1.5] font-normal text-[#828282] mb-4 text-left w-full">
+          <p className="font-sans font-normal text-[16px] leading-[100%] tracking-[0%] text-[#828282] mb-4 text-left w-full">
             We require a photo of a government ID to verify your identity
           </p>
 
-          {/* Options: Passport, National ID, Driving License - order per reference */}
-          <div className="w-full border-t border-[#E8E8E9]">
+          {/* Options: Passport, National ID, Driving License - layout width 325px, left 25px, row height 71px, border-bottom 1px */}
+          <div className="w-[325px] md:w-full border-t border-[#E0E0E0]">
             <button
               type="button"
               onClick={() => handleSelect('passport')}
-              className="w-full flex items-center justify-between gap-3 px-3 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+              className="w-full h-[71px] flex items-center justify-between gap-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer border-b border-[#E0E0E0] opacity-100"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
-                  <Image src="/Doc-icon2.png" alt="" width={36} height={36} className="w-full h-full object-contain" />
-                </span>
+                <IconCard>
+                  <Image src="/id-type-select/passport.png" alt="" width={24} height={24} className="w-6 h-6 object-contain invert" />
+                </IconCard>
                 <span className="text-[14px] md:text-[15px] font-normal text-[#000000]">Passport</span>
               </div>
-              <span className="flex-shrink-0 text-[#828282] text-lg leading-none">&rsaquo;</span>
+              <span className="flex-shrink-0 text-[#BDBDBD] text-xl leading-none">&rsaquo;</span>
             </button>
-            <div className="border-t border-[#E8E8E9] w-full" aria-hidden />
             <button
               type="button"
               onClick={() => handleSelect('national-id')}
-              className="w-full flex items-center justify-between gap-3 px-3 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+              className="w-full h-[71px] flex items-center justify-between gap-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer border-b border-[#E0E0E0] opacity-100"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
+                <IconCard>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/Doc-icon1.svg" alt="" className="w-full h-full object-contain object-center" />
-                </span>
+                  <img src="/id-type-select/national-id.svg" alt="" className="w-6 h-6 object-contain invert" />
+                </IconCard>
                 <span className="text-[14px] md:text-[15px] font-normal text-[#000000]">National ID</span>
               </div>
-              <span className="flex-shrink-0 text-[#828282] text-lg leading-none">&rsaquo;</span>
+              <span className="flex-shrink-0 text-[#BDBDBD] text-xl leading-none">&rsaquo;</span>
             </button>
-            <div className="border-t border-[#E8E8E9] w-full" aria-hidden />
             <button
               type="button"
               onClick={() => handleSelect('drivers-license')}
-              className="w-full flex items-center justify-between gap-3 px-3 py-4 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer"
+              className="w-full h-[71px] flex items-center justify-between gap-3 text-left hover:bg-[#FAFAFA] active:bg-[#F0F0F0] transition-colors cursor-pointer opacity-100"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <span className="flex-shrink-0 w-9 h-9 rounded-full bg-[#6D3CCC] flex items-center justify-center overflow-hidden p-1.5">
+                <IconCard>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/Doc-icon3.svg" alt="" className="w-full h-full object-contain object-center" />
-                </span>
+                  <img src="/id-type-select/driving-license.svg" alt="" className="w-6 h-6 object-contain invert" />
+                </IconCard>
                 <span className="text-[14px] md:text-[15px] font-normal text-[#000000]">Driving License</span>
               </div>
-              <span className="flex-shrink-0 text-[#828282] text-lg leading-none">&rsaquo;</span>
+              <span className="flex-shrink-0 text-[#BDBDBD] text-xl leading-none">&rsaquo;</span>
             </button>
           </div>
 
           {/* Back to Previous - desktop only; mobile uses top back arrow */}
           <button
             type="button"
-            onClick={() => router.push('/verify/documents')}
+            onClick={() => router.push('/verify/id-issuing-country')}
             className="hidden md:flex items-center justify-center gap-2 text-[#828282] text-[13px] font-normal mt-4 w-full hover:text-[#000000] transition-colors"
           >
             <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

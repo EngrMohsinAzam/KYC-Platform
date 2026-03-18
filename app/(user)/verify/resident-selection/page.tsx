@@ -71,12 +71,13 @@ export default function ResidentSelection() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden pl-1 pr-4 pt-5">
+      {/* Mobile: back arrow only (left) */}
+      <div className="md:hidden pl-4 pt-5 pb-1">
         <button
           type="button"
           aria-label="Go back"
           onClick={() => router.back()}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -84,48 +85,55 @@ export default function ResidentSelection() {
         </button>
       </div>
 
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center md:justify-center px-4 pt-3 pb-32 md:pt-6 md:pb-6 md:min-h-0">
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-start md:items-center md:justify-center px-4 pt-4 pb-32 md:pt-6 md:pb-6 md:min-h-0">
+        {/* Desktop heading, match previous screens */}
         <section className="hidden md:block text-center mb-4">
-          <h1 className="text-[34px] leading-[1.2] font-bold text-[#000000]">Tell us about yourself</h1>
-          <p className="mt-2 text-[16px] leading-[1.5] font-normal text-[#828282]">
-            We&apos;re required to collect this verify your identity.
+          <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
+          <p className="mt-2 font-sans text-[16px] font-normal leading-[100%] text-[#545454]">
+            We&apos;re required to collect this to verify your identity.
           </p>
         </section>
 
+        {/* Card / content */}
         <div className="w-full max-w-[680px] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4">
-          <h2 className="text-[16px] md:text-[18px] leading-[1.35] font-semibold text-[#000000] mb-2">
+          <h2 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-1.5">
             Country residency
           </h2>
-          <p className="text-[14px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-4">
+          <p className="font-sans text-[16px] md:text-[16px] leading-[1.4] font-normal text-[#545454] mb-4">
             Select where you currently reside
           </p>
 
-          <div className="space-y-2">
+          {/* Options styled like select-id-type inputs (light grey, radii 12/5) */}
+          <div className="space-y-1">
             <button
               onClick={() => handleSelect('other')}
-              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border-[1.5px] text-left flex items-center justify-between transition-colors ${
+              className={`w-full h-[51px] px-4 rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] md:rounded-[12px] border border-[#E5E5E5] text-left flex items-center justify-between bg-[#EBEBEB] transition-colors ${
                 selected === 'other'
-                  ? 'border-[#6D3CCC] bg-[#E8E8E9]'
-                  : 'border-transparent bg-[#E8E8E9]'
+                  ? 'border-[#A7D80D]'
+                  : 'border-[#E5E5E5]'
               } cursor-pointer`}
             >
-              <span className="text-[14px] md:text-[16px] font-normal text-[#000000]">All countries except USA</span>
-              <span className={`w-5 h-5 rounded-full border ${selected === 'other' ? 'border-[#6D3CCC] bg-[#6D3CCC]' : 'border-[#828282]'}`}>
-                <span className={`block w-2 h-2 rounded-full bg-white mx-auto mt-[5px] ${selected === 'other' ? 'opacity-100' : 'opacity-0'}`} />
+              <span className="font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000]">
+                All countries except USA
+              </span>
+              <span className={`w-5 h-5 rounded-full border ${selected === 'other' ? 'border-[#A7D80D] bg-[#A7D80D]' : 'border-[#828282]'}`}>
+                <span className={`block w-2 h-2 rounded-full bg-[#A7D80D] mx-auto mt-[5px] ${selected === 'other' ? 'opacity-100' : 'opacity-0'}`} />
               </span>
             </button>
 
             <button
               onClick={() => handleSelect('usa')}
-              className={`w-full h-[52px] px-4 rounded-[12px] md:rounded-[10px] border-[1.5px] text-left flex items-center justify-between transition-colors ${
+              className={`w-full h-[51px] px-4 rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] md:rounded-[12px] border border-[#E5E5E5] text-left flex items-center justify-between bg-[#EBEBEB] transition-colors ${
                 selected === 'usa'
-                  ? 'border-[#6D3CCC] bg-[#E8E8E9]'
-                  : 'border-transparent bg-[#E8E8E9]'
+                  ? 'border-[#A7D80D]'
+                  : 'border-[#E5E5E5]'
               } cursor-pointer`}
             >
-              <span className="text-[14px] md:text-[16px] font-normal text-[#000000]">United States of America</span>
-              <span className={`w-5 h-5 rounded-full border ${selected === 'usa' ? 'border-[#6D3CCC] bg-[#6D3CCC]' : 'border-[#828282]'}`}>
-                <span className={`block w-2 h-2 rounded-full bg-white mx-auto mt-[5px] ${selected === 'usa' ? 'opacity-100' : 'opacity-0'}`} />
+              <span className="font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000]">
+                United States of America
+              </span>
+              <span className={`w-5 h-5 rounded-full border ${selected === 'usa' ? 'border-[#A7D80D] bg-[#A7D80D]' : 'border-[#828282]'}`}>
+                <span className={`block w-2 h-2 rounded-full bg-[#A7D80D] mx-auto mt-[5px] ${selected === 'usa' ? 'opacity-100' : 'opacity-0'}`} />
               </span>
             </button>
           </div>
@@ -137,8 +145,8 @@ export default function ResidentSelection() {
           <div className="hidden md:block mt-6">
             <Button
               onClick={handleContinue}
-              disabled={false}
-              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+              disabled={!selected}
+              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#000000] hover:!opacity-90 active:!opacity-80 focus:!ring-2 focus:!ring-[#000000] focus:!ring-offset-2 disabled:opacity-50 !text-white text-[16px] font-semibold"
             >
               Continue
             </Button>
@@ -157,11 +165,12 @@ export default function ResidentSelection() {
         </div>
       </main>
       <PoweredBy />
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
+      {/* Mobile: bottom Continue button, lime with black text (like other screens) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
         <Button
           onClick={handleContinue}
-          disabled={false}
-          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
+          disabled={!selected}
+          className="w-full max-w-[341px] h-[54px] !rounded-[12px] !bg-[#A7D80D] hover:!opacity-95 active:!opacity-90 focus:!ring-2 focus:!ring-[#A7D80D] focus:!ring-offset-2 !text-black text-[16px] font-semibold"
         >
           Continue
         </Button>
