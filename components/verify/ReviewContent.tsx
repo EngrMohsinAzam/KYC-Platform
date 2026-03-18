@@ -1480,7 +1480,7 @@ export default function ReviewContent() {
           type="button"
           aria-label="Go back"
           onClick={() => router.push('/verify/upload-selfie')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -1488,24 +1488,24 @@ export default function ReviewContent() {
         </button>
       </div>
 
-      <main className="flex-1 w-full min-h-0 overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-3 pb-36 md:py-4">
+      <main className="flex-1 w-full min-h-0 overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-4 pb-[110px] md:py-6">
         {/* Page title - centered on desktop, left on mobile; compact on desktop */}
         <section className="w-full max-w-[560px] md:max-w-[520px] text-left md:text-center md:mb-2 flex-shrink-0">
-          <h1 className="text-[24px] md:text-[20px] font-bold text-[#000000] mb-0.5 md:mb-0">
+          <h1 className="text-[24px] md:text-[24px] font-bold text-[#000000] mb-1">
             Get your decentralised ID
           </h1>
-          <p className="text-[14px] md:text-[13px] text-[#828282]">
+          <p className="text-[18px] md:text-[16px] text-[#545454] font-normal leading-[125%]">
             Verified on the Mira-20 Blockchain
           </p>
         </section>
 
         {/* White card - compact padding on desktop */}
-        <div className="w-full max-w-[560px] md:max-w-[520px] bg-white md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm md:px-6 md:py-4 flex-shrink-0">
+        <div className="w-full max-w-[560px] md:max-w-[600px] bg-white md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm md:px-6 md:py-5 flex-shrink-0 mt-4 md:mt-4">
           {/* Instructional text - smaller on desktop */}
-          <h2 className="text-[16px] md:text-[14px] font-bold text-[#000000] mb-1.5 md:mb-1 text-left md:text-center">
+          <h2 className="text-[20px] md:text-[16px] font-bold text-[#000000] mb-3 text-left md:text-center">
             To create your decentralised ID, you need to blockstamp it.
           </h2>
-          <p className="text-[14px] md:text-[12px] md:leading-snug text-[#828282] leading-relaxed mb-4 md:mb-3 text-left md:text-center">
+          <p className="text-[16px] md:text-[13px] text-[#545454] leading-[150%] mb-6 md:mb-5 text-left md:text-center">
             In accordance with local laws and regulations, identity verification is required to access your Lumira Coins once the claim process starts. With this system, you will have a decentralised passport, in which you are recognised in the System.
           </p>
 
@@ -1522,46 +1522,46 @@ export default function ReviewContent() {
           )}
 
           {/* Data rows - tighter on desktop */}
-          <div className="bg-[#E8E8E9] rounded-[12px] md:rounded-[10px] overflow-hidden mb-3 md:mb-2">
-            <div className="flex justify-between items-center px-4 py-2.5 md:py-2 border-b border-[#d0d0d0]">
-              <span className="text-[14px] md:text-[13px] text-[#000000]">ID Number</span>
-              <span className="text-[14px] md:text-[13px] font-medium text-[#000000]">{idNumber}</span>
+          <div className="bg-[#E8E8E9] rounded-[14px] overflow-hidden mb-4">
+            <div className="flex justify-between items-center px-4 py-4 border-b border-[#D0D0D0]">
+              <span className="text-[14px] text-[#545454]">ID Number</span>
+              <span className="text-[14px] font-medium text-[#000000]">{idNumber}</span>
             </div>
-            <div className="flex justify-between items-center px-4 py-2.5 md:py-2 border-b border-[#d0d0d0]">
-              <span className="text-[14px] md:text-[13px] text-[#000000]">Estimated gas fee</span>
-              <span className="text-[14px] md:text-[13px] font-medium text-[#000000]">
+            <div className="flex justify-between items-center px-4 py-4 border-b border-[#D0D0D0]">
+              <span className="text-[14px] text-[#545454]">Estimated gas fee</span>
+              <span className="text-[14px] font-medium text-[#000000]">
                 {isConnected && loadingTransactionData ? 'Calculating...' : displayGasFee}
               </span>
             </div>
-            <div className="flex justify-between items-center px-4 py-2.5 md:py-2">
-              <span className="text-[14px] md:text-[13px] text-[#000000]">Blockchain</span>
-              <span className="text-[14px] md:text-[13px] font-medium text-[#000000]">{displayBlockchain}</span>
+            <div className="flex justify-between items-center px-4 py-4">
+              <span className="text-[14px] text-[#545454]">Blockchain</span>
+              <span className="text-[14px] font-medium text-[#000000]">{displayBlockchain}</span>
             </div>
           </div>
 
           {/* Help link */}
-          <div className="text-center mb-3 md:mb-2">
+          <div className="text-center mb-5">
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); setShowHelpModal(true) }}
-              className="text-[14px] md:text-[13px] text-[#000000] hover:text-[#6D3CCC] underline cursor-pointer bg-transparent border-none p-0 font-normal"
+              className="text-[14px] text-[#000000] underline cursor-pointer bg-transparent border-none p-0 font-normal"
             >
               Need help? Click here
             </button>
           </div>
 
           {/* Connected wallet bar - compact on desktop */}
-          <div className="flex justify-between items-center gap-2 bg-[#E8E8E9] rounded-[12px] md:rounded-[10px] px-4 py-2.5 md:py-2 mb-4 md:mb-3">
-            <span className="text-[14px] md:text-[13px] text-[#000000]">Connected wallet</span>
+          <div className="flex justify-between items-center gap-2 bg-[#E8E8E9] rounded-[14px] px-4 py-4 mb-2 md:mb-3">
+            <span className="text-[14px] text-[#545454]">Connected wallet</span>
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`text-[14px] md:text-[13px] font-medium truncate max-w-[180px] md:max-w-[200px] ${isConnected ? 'text-[#000000]' : 'text-[#828282]'}`}>
+              <span className={`text-[14px] font-medium truncate max-w-[200px] ${isConnected ? 'text-[#000000]' : 'text-[#828282]'}`}>
                 {isConnected ? formatWalletAddress(displayWalletAddress) : 'None'}
               </span>
               {isConnected && (
                 <button
                   type="button"
                   onClick={handleDisconnect}
-                  className="flex-shrink-0 text-[12px] text-[#6D3CCC] hover:text-[#8558D9] font-medium underline"
+                  className="flex-shrink-0 text-[12px] text-[#545454] hover:text-[#000000] font-medium underline"
                   aria-label="Disconnect wallet"
                 >
                   Disconnect
@@ -1571,12 +1571,12 @@ export default function ReviewContent() {
           </div>
 
           {/* Desktop: button + Back - compact */}
-          <div className="hidden md:flex flex-col">
+          <div className="hidden md:flex flex-col mt-5">
             {!isConnected ? (
               <Button
                 onClick={handleOpenWalletModal}
                 disabled={connecting}
-                className="w-full h-[44px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[14px] font-semibold"
+                className="w-full h-[54px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] !text-black text-[16px] font-semibold"
               >
                 {connecting ? 'Connecting...' : 'Connect wallet'}
               </Button>
@@ -1584,16 +1584,16 @@ export default function ReviewContent() {
               <Button
                 onClick={handleSubmitKYC}
                 disabled={processingPayment || submittingToBackend || !!networkError}
-                className="w-full h-[44px] !rounded-[10px] !bg-[#6D3CCC] hover:!bg-[#8558D9] disabled:!opacity-70 !text-white text-[14px] font-semibold flex items-center justify-center gap-2"
+                className="w-full h-[54px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] disabled:!opacity-70 !text-black text-[16px] font-semibold flex items-center justify-center gap-2"
               >
                 {processingPayment ? (
                   <>
-                    <LoadingDots size="sm" color="#ffffff" />
+                    <LoadingDots size="sm" color="#000000" />
                     <span>Processing transaction</span>
                   </>
                 ) : submittingToBackend ? (
                   <>
-                    <LoadingDots size="sm" color="#ffffff" />
+                    <LoadingDots size="sm" color="#000000" />
                     <span>Submitting</span>
                   </>
                 ) : (
@@ -1604,12 +1604,9 @@ export default function ReviewContent() {
             <button
               type="button"
               onClick={() => router.push('/verify/upload-selfie')}
-              className="flex items-center justify-center gap-2 text-[#828282] text-[13px] mt-4 hover:text-[#000000] transition-colors"
+              className="flex items-center justify-center gap-2 text-[#545454] text-[14px] mt-6 hover:text-[#000000] transition-colors"
             >
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-              </svg>
-              Back to Previous
+              ← Back to Previous
             </button>
           </div>
         </div>
@@ -1621,7 +1618,7 @@ export default function ReviewContent() {
           <Button
             onClick={handleOpenWalletModal}
             disabled={connecting}
-            className="w-full h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white text-[16px] font-semibold"
+            className="w-full h-[56px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] !text-black text-[16px] font-semibold"
           >
             {connecting ? 'Connecting...' : 'Connect wallet'}
           </Button>
@@ -1629,16 +1626,16 @@ export default function ReviewContent() {
           <Button
             onClick={handleSubmitKYC}
             disabled={processingPayment || submittingToBackend || !!networkError}
-            className="w-full h-[52px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] disabled:!opacity-70 !text-white text-[16px] font-semibold flex items-center justify-center gap-2"
+            className="w-full h-[56px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] disabled:!opacity-70 !text-black text-[16px] font-semibold flex items-center justify-center gap-2"
           >
             {processingPayment ? (
               <>
-                <LoadingDots size="sm" color="#ffffff" />
+                <LoadingDots size="sm" color="#000000" />
                 <span>Processing transaction</span>
               </>
             ) : submittingToBackend ? (
               <>
-                <LoadingDots size="sm" color="#ffffff" />
+                <LoadingDots size="sm" color="#000000" />
                 <span>Submitting</span>
               </>
             ) : (

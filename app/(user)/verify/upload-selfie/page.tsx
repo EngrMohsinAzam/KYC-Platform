@@ -5,87 +5,24 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
-import { PoweredBy } from '@/components/verify/PoweredBy'
+// PoweredBy intentionally omitted on this premium camera screen
 import dynamic from 'next/dynamic'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 
-const PURPLE = '#6D3CCC'
+const LIME = '#A7D80D'
+// Prefer exact file name; also try encoded variant when fetching
+const FACE_ID_RECORD_PATH = '/animations/selfei/Face ID record (1).json'
 
-/** Circular frame outside selfie: dotted circle + equalizer bars drawn fully outside the selfie circle */
-function SelfieCircleFrame({ sizePx, paused = false }: { sizePx: number; paused?: boolean }) {
-  const ringR = 66
-  const numBars = 28
-  const barAngles = Array.from({ length: numBars }, (_, i) => {
-    return (i / numBars) * Math.PI * 2
-  })
-  const [heights, setHeights] = useState(() => barAngles.map(() => 4))
-  const rafRef = useRef<number>()
-
-  useEffect(() => {
-    if (paused) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-      return
-    }
-    const startRef = { current: 0 }
-    const animate = (time: number) => {
-      if (!startRef.current) startRef.current = time
-      const elapsed = (time - startRef.current) / 1000
-      setHeights(
-        barAngles.map((_, i) => {
-          const wave = Math.sin(elapsed * 3 + i * 0.4) * 0.5 + Math.sin(elapsed * 5 + i * 0.2) * 0.3
-          return 4 + Math.max(0, wave * 12)
-        })
-      )
-      rafRef.current = requestAnimationFrame(animate)
-    }
-    rafRef.current = requestAnimationFrame(animate)
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current)
-    }
-  }, [barAngles.length, paused])
-
-  const cx = 50
-  const cy = 50
-
+function FaceIdRecordRing({ sizePx, animationData }: { sizePx: number; animationData: any }) {
   return (
-    <svg
-      viewBox="-16 -16 132 132"
-      className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
-      style={{ width: sizePx, height: sizePx, overflow: 'visible' }}
+    <div
+      className="absolute inset-0 pointer-events-none z-20"
+      style={{ width: sizePx, height: sizePx }}
+      aria-hidden
     >
-      <circle
-        cx={cx}
-        cy={cy}
-        r={ringR}
-        fill="none"
-        stroke={PURPLE}
-        strokeWidth={1.8}
-        strokeDasharray="1.5 4"
-        strokeLinecap="round"
-      />
-      <g transform={`translate(${cx}, ${cy})`}>
-        {barAngles.map((angle, i) => {
-          const h = heights[i] ?? 4
-          const x1 = (ringR * Math.cos(angle))
-          const y1 = (-ringR * Math.sin(angle))
-          const x2 = ((ringR + h) * Math.cos(angle))
-          const y2 = (-(ringR + h) * Math.sin(angle))
-          return (
-            <line
-              key={i}
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke={PURPLE}
-              strokeWidth={2.2}
-              strokeLinecap="round"
-            />
-          )
-        })}
-      </g>
-    </svg>
+      <Lottie animationData={animationData} loop className="w-full h-full" />
+    </div>
   )
 }
 
@@ -113,6 +50,7 @@ export default function UploadSelfie() {
   const [capturedImage, setCapturedImage] = useState<string | null>(state.selfieImage || null)
   const [isRecording, setIsRecording] = useState(false)
   const [animationData, setAnimationData] = useState<any>(null)
+  const [loadingAnimationData, setLoadingAnimationData] = useState<any>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const videoRefMobile = useRef<HTMLVideoElement>(null)
   const videoRefDesktop = useRef<HTMLVideoElement>(null)
@@ -144,6 +82,18 @@ export default function UploadSelfie() {
       })
       .catch(err => {
         console.error('❌ Error loading animation:', err)
+      })
+
+    // Loading animation (Face ID record)
+    const encoded = '/animations/selfei/Face%20ID%20record%20%281%29.json'
+    fetch(FACE_ID_RECORD_PATH)
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error('not found'))))
+      .then((data) => setLoadingAnimationData(data))
+      .catch(() => {
+        fetch(encoded)
+          .then((res) => (res.ok ? res.json() : Promise.reject(new Error('not found'))))
+          .then((data) => setLoadingAnimationData(data))
+          .catch(() => {})
       })
     
     // Detect mobile device
@@ -555,9 +505,9 @@ export default function UploadSelfie() {
       // OTP verification is now on enter-email page; after selfie go to review
       sessionStorage.setItem('justCompletedOTP', 'true')
       if (isUpdateMode && updateEmail) {
-        router.push(`/verify/review?update=true&email=${encodeURIComponent(updateEmail)}`)
+        router.push(`/verify/processing-selfei?update=true&email=${encodeURIComponent(updateEmail)}`)
       } else {
-        router.push('/verify/review')
+        router.push('/verify/processing-selfei')
       }
     }
   }
@@ -745,11 +695,15 @@ export default function UploadSelfie() {
             </svg>
           </button>
         </div>
-        <main className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden px-4 py-4 md:py-6">
-          <h1 className="text-white text-lg md:text-xl font-bold text-center mb-6">
+        <main className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden px-4 pt-10 pb-[92px] md:py-10">
+          <h1 className="text-white text-[18px] md:text-[20px] font-semibold text-center mb-8">
             Centre your self on the screen
           </h1>
-          <div className="relative flex-shrink-0 overflow-visible" style={{ width: 280, height: 280 }}>
+          {/*
+            Circle size tuned to match reference.
+            The Face ID record animation is drawn on top of the circle, aligned to the same box.
+          */}
+          <div className="relative flex-shrink-0 overflow-visible" style={{ width: isMobile ? 330 : 300, height: isMobile ? 330 : 300 }}>
             {/* Arrow prompt overlay when recording - same design, only direction changes */}
             {isRecording && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
@@ -832,59 +786,50 @@ export default function UploadSelfie() {
                 </>
               )}
               {isCameraLoading && !isVideoReady && !capturedImage && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/70">
                   <div className="w-10 h-10 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <p className="absolute bottom-2 left-0 right-0 text-white text-xs text-center">Starting camera...</p>
+                  <p className="mt-2 text-white/80 text-xs text-center">Starting camera...</p>
                 </div>
               )}
             </div>
-            <SelfieCircleFrame sizePx={280} paused={!!capturedImage} />
+            {loadingAnimationData ? (
+              <FaceIdRecordRing sizePx={isMobile ? 330 : 300} animationData={loadingAnimationData} />
+            ) : null}
           </div>
           <canvas ref={canvasRef} className="hidden" aria-hidden />
-          <div className="mt-8 flex flex-col items-center w-full max-w-[320px] gap-3">
+          <div className="md:hidden fixed bottom-0 left-0 right-0 px-6 pb-8 z-10">
             {capturedImage ? (
               <>
-                <Button
+                <button
+                  type="button"
                   onClick={handleContinue}
-                  className="w-full h-12 rounded-[14px] md:rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] text-white font-semibold text-base"
+                  className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors"
                 >
                   Continue
-                </Button>
+                </button>
                 <button
                   type="button"
                   onClick={handleRetake}
-                  className="text-white/90 text-sm hover:text-white flex items-center gap-2"
+                  className="mt-3 w-full h-[56px] rounded-[14px] bg-transparent border-2 border-white text-white text-[16px] font-semibold transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
                   Retake photo
                 </button>
               </>
             ) : (
               <>
-                <Button
-                  onClick={startVideoRecording}
-                  disabled={!isVideoReady || !stream || isRecording}
-                  className="w-full h-12 rounded-[14px] md:rounded-[12px] bg-[#6D3CCC] hover:bg-[#8558D9] disabled:opacity-50 text-white font-semibold text-base"
-                >
-                  {isRecording ? `Recording... ${Math.round(progress)}%` : 'Continue'}
-                </Button>
                 <button
                   type="button"
-                  onClick={() => router.back()}
-                  className="text-white/90 text-sm hover:text-white flex items-center gap-2"
+                  onClick={startVideoRecording}
+                  disabled={!isVideoReady || !stream || isRecording}
+                  className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] disabled:opacity-50 text-black text-[16px] font-semibold transition-colors"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                  </svg>
-                  Back to Previous
+                  {isRecording ? 'Capture' : 'Capture'}
                 </button>
               </>
             )}
           </div>
         </main>
-        <PoweredBy />
+        {/* PoweredBy removed for this premium screen */}
         <input
           ref={cameraFrontRef}
           type="file"

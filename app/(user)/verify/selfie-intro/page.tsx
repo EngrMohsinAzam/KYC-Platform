@@ -1,16 +1,20 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Image from 'next/image'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+
+const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
+const FACE_SCAN_ANIMATION_PATH = '/animations/selfei/Face%20scan%20animation%20(1).json'
 
 export default function SelfieIntroPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isUpdateMode = searchParams.get('update') === 'true'
   const updateEmail = searchParams.get('email') || ''
+  const [animationData, setAnimationData] = useState<object | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -22,6 +26,13 @@ export default function SelfieIntroPage() {
       document.documentElement.style.overflowY = prevHtml
       document.body.style.overflowY = prevBody
     }
+  }, [])
+
+  useEffect(() => {
+    fetch(FACE_SCAN_ANIMATION_PATH)
+      .then((res) => res.json())
+      .then((data) => setAnimationData(data))
+      .catch(() => {})
   }, [])
 
   const handleContinue = () => {
@@ -48,7 +59,7 @@ export default function SelfieIntroPage() {
           type="button"
           aria-label="Go back"
           onClick={handleBack}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
@@ -56,60 +67,72 @@ export default function SelfieIntroPage() {
         </button>
       </div>
 
-      {/* Mobile: scrollable area with padding so content is not hidden under fixed button */}
-      <main className="flex-1 flex flex-col items-center justify-start md:justify-center min-h-0 overflow-hidden md:overflow-visible px-4 pt-0 pb-[88px] md:pb-4 md:py-4">
-        {/* White card: ~60% width on desktop, full width on mobile */}
-        <div className="w-full md:w-[60%] md:max-w-[800px] md:min-w-[400px] flex flex-col items-start md:items-center md:bg-white md:rounded-[14px] md:shadow-md md:border-[1.5px] md:border-[#E8E8E9] md:pt-6 md:px-8 md:pb-6 flex-shrink-0 pt-0">
-          <h1 className="text-[20px] md:text-[26px] leading-tight font-bold text-[#000000] mb-1 md:mb-2 text-left md:text-center w-full">
-            Let&apos;s make sure you&apos;re you
-          </h1>
-          <p className="text-[13px] md:text-[16px] leading-[1.4] font-normal text-[#828282] mb-2 md:mb-4 text-left md:text-center w-full">
-            A live photo of your face is required to verify your identity.
-          </p>
-
-          <div className="flex justify-center w-full mb-2 md:mb-5 self-center">
-            <Image
-              src="/selfei.png"
-              alt="Selfie verification"
-              width={220}
-              height={120}
-              className="max-w-[180px] md:max-w-[280px] max-h-[80px] md:max-h-[140px] w-auto h-auto object-contain"
-            />
-          </div>
-
-          <div className="w-full mb-2 md:mb-5 max-w-[90%] md:max-w-[85%] mx-auto">
-            <p className="text-[11px] md:text-[13px] leading-[1.45] font-normal text-[#828282] text-left md:text-center break-words">
-              By clicking the button below, you consent to Persona, our vendor, collecting, using, and
-              utilizing its service providers to process your biometric information to verify your
-              identity, identify fraud, and improve Persona&apos;s platform in accordance with its{' '}
-              <a
-                href="https://withpersona.com/legal/privacy-policy"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#6D3CCC] font-semibold underline hover:text-[#8558D9] transition-colors"
-              >
-                Privacy Policy
-              </a>
-              . Your biometric information will be stored for no more than 3 years.
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 pt-6 pb-[92px] md:pb-6 md:px-6 md:pt-6">
+        {/* Desktop card wrapper */}
+        <div className="w-full md:max-w-[680px] md:mx-auto md:bg-white md:rounded-[14px] md:border-[1.5px] md:border-[#E8E8E9] md:shadow-md md:px-6 md:py-6 flex flex-col min-h-0">
+          {/* Title + subtitle */}
+          <div className="w-full">
+            <h1 className="text-[26px] md:text-[26px] font-bold leading-[110%] tracking-[0%] text-[#000000] text-left md:text-center">
+              Let&apos;s make sure you&apos;re you
+            </h1>
+            <p className="mt-2 text-[16px] font-normal leading-[125%] tracking-[0%] text-[#545454] text-left md:text-center">
+              A live photo of your face is required to verify your identity.
             </p>
           </div>
 
-          <div className="hidden md:flex flex-col items-center w-full gap-1">
-            <Button
+          {/* Center animation (slightly lower on mobile) */}
+          <div className="flex-1 min-h-0 flex items-center justify-center pt-10 pb-6 md:py-8">
+            {animationData ? (
+              <div className="w-[260px] md:w-[320px] aspect-square">
+                <Lottie animationData={animationData} loop className="w-full h-full" />
+              </div>
+            ) : (
+              <div className="w-[260px] md:w-[320px] aspect-square rounded-2xl bg-[#F5F5F5]" />
+            )}
+          </div>
+
+          {/* Consent text */}
+          <p className="text-[12px] md:text-[12px] font-normal leading-[140%] tracking-[0%] text-[#545454] text-left md:text-center">
+            By clicking the button below, you consent to Persona, our vendor, collecting, using, and utilizing its service
+            providers to process your biometric information to verify your identity, identify fraud, and improve
+            Persona&apos;s platform in accordance with its{' '}
+            <a
+              href="https://withpersona.com/legal/privacy-policy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#545454] underline font-medium"
+            >
+              Privacy Policy
+            </a>
+            . Your biometric information will be stored for no more than 3 years.
+          </p>
+
+          {/* Mobile Continue (in-flow, near text like reference) */}
+          <div className="md:hidden w-full mt-5">
+            <button
+              type="button"
               onClick={handleContinue}
-              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white text-[16px] font-semibold"
+              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors"
             >
               Continue
-            </Button>
+            </button>
+          </div>
+
+          {/* Desktop buttons */}
+          <div className="hidden md:flex flex-col items-center w-full mt-6">
+            <button
+              type="button"
+              onClick={handleContinue}
+              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors"
+            >
+              Continue
+            </button>
             <button
               type="button"
               onClick={handleBack}
-              className="flex items-center justify-center gap-2 text-[#828282] text-[14px] font-normal mt-5 w-full hover:text-[#000000] transition-colors"
+              className="mt-5 text-[#545454] text-[14px] font-normal hover:text-[#000000] transition-colors"
             >
-              <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-              </svg>
-              Back to Previous
+              ← Back to Previous
             </button>
           </div>
         </div>
@@ -117,15 +140,7 @@ export default function SelfieIntroPage() {
 
       <PoweredBy />
 
-      {/* Mobile: fixed to bottom so Continue is always visible on real devices */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-3 bg-[#FFFFFF] border-t border-[#E8E8E9] z-10 flex justify-center">
-        <Button
-          onClick={handleContinue}
-          className="w-full max-w-[341px] h-[54px] !rounded-[14px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!ring-0 focus:!ring-offset-0 !text-white font-semibold text-[16px]"
-        >
-          Continue
-        </Button>
-      </div>
+      {/* Mobile fixed CTA removed (in-flow button used) */}
     </div>
   )
 }

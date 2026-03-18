@@ -1,16 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import { useMemo, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Card } from '@/components/ui/Card'
-import { Header } from '@/components/layout/Header'
 import { useAppContext } from '@/context/useAppContext'
 import { clearKYCCache, clearAllKYCCaches } from '@/app/(public)/utils/kyc-cache'
 
 export default function VerificationComplete() {
   const { state, dispatch } = useAppContext()
   const [transactionHash, setTransactionHash] = useState<string | null>(null)
+
+  const qrDots = useMemo(() => {
+    // Deterministic pattern (avoids hydration mismatches).
+    return Array.from({ length: 100 }).map((_, i) => {
+      const v = (i * 17 + 11) % 29
+      return v < 14
+    })
+  }, [])
   
   useEffect(() => {
     // Get transaction hash from localStorage
@@ -133,98 +138,131 @@ export default function VerificationComplete() {
   }
 
   return (
-    <div className="min-h-screen bg-white md:bg-surface-gray flex flex-col">
-      <Header showClose />
-      <main className="flex-1 px-4 md:px-0 pt-8 pb-6 md:flex md:items-center md:justify-center">
-        <div className="w-full max-w-md md:bg-white md:rounded-lg md:shadow-md md:p-6 md:my-8">
-          <div className="text-center mb-8">
-          {/* Mobile: Green circle with checkmark */}
-          <div className="w-20 h-20 mx-auto mb-6 bg-green-500 rounded-full flex items-center justify-center md:bg-accent-green">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-hidden">
+      {/* Mobile: back arrow */}
+      <div className="md:hidden px-4 pt-5 flex-shrink-0">
+        <button
+          type="button"
+          aria-label="Go back"
+          onClick={() => window.history.back()}
+          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+      </div>
+
+      <main className="flex-1 w-full min-h-0 overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-3 pb-8 md:py-6">
+        {/* Header illustration */}
+        <div className="w-full max-w-[560px] md:max-w-[600px] flex flex-col items-center">
+          <div className="w-[120px] h-[80px] md:w-[140px] md:h-[92px] mb-2 flex items-center justify-center">
+            {/* Simple illustration (card + badge) */}
+            <svg viewBox="0 0 120 80" className="w-full h-full">
+              <path d="M15 55L60 30l45 25-45 25-45-25z" fill="#EAF6C7" />
+              <path d="M18 55l42 23 42-23" fill="none" stroke="#B7D67A" strokeWidth="3" strokeLinejoin="round" />
+              <rect x="34" y="22" width="52" height="32" rx="6" fill="#A7D80D" />
+              <circle cx="48" cy="38" r="6" fill="#FFFFFF" opacity="0.85" />
+              <rect x="58" y="31" width="20" height="4" rx="2" fill="#FFFFFF" opacity="0.8" />
+              <rect x="58" y="39" width="24" height="4" rx="2" fill="#FFFFFF" opacity="0.8" />
+              <circle cx="83" cy="46" r="8" fill="#F4C94C" />
+              <path d="M83 41v7" stroke="#000" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="83" cy="51" r="1.2" fill="#000" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-text-primary mb-2">
-            Verification Complete!
+
+          <h1 className="text-[28px] md:text-[24px] font-bold leading-[110%] text-[#000000] text-center">
+            Verification pending
           </h1>
-          <p className="text-sm text-text-light">Your anonymous ID has been created!</p>
+          <p className="mt-1 text-[14px] md:text-[13px] text-[#545454] text-center">
+            Your anonymous ID has been created
+          </p>
         </div>
 
-        <div className="mb-6">
-          <div className="bg-primary rounded-lg p-6 text-white relative overflow-hidden">
-            <div className="flex justify-between items-start mb-4">
-              <div>
-                <p className="text-sm opacity-90 mb-1">Digital Identity</p>
+        {/* Card */}
+        <div className="w-full max-w-[560px] md:max-w-[600px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm mt-4 px-0 md:px-6 md:py-5">
+          <div className="bg-[#D9D9D9] rounded-[18px] overflow-hidden p-5 md:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[12px] text-[#545454] leading-tight">
+                  Digital Identity
+                  <br />
+                  Verified by Blockchain
+                </p>
+                <div className="mt-4">
+                  <p className="text-[12px] font-semibold text-[#545454]">Anonymous ID</p>
+                  <p className="mt-1 text-[14px] font-medium text-[#000000]">{anonymousId}</p>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-[12px] font-semibold text-[#545454]">Blockchain</p>
+                    <p className="mt-1 text-[13px] text-[#000000]">Mira-20</p>
+                  </div>
+                  <div>
+                    <p className="text-[12px] font-semibold text-[#545454]">Verified</p>
+                    <p className="mt-1 text-[13px] text-[#000000]">Oct 24, 2025</p>
+                  </div>
+                </div>
               </div>
-              <div className="w-10 h-10 bg-accent-blue rounded-full flex items-center justify-center">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <p className="text-sm text-accent-green font-semibold mb-2">Verified by Blockchain</p>
-            </div>
 
-            {/* <div className="mb-4">
-              <p className="text-sm opacity-90 mb-1">Anonymous ID:</p>
-              <p className="text-xl font-bold">{anonymousId}</p>
-            </div> */}
-
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              <div>
-                <p className="text-xs opacity-90 mb-1">Blockchain:</p>
-                <p className="text-sm font-semibold">BSC Mainnet</p>
-              </div>
-              <div>
-                <p className="text-xs opacity-90 mb-1">Verified:</p>
-                <p className="text-sm font-semibold">Oct 24, 2025</p>
-              </div>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-white border-opacity-20">
-              <div className="w-full h-24 bg-white bg-opacity-10 rounded flex items-center justify-center">
-                <div className="grid grid-cols-8 gap-1">
-                  {Array.from({ length: 64 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className={`w-2 h-2 rounded ${
-                        Math.random() > 0.5 ? 'bg-white' : 'bg-white bg-opacity-30'
-                      }`}
-                    />
-                  ))}
+              {/* Check badge */}
+              <div className="flex-shrink-0 mt-1">
+                <div className="w-10 h-10 rounded-full bg-[#EDEDED] flex items-center justify-center">
+                  <svg className="w-5 h-5 text-[#FFFFFF]" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2l3 3.5L20 6l-1 5 3 3-3 3 1 5-5-.5L12 22l-3-3.5L4 18l1-5-3-3 3-3-1-5 5 .5L12 2z" fill="#BDBDBD" />
+                    <path d="M9.5 12.5l1.8 1.8 3.6-4" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </div>
               </div>
             </div>
+
+            {/* QR card */}
+            <div className="mt-5 bg-white rounded-[18px] p-5 md:p-6 flex items-center justify-center">
+              <div className="w-[210px] h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
+                {qrDots.map((on, i) => (
+                  <div key={i} className={`w-full h-full rounded-full ${on ? 'bg-white' : 'bg-white/30'}`} />
+                ))}
+              </div>
+            </div>
           </div>
-        </div>
 
-        <p className="text-sm text-text-secondary mb-6 text-center leading-relaxed">
-          Your identity has been verified and stamped on the Binance Smart Chain. This anonymous ID protects your privacy while proving your verification status.
-        </p>
-
-        <div className="flex flex-col gap-3">
-          <div className="flex gap-3">
-            <Button variant="secondary" onClick={handleDownload} className="flex-1 flex items-center justify-center gap-2 border-2 border-text-primary">
+          {/* Buttons */}
+          <div className="mt-4 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="w-full h-[56px] rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Download
-            </Button>
-            <Button variant="secondary" onClick={handleShare} className="flex-1 flex items-center justify-center gap-2 border-2 border-text-primary">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                />
               </svg>
               Share
-            </Button>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v10m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
+              </svg>
+              Download
+            </button>
           </div>
-          <Link href="/support" className="block text-center">
-            <Button variant="secondary" className="w-full">
-              Contact support
-            </Button>
-          </Link>
-        </div>
+
+          {/* Desktop back link */}
+          <button
+            type="button"
+            onClick={() => window.history.back()}
+            className="hidden md:block w-full text-center mt-6 text-[#545454] text-[14px] font-normal hover:text-[#000000] transition-colors"
+          >
+            ← Back to Previous
+          </button>
         </div>
       </main>
     </div>
