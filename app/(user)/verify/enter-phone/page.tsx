@@ -100,12 +100,12 @@ export default function EnterPhonePage() {
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       {/* Mobile: back arrow only (left) */}
-      <div className="md:hidden pl-4 pt-5 pb-1">
+      <div className="md:hidden px-4 pt-5 pb-1">
         <button
           type="button"
           aria-label="Go back"
           onClick={() => router.push('/verify/resident-selection')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
+          className="h-8 w-5 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />

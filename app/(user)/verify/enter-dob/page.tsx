@@ -95,12 +95,12 @@ export default function EnterDobPage() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden pl-1 pr-4 pt-5">
+      <div className="md:hidden px-4 pt-5">
         <button
           type="button"
           aria-label="Go back"
           onClick={() => router.push('/verify/enter-name')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+          className="h-8 w-5 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />

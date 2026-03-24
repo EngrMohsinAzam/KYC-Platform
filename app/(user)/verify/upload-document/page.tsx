@@ -1215,7 +1215,7 @@ export default function UploadDocument() {
             type="button"
             aria-label="Go back"
             onClick={() => router.push('/verify/upload-id-type')}
-            className="h-8 w-8 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
+            className="h-8 w-5 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />

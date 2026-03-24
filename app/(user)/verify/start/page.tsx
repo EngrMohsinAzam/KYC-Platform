@@ -103,7 +103,7 @@ function StartContent() {
           type="button"
           aria-label="Close"
           onClick={() => router.push('/')}
-          className="h-8 w-8 flex items-center justify-center text-[#111] hover:opacity-80 transition-opacity"
+          className="h-8 w-5 flex items-center justify-center text-[#111] hover:opacity-80 transition-opacity"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />

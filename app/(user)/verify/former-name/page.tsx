@@ -20,7 +20,7 @@ export default function FormerNamePage() {
           type="button"
           aria-label="Go back"
           onClick={() => router.push('/verify/source-of-wealth')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
+          className="h-8 w-5 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />

@@ -12,13 +12,30 @@ const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 
 const LIME = '#A7D80D'
 // Prefer exact file name; also try encoded variant when fetching
-const FACE_ID_RECORD_PATH = '/animations/selfei/Face ID record (1).json'
+const FACE_ID_RECORD_PATH = '/animations/digiport animations/Face ID record (1).json'
 
 function FaceIdRecordRing({ sizePx, animationData }: { sizePx: number; animationData: any }) {
+  // Native animation: 400x400 canvas, tick inner edge at radius 105.75px.
+  // Scale so inner edge sits 2px outside the circle border.
+  // containerSize * (105.75/400) = sizePx/2 + 2  →  containerSize = (sizePx/2 + 2) * (400/105.75)
+  const gap = 8
+  const containerSize = Math.round((sizePx / 2 + gap) * (400 / 105.75))
+  const baseOffset = -Math.round((containerSize - sizePx) / 2)
+  // Layer center in native canvas is at (196.16, 200) — not perfectly centered.
+  // Compensate so the ring is centered on the circle, not the animation bbox.
+  const nativeSize = 400
+  const layerCenterX = 196.16
+  const ringCenterInContainer = layerCenterX * (containerSize / nativeSize)
+  const xAdjust = Math.round(containerSize / 2 - ringCenterInContainer)
   return (
     <div
-      className="absolute inset-0 pointer-events-none z-20"
-      style={{ width: sizePx, height: sizePx }}
+      className="absolute pointer-events-none z-20"
+      style={{
+        width: containerSize,
+        height: containerSize,
+        top: baseOffset,
+        left: baseOffset + xAdjust,
+      }}
       aria-hidden
     >
       <Lottie animationData={animationData} loop className="w-full h-full" />
@@ -85,7 +102,7 @@ export default function UploadSelfie() {
       })
 
     // Loading animation (Face ID record)
-    const encoded = '/animations/selfei/Face%20ID%20record%20%281%29.json'
+    const encoded = '/animations/digiport%20animations/Face%20ID%20record%20%281%29.json'
     fetch(FACE_ID_RECORD_PATH)
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error('not found'))))
       .then((data) => setLoadingAnimationData(data))
@@ -696,7 +713,7 @@ export default function UploadSelfie() {
           </button>
         </div>
         <main className="flex-1 flex flex-col items-center justify-center min-h-0 overflow-hidden px-4 pt-10 pb-[92px] md:py-10">
-          <h1 className="text-white text-[18px] md:text-[20px] font-semibold text-center mb-8">
+          <h1 className="text-white text-[18px] md:text-[20px] font-semibold text-center mb-10">
             Centre your self on the screen
           </h1>
           {/*
