@@ -13,12 +13,12 @@ export function PoweredBy() {
     setCompany(ctx?.companyName ? { companyName: ctx.companyName } : null)
   }, [pathname])
 
-  if (!company) return null
+  // if (!company) return null
 
   return (
-    <footer className="py-3 text-center border-t border-gray-200 bg-white">
+    <footer className="hidden md:block flex-shrink-0 py-3 text-center border-t border-gray-200 bg-white">
       <p className="text-xs text-gray-500">
-        Powered by <span className="font-semibold text-gray-700">{company.companyName}</span>
+        Powered by <span className="font-semibold text-gray-700">{company?.companyName}</span>
       </p>
     </footer>
   )

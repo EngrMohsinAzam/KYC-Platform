@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 type PlanUse =
   | 'crypto'
@@ -28,11 +29,13 @@ const PLAN_OPTIONS: { id: PlanUse; label: string }[] = [
 export default function PlanUsePage() {
   const router = useRouter()
   const [selected, setSelected] = useState<PlanUse | ''>('')
+  const [loading, setLoading] = useState(false)
 
   const canProceed = !!selected
 
   const handleContinue = () => {
     if (!selected) return
+    setLoading(true)
     router.push('/verify/source-of-wealth')
   }
 
@@ -122,10 +125,10 @@ export default function PlanUsePage() {
             <button
               type="button"
               onClick={handleContinue}
-              disabled={!canProceed}
+              disabled={!canProceed || loading}
               className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
             <button
               type="button"
@@ -151,10 +154,10 @@ export default function PlanUsePage() {
         <button
           type="button"
           onClick={handleContinue}
-          disabled={!canProceed}
+          disabled={!canProceed || loading}
           className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Continue
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </button>
       </div>
     </div>

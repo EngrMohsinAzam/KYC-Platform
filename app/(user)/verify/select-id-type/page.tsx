@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 import { getCountryOptions, getCitiesForCountry } from '@/app/(public)/utils/countries'
 import { getKycPausedStatus } from '@/app/api/api'
 
@@ -14,6 +15,7 @@ export default function SelectIdType() {
   const [country, setCountry] = useState('')
   const [city, setCity] = useState('')
   const [pausedMessage, setPausedMessage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const countryOptions = getCountryOptions()
   const cityOptions = country ? getCitiesForCountry(country) : []
@@ -81,6 +83,7 @@ export default function SelectIdType() {
 
   const handleNext = () => {
     if (pausedMessage) return
+    setLoading(true)
     dispatch({ type: 'SET_COUNTRY', payload: country })
     if (cityOptions.length > 0 && city) {
       dispatch({ type: 'SET_CITY', payload: city })
@@ -201,10 +204,10 @@ export default function SelectIdType() {
             <button
               type="button"
               onClick={handleNext}
-              disabled={!canProceed || !!pausedMessage}
+              disabled={!canProceed || !!pausedMessage || loading}
               className="w-full h-[54px] rounded-[12px] bg-[#000000] hover:opacity-90 active:opacity-80 text-white text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#000000] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#ffffff" /> : 'Continue'}
             </button>
           </div>
         </div>
@@ -232,10 +235,10 @@ export default function SelectIdType() {
         <button
           type="button"
           onClick={handleNext}
-          disabled={!canProceed || !!pausedMessage}
+          disabled={!canProceed || !!pausedMessage || loading}
           className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Continue
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </button>
       </div>
     </div>

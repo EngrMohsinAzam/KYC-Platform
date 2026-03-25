@@ -9,6 +9,7 @@ import { clearCompanyContext, setCompanyContext } from '@/app/(public)/utils/kyc
 import { clearAllKYCCaches } from '@/app/(public)/utils/kyc-cache'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 function StartContent() {
   const router = useRouter()
@@ -22,6 +23,7 @@ function StartContent() {
   const [pausedMessage, setPausedMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(hasCompanyLink)
   const [error, setError] = useState('')
+  const [starting, setStarting] = useState(false)
 
   // When user lands on start (or refreshes here), clear all KYC data so a new run has empty fields, selfie, and document
   useEffect(() => {
@@ -72,6 +74,7 @@ function StartContent() {
   }, [])
 
   const handleStart = () => {
+    setStarting(true)
     router.push('/verify/enter-email')
   }
 
@@ -102,19 +105,17 @@ function StartContent() {
         <button
           type="button"
           aria-label="Close"
-          onClick={() => router.push('/')}
+          // onClick={() => router.push('/')}
           className="h-8 w-5 flex items-center justify-center text-[#111] hover:opacity-80 transition-opacity"
         >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
+      
         </button>
       </div>
 
       {/* Main: mobile = center illustration in middle; desktop = card 723×623, top 96px, left 279px */}
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center md:items-start md:pl-[279px] px-4 pt-2 md:pt-[96px] pb-32 md:pb-8 min-h-0">
+      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center px-4 pt-2 pb-32 md:py-8 min-h-0">
         <div
-          className="w-full max-w-[680px] md:w-[723px] md:max-w-[min(723px,calc(100vw-318px))] md:max-h-[min(623px,calc(100dvh-128px))] md:min-h-0 flex flex-col items-center md:bg-white md:rounded-[14px] md:shadow-[0_4px_24px_rgba(0,0,0,0.08)] md:border md:border-[#E8E8E9] md:px-8 md:pt-6 md:pb-6 md:flex md:overflow-y-auto flex-1 md:flex-initial min-h-0"
+          className="w-full max-w-[680px] md:w-[723px] md:max-w-[min(723px,calc(100vw-80px))] md:max-h-[min(623px,calc(100dvh-128px))] md:min-h-0 flex flex-col items-center md:bg-white md:rounded-[14px]  md:border-2 md:border-[#D3D3D3]  md:px-8 md:py-[37px]  md:flex md:overflow-y-auto flex-1 md:flex-initial min-h-0"
           style={{ opacity: 1 }}
         >
           {/* Title + Subtitle - centered: Inter 24px/700 #000, 16px/400 #545454 */}
@@ -152,15 +153,16 @@ function StartContent() {
                 <button
                   type="button"
                   onClick={handleStart}
-                  className="w-full max-w-[670px] h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-base font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
+                  disabled={starting}
+                  className="w-full max-w-[670px] h-[50px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-base font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Continue
+                  {starting ? <SpinnerIcon color="#000000" /> : 'Start KYC'}
                 </button>
                 <Link
                   href="/"
                   className="mt-4 text-sm text-[#6B7280] hover:text-[#374151] transition-colors"
                 >
-                  X Close
+           
                 </Link>
               </>
             )}
@@ -168,15 +170,16 @@ function StartContent() {
         </div>
       </main>
 
-      {/* Mobile: fixed bottom - button 341px width, 54px height, 17px horizontal padding; raised a bit from bottom */}
+      {/* Mobile: fixed bottom - button 341px width, 50px height, 17px horizontal padding; raised a bit from bottom */}
       {!paused && !pausedMessage && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 px-[17px] pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
           <button
             type="button"
             onClick={handleStart}
-            className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
+            disabled={starting}
+            className="w-full h-[50px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Start KYC
+            {starting ? <SpinnerIcon color="#000000" /> : 'Start KYC'}
           </button>
         </div>
       )}

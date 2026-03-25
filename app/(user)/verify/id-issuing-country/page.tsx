@@ -3,17 +3,20 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 import { getCountryOptions } from '@/app/(public)/utils/countries'
 
 export default function IdIssuingCountryPage() {
   const router = useRouter()
   const [country, setCountry] = useState('')
+  const [loading, setLoading] = useState(false)
   const countryOptions = getCountryOptions()
 
   const canProceed = !!country
 
   const handleContinue = () => {
     if (!country) return
+    setLoading(true)
     router.push('/verify/upload-id-type')
   }
 
@@ -89,10 +92,10 @@ export default function IdIssuingCountryPage() {
             <button
               type="button"
               onClick={handleContinue}
-              disabled={!canProceed}
+              disabled={!canProceed || loading}
               className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
           </div>
 
@@ -101,10 +104,10 @@ export default function IdIssuingCountryPage() {
             <button
               type="button"
               onClick={handleContinue}
-              disabled={!canProceed}
+              disabled={!canProceed || loading}
               className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
             <button
               type="button"

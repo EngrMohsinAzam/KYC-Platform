@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Header } from '@/components/layout/Header'
 import { checkStatusByEmail } from '@/app/api/api'
-import { LoadingDots } from '@/components/ui/LoadingDots'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 // Validate email format
 const validateEmail = (email: string): boolean => {
@@ -175,14 +175,7 @@ export default function CheckStatus() {
               disabled={loading || !email}
               className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold flex items-center justify-center gap-2 mx-auto"
             >
-              {loading ? (
-                <>
-                  <LoadingDots size="sm" color="#ffffff" />
-                  <span>Checking...</span>
-                </>
-              ) : (
-                'Check Status'
-              )}
+              {loading ? <SpinnerIcon color="#ffffff" /> : 'Check Status'}
             </Button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 type SourceOfWealth =
   | 'salary'
@@ -25,11 +26,13 @@ const WEALTH_OPTIONS: { id: SourceOfWealth; label: string; icon: string }[] = [
 export default function SourceOfWealthPage() {
   const router = useRouter()
   const [selected, setSelected] = useState<SourceOfWealth | ''>('')
+  const [loading, setLoading] = useState(false)
 
   const canProceed = !!selected
 
   const handleContinue = () => {
     if (!selected) return
+    setLoading(true)
     router.push('/verify/former-name')
   }
 
@@ -124,10 +127,10 @@ export default function SourceOfWealthPage() {
             <button
               type="button"
               onClick={handleContinue}
-              disabled={!canProceed}
+              disabled={!canProceed || loading}
               className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
             <button
               type="button"
@@ -153,10 +156,10 @@ export default function SourceOfWealthPage() {
         <button
           type="button"
           onClick={handleContinue}
-          disabled={!canProceed}
+          disabled={!canProceed || loading}
           className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Continue
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </button>
       </div>
     </div>

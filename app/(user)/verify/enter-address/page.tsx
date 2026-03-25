@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 type GeocodeSuggestion = {
   display_name: string
@@ -308,7 +309,7 @@ export default function EnterAddressPage() {
               disabled={loading || !canProceed}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#000000] hover:!opacity-90 active:!opacity-80 focus:!ring-2 focus:!ring-[#000000] focus:!ring-offset-2 !text-white text-[16px] font-semibold disabled:opacity-50"
             >
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? <SpinnerIcon color="#ffffff" /> : 'Continue'}
             </Button>
             <button
               type="button"
@@ -335,7 +336,7 @@ export default function EnterAddressPage() {
           disabled={loading || !canProceed}
           className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving...' : 'Continue'}
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </button>
       </div>
     </div>

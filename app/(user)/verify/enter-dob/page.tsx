@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 export default function EnterDobPage() {
   const router = useRouter()
@@ -177,7 +178,7 @@ export default function EnterDobPage() {
               disabled={loading}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] focus:!bg-[#6D3CCC] focus:!ring-0 focus:!ring-offset-0 active:!bg-[#6D3CCC] disabled:!bg-[#6D3CCC] disabled:opacity-100 !text-white disabled:!text-white text-[16px] font-semibold"
             >
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? <SpinnerIcon color="#ffffff" /> : 'Continue'}
             </Button>
             <button
               type="button"
@@ -204,7 +205,7 @@ export default function EnterDobPage() {
           disabled={loading || !canProceed}
           className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving...' : 'Continue'}
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </button>
       </div>
     </div>

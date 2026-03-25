@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 import {
   PHONE_COUNTRY_CODES,
   getCountryCode,
@@ -116,13 +117,13 @@ export default function EnterPhonePage() {
       <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         {/* Desktop heading */}
         <section className="hidden md:block text-center mb-7">
-          <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
+          <h1 className="font-sans text-[28px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 font-sans text-[16px] leading-[100%] font-normal text-[#545454]">
             We&apos;re required to collect this verify your identity.
           </p>
         </section>
 
-        <div className="w-full max-w-[760px] md:max-w-[680px] md:bg-transparent md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-6">
+        <div className="w-full max-w-[760px] md:mt-2 md:border-[1.5px] md:border-[#D3D3D3] md:rounded-[14px] md:px-7 md:py-9">
           {/* Mobile heading inside card */}
           <h2 className="md:hidden font-sans text-[24px] leading-[1.3] font-bold text-[#000000] mb-2">
             Phone number
@@ -131,16 +132,13 @@ export default function EnterPhonePage() {
           <label className="hidden md:block font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000] mb-2">
             Phone number
           </label>
-          {/* Helper text: desktop only */}
-          <p className="hidden md:block font-sans text-[16px] leading-[1.4] font-normal text-[#545454] mb-4">
-            Enter the phone number you&apos;d like to use
-          </p>
+          
 
           {/* Combined country code + phone field, styled like other inputs */}
-          <div className="w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#A7D80D] flex items-stretch overflow-hidden">
+          <div className="w-full h-[50px] md:mt-3 flex items-stretch rounded-[12px] bg-[#EBEBEB] border border-[#A7D80D] overflow-hidden md:rounded-none md:bg-transparent md:border-0 md:gap-1">
             <div
               aria-label={`Country code ${phoneCountryLabel}`}
-              className="flex-shrink-0 w-[120px] md:w-[140px] flex items-center justify-between pl-4 pr-3 border-r border-[#D4D4D4] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] cursor-default select-none"
+              className="flex-shrink-0 w-[120px] md:w-[140px] flex items-center justify-between pl-4 pr-3 border-r border-[#A7D80D] md:border-r-0 md:rounded-tl-[12px] md:rounded-tr-[5px] md:rounded-br-[5px] md:rounded-bl-[12px] md:bg-[#EBEBEB] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] cursor-default select-none"
             >
               <span className="truncate">{phoneCountryLabel}</span>
               <svg
@@ -153,7 +151,7 @@ export default function EnterPhonePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-            <div className="flex-1 min-w-0 flex items-center pl-4 pr-4 ml-1">
+            <div className="flex-1 min-w-0 flex items-center pl-4 pr-4 md:rounded-tl-[5px] md:rounded-tr-[12px] md:rounded-br-[12px] md:rounded-bl-[5px] md:bg-[#EBEBEB] md:border-[1.5px] md:border-[#E8E8E9]">
               <input
                 type="tel"
                 inputMode="numeric"
@@ -175,9 +173,9 @@ export default function EnterPhonePage() {
             <Button
               onClick={() => void handleContinue()}
               disabled={loading || !canProceed}
-              className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#000000] hover:!opacity-90 active:!opacity-80 focus:!ring-2 focus:!ring-[#000000] focus:!ring-offset-2 !text-white text-[16px] font-semibold disabled:opacity-50"
+              className="w-full  h-[54px] !rounded-[12px] !bg-[#A7D80D] hover:!opacity-95 active:!opacity-90 focus:!ring-2 focus:!ring-[#A7D80D] focus:!ring-offset-2 !text-black text-[16px] font-semibold disabled:opacity-50"
             >
-              {loading ? 'Saving...' : 'Continue'}
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </Button>
             <button
               type="button"
@@ -204,7 +202,7 @@ export default function EnterPhonePage() {
           disabled={loading || !canProceed}
           className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving...' : 'Continue'}
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </button>
       </div>
     </div>

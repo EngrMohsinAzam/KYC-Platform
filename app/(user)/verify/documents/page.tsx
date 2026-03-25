@@ -1,13 +1,15 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 export default function DocumentsPage() {
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -22,6 +24,7 @@ export default function DocumentsPage() {
   }, [])
 
   const handleContinue = () => {
+    setLoading(true)
     router.push('/verify/id-issuing-country')
   }
 
@@ -88,9 +91,10 @@ export default function DocumentsPage() {
             <button
               type="button"
               onClick={handleContinue}
-              className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
+              disabled={loading}
+              className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
             <button
               type="button"
@@ -113,9 +117,10 @@ export default function DocumentsPage() {
         <button
           type="button"
           onClick={handleContinue}
-          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2"
+          disabled={loading}
+          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Continue
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </button>
       </div>
     </div>

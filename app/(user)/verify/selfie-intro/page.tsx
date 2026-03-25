@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 const FACE_SCAN_ANIMATION_PATH = '/animations/selfei/Face%20scan%20animation%20(1).json'
@@ -15,6 +16,7 @@ export default function SelfieIntroPage() {
   const isUpdateMode = searchParams.get('update') === 'true'
   const updateEmail = searchParams.get('email') || ''
   const [animationData, setAnimationData] = useState<object | null>(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -36,6 +38,7 @@ export default function SelfieIntroPage() {
   }, [])
 
   const handleContinue = () => {
+    setLoading(true)
     if (isUpdateMode && updateEmail) {
       router.push(`/verify/upload-selfie?update=true&email=${encodeURIComponent(updateEmail)}`)
     } else {
@@ -112,9 +115,10 @@ export default function SelfieIntroPage() {
             <button
               type="button"
               onClick={handleContinue}
-              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors"
+              disabled={loading}
+              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
           </div>
 
@@ -123,9 +127,10 @@ export default function SelfieIntroPage() {
             <button
               type="button"
               onClick={handleContinue}
-              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors"
+              disabled={loading}
+              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
             <button
               type="button"

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 export default function ResidentSelection() {
   const router = useRouter()
@@ -12,6 +13,7 @@ export default function ResidentSelection() {
   
   const [selected, setSelected] = useState<string>('')
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const handleContinue = () => {
     if (!selected) {
@@ -19,6 +21,7 @@ export default function ResidentSelection() {
       return
     }
     setError(null)
+    setLoading(true)
     dispatch({ type: 'SET_RESIDENT_USA', payload: selected === 'usa' })
     router.push('/verify/enter-phone')
   }
@@ -145,10 +148,10 @@ export default function ResidentSelection() {
           <div className="hidden md:block mt-6">
             <Button
               onClick={handleContinue}
-              disabled={!selected}
+              disabled={!selected || loading}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#000000] hover:!opacity-90 active:!opacity-80 focus:!ring-2 focus:!ring-[#000000] focus:!ring-offset-2 disabled:opacity-50 !text-white text-[16px] font-semibold"
             >
-              Continue
+              {loading ? <SpinnerIcon color="#ffffff" /> : 'Continue'}
             </Button>
 
             <button
@@ -169,10 +172,10 @@ export default function ResidentSelection() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex justify-center">
         <Button
           onClick={handleContinue}
-          disabled={!selected}
+          disabled={!selected || loading}
           className="w-full max-w-[341px] h-[54px] !rounded-[12px] !bg-[#A7D80D] hover:!opacity-95 active:!opacity-90 focus:!ring-2 focus:!ring-[#A7D80D] focus:!ring-offset-2 !text-black text-[16px] font-semibold"
         >
-          Continue
+          {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
         </Button>
       </div>
     </div>
