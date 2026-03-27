@@ -55,7 +55,7 @@ export default function PlanUsePage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 pb-[170px] md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
         {/* Desktop heading */}
         <section className="hidden md:block text-center mb-3 md:mb-4">
           <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
@@ -96,7 +96,7 @@ export default function PlanUsePage() {
                     key={opt.id}
                     type="button"
                     onClick={() => setSelected(opt.id)}
-                    className={`w-full flex items-center justify-between h-[51px] px-4 ${radiusClass} text-left font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] transition-colors border-2 ${
+                    className={`w-full flex items-center justify-between h-[46px] px-4 ${radiusClass} text-left font-sans text-[15px] font-normal leading-[100%] tracking-[0%] text-[#000000] transition-colors border-2 ${
                       isSelected
                         ? 'bg-[#ECF9E3] border-[#A7D80D]'
                         : 'bg-[#EBEBEB] border-transparent'
