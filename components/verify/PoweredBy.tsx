@@ -13,12 +13,12 @@ export function PoweredBy() {
     setCompany(ctx?.companyName ? { companyName: ctx.companyName } : null)
   }, [pathname])
 
-  // if (!company) return null
+  const companyName = company?.companyName || 'Blockchain'
 
   return (
-    <footer className="hidden md:block flex-shrink-0 py-3 text-center border-t border-gray-200 bg-white">
+    <footer className="fixed bottom-0 left-0 right-0 z-10 border-t border-gray-200 bg-white py-2 text-center md:static md:flex-shrink-0 md:py-3">
       <p className="text-xs text-gray-500">
-        Powered by <span className="font-semibold text-gray-700">{company?.companyName}</span>
+        Powered by <span className="font-semibold text-gray-700">{companyName}</span>
       </p>
     </footer>
   )
