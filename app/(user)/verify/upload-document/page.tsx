@@ -1227,7 +1227,7 @@ export default function UploadDocument() {
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-4">
         {/* Intro card: carbon copy of reference images - when no image and camera not active */}
         {showIntroCard && (
-          <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[680px] md:mx-auto pt-1 pb-5 md:py-0">
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[680px] md:mx-auto pt-1 pb-8 md:py-0">
           <div className="w-full max-w-[680px] flex flex-col flex-shrink-0 flex-1 min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 md:max-h-[90vh] md:overflow-hidden md:scale-[0.97] md:origin-center">
             {/* Title - per reference: bold, centered on mobile */}
             <div className="flex-shrink-0 text-left">
@@ -1251,7 +1251,7 @@ export default function UploadDocument() {
               )}
             </div>
             {/* Buttons - mobile: pinned to bottom like reference */}
-            <div className="flex-shrink-0 flex flex-col w-full gap-3 mt-auto pt-2 pb-6 md:pt-4 md:pb-0">
+            <div className="flex-shrink-0 flex flex-col w-full gap-3 mt-auto pt-2 pb-10 md:pt-4 md:pb-0">
               <button
                 type="button"
                 onClick={handleFileClick}
