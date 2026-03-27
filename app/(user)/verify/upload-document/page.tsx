@@ -1163,9 +1163,9 @@ export default function UploadDocument() {
       
       setTimeout(() => {
         if (isUpdateMode && updateEmail) {
-          router.push(`/verify/selfie-intro?update=true&email=${encodeURIComponent(updateEmail)}`)
+          router.push(`/verify/processing-id?update=true&email=${encodeURIComponent(updateEmail)}`)
         } else {
-          router.push('/verify/selfie-intro')
+          router.push('/verify/processing-id')
         }
       }, 300)
       return
@@ -1175,9 +1175,9 @@ export default function UploadDocument() {
       dispatch({ type: 'SET_DOCUMENT_IMAGE_FRONT', payload: frontImage })
       setTimeout(() => {
         if (isUpdateMode && updateEmail) {
-          router.push(`/verify/selfie-intro?update=true&email=${encodeURIComponent(updateEmail)}`)
+          router.push(`/verify/processing-id?update=true&email=${encodeURIComponent(updateEmail)}`)
         } else {
-          router.push('/verify/selfie-intro')
+          router.push('/verify/processing-id')
         }
       }, 200)
       return
