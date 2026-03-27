@@ -155,7 +155,7 @@ export default function EnterDobPage() {
                   inputRef.current?.click()
                 }
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors rounded focus:outline-none focus:ring-0"
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center text-[#000000] transition-colors rounded focus:outline-none focus:ring-0"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />

@@ -1227,7 +1227,7 @@ export default function UploadDocument() {
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-4">
         {/* Intro card: carbon copy of reference images - when no image and camera not active */}
         {showIntroCard && (
-          <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[680px] md:mx-auto py-2 md:py-0">
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center w-full md:max-w-[680px] md:mx-auto pt-1 pb-5 md:py-0">
           <div className="w-full max-w-[680px] flex flex-col flex-shrink-0 flex-1 min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 md:max-h-[90vh] md:overflow-hidden md:scale-[0.97] md:origin-center">
             {/* Title - per reference: bold, centered on mobile */}
             <div className="flex-shrink-0 text-left">
@@ -1239,19 +1239,19 @@ export default function UploadDocument() {
               </p>
             </div>
             {/* Middle: Lottie animation - centered + larger on mobile (match reference) */}
-            <div className="flex-1 min-h-0 flex items-center justify-center py-2 md:flex-1 md:min-h-0 md:py-4">
+            <div className="w-full flex items-center justify-center py-1 md:flex-1 md:min-h-0 md:py-4">
               {passportAnimationData ? (
-                <div className="w-[260px] max-w-[260px] md:max-w-[280px] aspect-square flex items-center justify-center">
+                <div className="w-[230px] max-w-[230px] md:max-w-[280px] aspect-square flex items-center justify-center">
                   <Lottie animationData={passportAnimationData} loop className="w-full h-full" />
                 </div>
               ) : (
-                <div className="w-[260px] max-w-[260px] md:max-w-[280px] aspect-square flex items-center justify-center bg-[#F5F5F5] rounded-2xl">
+                <div className="w-[230px] max-w-[230px] md:max-w-[280px] aspect-square flex items-center justify-center bg-[#F5F5F5] rounded-2xl">
                   <Image src="/Doc3.png" alt="" width={120} height={80} className="w-3/4 h-auto object-contain opacity-70" />
                 </div>
               )}
             </div>
             {/* Buttons - mobile: pinned to bottom like reference */}
-            <div className="flex-shrink-0 flex flex-col w-full gap-3 mt-auto pt-2 pb-2 md:pt-4 md:pb-0">
+            <div className="flex-shrink-0 flex flex-col w-full gap-3 mt-auto pt-2 pb-6 md:pt-4 md:pb-0">
               <button
                 type="button"
                 onClick={handleFileClick}

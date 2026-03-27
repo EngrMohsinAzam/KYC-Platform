@@ -35,7 +35,7 @@ export default function SelectIndustryPage() {
   const canProceed = !!selected
 
   const optionBase =
-    'inline-flex h-[51px] px-4 rounded-[12px] bg-[#EBEBEB] items-center gap-3 text-left font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] transition-colors'
+    'inline-flex h-[44px] px-4 rounded-[12px] bg-[#EBEBEB] items-center gap-2.5 text-left font-sans text-[15px] font-normal leading-[100%] tracking-[0%] text-[#000000] transition-colors'
 
   const handleContinue = () => {
     if (!selected) return
@@ -59,7 +59,7 @@ export default function SelectIndustryPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 pb-[170px] md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
         {/* Desktop heading */}
         <section className="hidden md:block text-center mb-3 md:mb-4">
           <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
@@ -86,7 +86,7 @@ export default function SelectIndustryPage() {
 
           {/* Scrollable options area on desktop to mirror design */}
           <div className="md:flex-1 md:overflow-y-auto md:pr-2">
-            <div className="flex flex-col items-start gap-2">
+            <div className="flex flex-col items-start gap-1">
               {INDUSTRY_OPTIONS.map((opt) => (
                 <button
                   key={opt.id}
@@ -96,7 +96,7 @@ export default function SelectIndustryPage() {
                     selected === opt.id ? 'border-[2px] border-[#A7D80D]' : ''
                   }`}
                 >
-                  <span className="inline-flex h-7 w-7 items-center justify-center">
+                  <span className="inline-flex h-6 w-6 items-center justify-center">
                     <Image src={opt.icon} alt={opt.label} width={24} height={24} />
                   </span>
                   <span>{opt.label}</span>

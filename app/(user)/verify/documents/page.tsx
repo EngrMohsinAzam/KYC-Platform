@@ -44,7 +44,7 @@ export default function DocumentsPage() {
         </button>
       </div>
 
-      <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-3 pb-[104px] md:pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
+      <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-3 pb-[170px] md:pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
         {/* Card: flex column so illustration can sit in center, consent at bottom */}
         <div className="w-full max-w-[760px] md:max-w-[680px] h-full md:h-auto md:min-h-0 flex flex-col md:justify-start md:bg-[#FFFFFF] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4 md:flex-shrink-0">
           {/* Heading - Inter 20px bold */}
@@ -71,7 +71,7 @@ export default function DocumentsPage() {
           </div>
 
           {/* Consent text - at bottom, above button; Inter 12px, 117% line-height */}
-          <p className="font-sans text-[12px] font-normal leading-[117%] tracking-[0%] text-[#545454] mb-[18px] text-left w-full flex-shrink-0 md:max-w-none max-w-[95%] mx-auto">
+          <p className="font-sans text-[12px] font-normal leading-[117%] tracking-[0%] text-[#545454] mb-8 text-left w-full flex-shrink-0 md:max-w-none max-w-[95%] mx-auto">
             By clicking the button below, you consent to Persona, our vendor, collecting, using, and
             utilizing its service providers to process your biometric information to verify your
             identity, identify fraud, and improve Persona&apos;s platform in accordance with its{' '}

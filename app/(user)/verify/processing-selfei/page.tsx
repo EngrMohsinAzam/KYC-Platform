@@ -2,7 +2,9 @@
 
 'use client'
 
+import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 const DotLottie = dynamic(
   () => import('@lottiefiles/dotlottie-react').then((m) => ({ default: m.DotLottieReact })),
@@ -12,6 +14,25 @@ const DotLottie = dynamic(
 const ANIMATION_SRC = '/animations/digiport animations/Circular motion.json'
 
 export default function ProcessingSelfeiPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const update = searchParams.get('update')
+      const email = searchParams.get('email')
+
+      if (update === 'true' && email) {
+        router.push(`/verify/review?update=true&email=${encodeURIComponent(email)}`)
+        return
+      }
+
+      router.push('/verify/review')
+    }, 5000)
+
+    return () => clearTimeout(timer)
+  }, [router, searchParams])
+
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-black flex flex-col overflow-hidden">
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-6 pt-24 md:pt-16 md:items-center">

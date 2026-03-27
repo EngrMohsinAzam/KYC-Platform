@@ -37,27 +37,27 @@ export default function ProcessingIdPage() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
-      <main className="flex-1 w-full px-6 pt-24 md:pt-16 md:flex md:flex-col md:items-center md:justify-center">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-6 pt-24 md:pt-16 md:items-center">
         <div className="w-full max-w-[680px]">
-          <h1 className="text-[#000000] text-[48px] md:text-[28px] font-bold leading-[100%] tracking-[0%] text-left md:text-center">
+          <h1 className="text-[#000000] text-[26px] md:text-[26px] font-bold leading-[100%] tracking-[0%] text-left md:text-center">
             Processing ID
           </h1>
-          <p className="mt-3 text-[#545454] text-[16px] md:text-[14px] font-normal leading-[140%] text-left md:text-center max-w-[520px]">
+          <p className="mt-2 text-[#545454] text-[13px] md:text-[13px] font-normal leading-[140%] text-left md:text-center max-w-[520px]">
             Please wait as we process your uploads. This may take a few seconds.
           </p>
         </div>
 
-        <div className="w-full flex justify-center mt-24 md:mt-10">
+        <div className="flex-1 w-full flex items-start md:items-center justify-center pt-20 md:pt-0">
           {animationData ? (
-            <div className="w-full max-w-[600px] md:max-w-[480px] h-[250px] md:h-[210px]">
+            <div className="w-full max-w-[320px] md:max-w-[360px] h-[180px] md:h-[210px]">
               <Lottie animationData={animationData} loop className="w-full h-full" />
             </div>
           ) : (
-            <div className="w-full max-w-[600px] md:max-w-[480px] h-[250px] md:h-[210px] bg-[#F4F4F4] rounded-[16px]" />
+            <div className="w-full max-w-[320px] md:max-w-[360px] h-[180px] md:h-[210px] bg-[#F4F4F4] rounded-[16px]" />
           )}
         </div>
 
-        <div className="w-full max-w-[680px] mx-auto mt-2 md:mt-1">
+        <div className="w-full max-w-[680px] mx-auto mb-12 md:mb-8">
           <div className="h-[8px] bg-[#A7D80D]" />
         </div>
       </main>

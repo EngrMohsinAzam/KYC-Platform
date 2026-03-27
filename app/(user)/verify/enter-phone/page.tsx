@@ -135,10 +135,10 @@ export default function EnterPhonePage() {
           
 
           {/* Combined country code + phone field, styled like other inputs */}
-          <div className="w-full h-[50px] md:mt-3 flex items-stretch rounded-[12px] bg-[#EBEBEB] border border-[#A7D80D] overflow-hidden md:rounded-none md:bg-transparent md:border-0 md:gap-1">
+          <div className="w-full h-[50px] md:mt-3 flex items-stretch gap-px">
             <div
               aria-label={`Country code ${phoneCountryLabel}`}
-              className="flex-shrink-0 w-[120px] md:w-[140px] flex items-center justify-between pl-4 pr-3 border-r border-[#A7D80D] md:border-r-0 md:rounded-tl-[12px] md:rounded-tr-[5px] md:rounded-br-[5px] md:rounded-bl-[12px] md:bg-[#EBEBEB] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] cursor-default select-none"
+              className="flex-shrink-0 w-[120px] md:w-[140px] flex items-center justify-between pl-4 pr-3 rounded-tl-[12px] rounded-tr-[5px] rounded-br-[5px] rounded-bl-[12px] bg-[#EBEBEB] border-0 md:border-r-0 md:rounded-tl-[12px] md:rounded-tr-[5px] md:rounded-br-[5px] md:rounded-bl-[12px] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] cursor-default select-none"
             >
               <span className="truncate">{phoneCountryLabel}</span>
               <svg
@@ -151,7 +151,7 @@ export default function EnterPhonePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
               </svg>
             </div>
-            <div className="flex-1 min-w-0 flex items-center pl-4 pr-4 md:rounded-tl-[5px] md:rounded-tr-[12px] md:rounded-br-[12px] md:rounded-bl-[5px] md:bg-[#EBEBEB] md:border-[1.5px] md:border-[#E8E8E9]">
+            <div className="flex-1 min-w-0 flex items-center pl-4 pr-4 rounded-tl-[5px] rounded-tr-[12px] rounded-br-[12px] rounded-bl-[5px] bg-[#EBEBEB] border border-[#A7D80D] md:rounded-tl-[5px] md:rounded-tr-[12px] md:rounded-br-[12px] md:rounded-bl-[5px] md:border-[1.5px] md:border-[#E8E8E9]">
               <input
                 type="tel"
                 inputMode="numeric"
