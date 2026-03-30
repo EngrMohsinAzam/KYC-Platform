@@ -48,7 +48,7 @@ export default function SourceOfWealthPage() {
             Tell us about yourself
           </h1>
           <p className="mt-1 font-sans text-[18px] font-normal leading-[100%] tracking-[0%] text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -66,7 +66,7 @@ export default function SourceOfWealthPage() {
           </p>
 
           {/* Options - with icons, scrollable on desktop, 1px gap, radii like previous stacked inputs */}
-          <div className="md:flex-1 md:overflow-y-auto md:min-h-0">
+          <div className="md:flex-1 md:overflow-hidden md:min-h-0">
             <div className="flex flex-col gap-[1px]">
               {WEALTH_OPTIONS.map((opt, index) => {
                 const isSelected = selected === opt.id

@@ -108,7 +108,7 @@ export default function EnterPhonePage() {
         <section className="hidden md:block text-center mb-7">
           <h1 className="font-sans text-[28px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 font-sans text-[16px] leading-[100%] font-normal text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -183,7 +183,7 @@ export default function EnterPhonePage() {
       {/* Mobile: helper text + bottom Continue button, lime with black text, same width as input */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
         <p className="mb-3 font-sans text-[14px] leading-[1.4] font-normal text-center text-[#545454]">
-          We&apos;re required to collect this verify your identity.
+          Local regulation requires us to ask
         </p>
         <button
           type="button"

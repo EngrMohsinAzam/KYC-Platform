@@ -77,12 +77,12 @@ export default function ResidentSelection() {
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.back()} />
 
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-start md:items-center md:justify-center px-4 pt-4 pb-32 md:pt-6 md:pb-6 md:min-h-0">
+      <main className="flex-1 w-full overflow-hidden flex flex-col items-start md:items-center md:justify-center px-4 pt-4 pb-32 md:pt-6 md:pb-6 md:min-h-0">
         {/* Desktop heading, match previous screens */}
         <section className="hidden md:block text-center mb-4">
           <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">Tell us about yourself</h1>
           <p className="mt-2 font-sans text-[16px] font-normal leading-[100%] text-[#545454]">
-            We&apos;re required to collect this to verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 

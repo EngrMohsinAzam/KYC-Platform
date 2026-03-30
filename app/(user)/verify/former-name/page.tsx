@@ -27,7 +27,7 @@ export default function FormerNamePage() {
             Tell us about yourself
           </h1>
           <p className="mt-1 font-sans text-[18px] font-normal leading-[100%] tracking-[0%] text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 

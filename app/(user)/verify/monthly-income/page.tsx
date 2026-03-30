@@ -39,7 +39,7 @@ export default function MonthlyIncomePage() {
             Tell us about yourself
           </h1>
           <p className="mt-1 font-sans text-[18px] font-normal leading-[100%] tracking-[0%] text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -127,7 +127,7 @@ export default function MonthlyIncomePage() {
       {/* Mobile: helper text (14px) above Continue button only */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
         <p className="mb-3 font-sans text-[14px] font-normal leading-[100%] tracking-[0%] text-center text-[#545454]">
-          We&apos;re required to collect this verify your identity.
+          Local regulation requires us to ask
         </p>
         <button
           type="button"

@@ -33,7 +33,7 @@ export default function DocumentsPage() {
     <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       <VerifyMobileBackRow onBack={() => router.push('/verify/former-name')} className="flex-shrink-0" />
 
-      <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-3 pb-[170px] md:pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
+      <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-3 pb-[170px] md:pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-hidden">
         {/* Card: flex column so illustration can sit in center, consent at bottom */}
         <div className="w-full max-w-[760px] md:max-w-[680px] h-full md:h-auto md:min-h-0 flex flex-col md:justify-start md:bg-[#FFFFFF] md:border-[1.5px] md:border-[#E8E8E9] md:rounded-[14px] md:px-5 md:py-4 md:flex-shrink-0">
           {/* Heading - Inter 20px bold */}

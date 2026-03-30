@@ -204,7 +204,7 @@ export default function EnterAddressPage() {
   }, []);
 
   const inputBase =
-    "w-full h-[51px] bg-[#EBEBEB] md:bg-[#14111C1A] placeholder:text-[#828282] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] px-4 border border-transparent focus:outline-none focus:ring-0";
+    "w-full h-[51px] bg-transparent placeholder:text-[#545454] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] px-4 border-0 outline-none focus:outline-none focus:ring-0";
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
@@ -217,7 +217,7 @@ export default function EnterAddressPage() {
             Tell us about yourself
           </h1>
           <p className="mt-2 font-sans text-[18px] font-normal leading-[100%] text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -237,7 +237,11 @@ export default function EnterAddressPage() {
           {/* Inputs styled like select-id-type (stacked, light gray, small gap, focus border lime) */}
           <div className="space-y-1">
             {/* Address: top 12, bottom 5 */}
-            <div className="relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] flex items-center px-0 border-[1.5px] border-transparent bg-transparent focus-within:border-[#A7D80D]  transition-colors">
+            <div
+              className={`relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
+                errorAddress ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20' : ''
+              }`}
+            >
               <input
                 type="text"
                 placeholder="Address"
@@ -253,7 +257,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !loading) handleContinue();
                 }}
-                className={`${inputBase} rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] ${errorAddress ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
+                className={`${inputBase} rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px]`}
                 autoComplete="off"
               />
               {errorAddress && (
@@ -277,7 +281,7 @@ export default function EnterAddressPage() {
             </div>
 
             {/* Apt/Suite: middle field, small radius all around */}
-            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 border-[1.5px]  border-transparent bg-transparent focus-within:border-[#A7D80D]  transition-colors">
+            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <input
                 type="text"
                 placeholder="Apt, Suite, Unit, Building"
@@ -296,7 +300,11 @@ export default function EnterAddressPage() {
             </div>
 
             {/* City: middle field */}
-            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 border-[1.5px]  border-transparent bg-transparent focus-within:border-[#A7D80D]  transition-colors">
+            <div
+              className={`relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
+                errorCity ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20' : ''
+              }`}
+            >
               <input
                 type="text"
                 placeholder="City"
@@ -308,7 +316,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !loading) handleContinue();
                 }}
-                className={`${inputBase} rounded-[5px] ${errorCity ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
+                className={`${inputBase} rounded-[5px]`}
               />
               {errorCity && (
                 <p className="text-sm text-red-600 mt-1">{errorCity}</p>
@@ -316,7 +324,11 @@ export default function EnterAddressPage() {
             </div>
 
             {/* Postal code: bottom field, top 5, bottom 12 */}
-            <div className="relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] flex items-center px-0 border-[1.5px] border-transparent bg-transparent focus-within:border-[#A7D80D]  transition-colors">
+            <div
+              className={`relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
+                errorPostalCode ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20' : ''
+              }`}
+            >
               <input
                 type="text"
                 placeholder="Postal code"
@@ -328,7 +340,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !loading) handleContinue();
                 }}
-                className={`${inputBase} rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] ${errorPostalCode ? "border-red-500 focus:border-red-500 focus:ring-red-500/20" : ""}`}
+                className={`${inputBase} rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px]`}
               />
               {errorPostalCode && (
                 <p className="text-sm text-red-600 mt-1">{errorPostalCode}</p>
@@ -373,7 +385,7 @@ export default function EnterAddressPage() {
       <div className="md:hidden fixed bottom-0 left-0 right-0  pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
         <div className="px-4 pb-2">
           <p className="mb-3 font-sans text-[14px] leading-[1.4] font-normal text-center text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
           <button
             type="button"

@@ -18,7 +18,7 @@ function IconCard({ children }: { children: React.ReactNode }) {
 
 export default function UploadIdTypePage() {
   const router = useRouter()
-  const { dispatch } = useAppContext()
+  const { state, dispatch } = useAppContext()
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -30,6 +30,14 @@ export default function UploadIdTypePage() {
       document.documentElement.style.overflowY = prevHtml
       document.body.style.overflowY = prevBody
     }
+  }, [])
+
+  useEffect(() => {
+    // Do not pre-select an ID type when landing here (state may be restored from storage).
+    if (state.selectedIdType) {
+      dispatch({ type: 'SET_ID_TYPE', payload: '' })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSelect = (idType: 'national-id' | 'passport' | 'drivers-license') => {
@@ -50,7 +58,7 @@ export default function UploadIdTypePage() {
         <section className="hidden md:block text-center mb-4 flex-shrink-0 w-full max-w-[680px]">
           <h1 className="text-[28px] md:text-[30px] leading-tight font-bold text-[#000000]">Tell us about yourself</h1>
           <p className="mt-1 text-[14px] md:text-[15px] leading-[1.5] font-normal text-[#828282]">
-            We&apos;re required to collect this to verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 

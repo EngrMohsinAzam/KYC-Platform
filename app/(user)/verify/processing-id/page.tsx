@@ -57,9 +57,7 @@ export default function ProcessingIdPage() {
           )}
         </div>
 
-        <div className="w-full max-w-[680px] mx-auto mb-12 md:mb-8">
-          <div className="h-[8px] bg-[#A7D80D]" />
-        </div>
+        
       </main>
     </div>
   )

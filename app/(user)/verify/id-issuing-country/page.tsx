@@ -25,14 +25,14 @@ export default function IdIssuingCountryPage() {
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.push('/verify/documents')} />
 
-      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
+      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-hidden">
         {/* Desktop heading */}
         <section className="hidden md:block text-center mb-3 md:mb-4">
           <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
             Tell us about yourself
           </h1>
           <p className="mt-1 font-sans text-[18px] font-normal leading-[100%] tracking-[0%] text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 

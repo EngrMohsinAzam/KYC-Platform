@@ -1,12 +1,25 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 
 export default function PrivacyPolicyPage() {
   const router = useRouter()
+  const backTo = '/verify/select-id-type'
   const lastUpdated = 'January 27, 2025'
+
+  useEffect(() => {
+    // Ensure that tapping the browser/device back always returns to the verify flow
+    // page that opened Terms/Privacy.
+    window.history.pushState({ __kyc_privacy: true }, '', window.location.href)
+    const onPop = () => {
+      router.push(backTo)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [router, backTo])
 
   return (
     <div className="min-h-screen bg-white">
@@ -16,9 +29,9 @@ export default function PrivacyPolicyPage() {
           <div className="flex items-center justify-between h-14 md:h-16">
             <div className="flex items-center gap-3">
               <button
-                onClick={() => router.push('/')}
+                onClick={() => router.push(backTo)}
                 className="p-2 -ml-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Back to home"
+                aria-label="Back to verify"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

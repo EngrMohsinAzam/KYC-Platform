@@ -9,6 +9,7 @@ import { useAppContext } from '@/context/useAppContext'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 import { HelpModal } from '@/components/ui/HelpModal'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { getNetworkInfo, submitKYCVerification, checkBNBBalance } from '@/app/(public)/wallet/web3'
 import { submitKYCData } from '@/app/api/api'
@@ -1474,21 +1475,9 @@ export default function ReviewContent() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-hidden">
-      {/* Mobile: back arrow only */}
-      <div className="md:hidden px-4 pt-5 flex-shrink-0">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => router.push('/verify/upload-selfie')}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
+      <VerifyMobileBackRow onBack={() => router.push('/verify/upload-selfie')} />
 
-      <main className="flex-1 w-full min-h-0 overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-4 pb-[110px] md:py-6">
+      <main className="flex-1 w-full min-h-0 overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-3 pb-[170px] md:py-6">
         {/* Page title - centered on desktop, left on mobile; compact on desktop */}
         <section className="w-full max-w-[560px] md:max-w-[520px] text-left md:text-center md:mb-2 flex-shrink-0">
           <h1 className="text-[24px] md:text-[24px] font-bold text-[#000000] mb-1">
@@ -1500,12 +1489,12 @@ export default function ReviewContent() {
         </section>
 
         {/* White card - compact padding on desktop */}
-        <div className="w-full max-w-[560px] md:max-w-[600px] bg-white md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm md:px-6 md:py-5 flex-shrink-0 mt-4 md:mt-4">
+        <div className="w-full max-w-[560px] md:max-w-[600px] bg-white md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm md:px-6 md:py-5 flex-shrink-0 mt-3 md:mt-4">
           {/* Instructional text - smaller on desktop */}
           <h2 className="text-[20px] md:text-[16px] font-bold text-[#000000] mb-3 text-left md:text-center">
             To create your decentralised ID, you need to blockstamp it.
           </h2>
-          <p className="text-[16px] md:text-[13px] text-[#545454] leading-[150%] mb-6 md:mb-5 text-left md:text-center">
+          <p className="text-[14px] md:text-[13px] text-[#545454] leading-[150%] mb-4 md:mb-5 text-left md:text-center">
             In accordance with local laws and regulations, identity verification is required to access your Lumira Coins once the claim process starts. With this system, you will have a decentralised passport, in which you are recognised in the System.
           </p>
 
@@ -1522,25 +1511,25 @@ export default function ReviewContent() {
           )}
 
           {/* Data rows - tighter on desktop */}
-          <div className="bg-[#E8E8E9] rounded-[14px] overflow-hidden mb-4">
-            <div className="flex justify-between items-center px-4 py-4 border-b border-[#D0D0D0]">
+          <div className="bg-[#E8E8E9] rounded-[14px] overflow-hidden mb-3">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-[#D0D0D0]">
               <span className="text-[14px] text-[#545454]">ID Number</span>
               <span className="text-[14px] font-medium text-[#000000]">{idNumber}</span>
             </div>
-            <div className="flex justify-between items-center px-4 py-4 border-b border-[#D0D0D0]">
+            <div className="flex justify-between items-center px-4 py-3 border-b border-[#D0D0D0]">
               <span className="text-[14px] text-[#545454]">Estimated gas fee</span>
               <span className="text-[14px] font-medium text-[#000000]">
                 {isConnected && loadingTransactionData ? 'Calculating...' : displayGasFee}
               </span>
             </div>
-            <div className="flex justify-between items-center px-4 py-4">
+            <div className="flex justify-between items-center px-4 py-3">
               <span className="text-[14px] text-[#545454]">Blockchain</span>
               <span className="text-[14px] font-medium text-[#000000]">{displayBlockchain}</span>
             </div>
           </div>
 
           {/* Help link */}
-          <div className="text-center mb-5">
+          <div className="text-center mb-4">
             <button
               type="button"
               onClick={(e) => { e.preventDefault(); setShowHelpModal(true) }}
@@ -1551,7 +1540,7 @@ export default function ReviewContent() {
           </div>
 
           {/* Connected wallet bar - compact on desktop */}
-          <div className="flex justify-between items-center gap-2 bg-[#E8E8E9] rounded-[14px] px-4 py-4 mb-2 md:mb-3">
+          <div className="flex justify-between items-center gap-2 bg-[#E8E8E9] rounded-[14px] px-4 py-3 mb-2 md:mb-3">
             <span className="text-[14px] text-[#545454]">Connected wallet</span>
             <div className="flex items-center gap-2 min-w-0">
               <span className={`text-[14px] font-medium truncate max-w-[200px] ${isConnected ? 'text-[#000000]' : 'text-[#828282]'}`}>
@@ -1611,38 +1600,51 @@ export default function ReviewContent() {
           </div>
         </div>
       </main>
-      <PoweredBy />
-      {/* Mobile fixed bottom button */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-white border-t border-[#E8E8E9]">
-        {!isConnected ? (
-          <Button
-            onClick={handleOpenWalletModal}
-            disabled={connecting}
-            className="w-full h-[56px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] !text-black text-[16px] font-semibold"
-          >
-            {connecting ? 'Connecting...' : 'Connect wallet'}
-          </Button>
-        ) : (
-          <Button
-            onClick={handleSubmitKYC}
-            disabled={processingPayment || submittingToBackend || !!networkError}
-            className="w-full h-[56px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] disabled:!opacity-70 !text-black text-[16px] font-semibold flex items-center justify-center gap-2"
-          >
-            {processingPayment ? (
-              <>
-                <LoadingDots size="sm" color="#000000" />
-                <span>Processing transaction</span>
-              </>
-            ) : submittingToBackend ? (
-              <>
-                <LoadingDots size="sm" color="#000000" />
-                <span>Submitting</span>
-              </>
-            ) : (
-              'Continue'
-            )}
-          </Button>
-        )}
+
+      {/* Desktop footer only (mobile footer is inside the fixed CTA bar below) */}
+      <div className="hidden md:block">
+        <PoweredBy />
+      </div>
+
+      {/* Mobile fixed bottom bar: button + PoweredBy (single divider line) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-[#E8E8E9]">
+        <div className="px-4 pt-2 pb-[max(10px,env(safe-area-inset-bottom))]">
+          {!isConnected ? (
+            <Button
+              onClick={handleOpenWalletModal}
+              disabled={connecting}
+              className="w-full h-[56px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] !text-black text-[16px] font-semibold focus:!ring-0 focus:!ring-offset-0 focus-visible:!ring-0 focus-visible:!ring-offset-0"
+            >
+              {connecting ? 'Connecting...' : 'Connect wallet'}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleSubmitKYC}
+              disabled={processingPayment || submittingToBackend || !!networkError}
+              className="w-full h-[56px] !rounded-[14px] !bg-[#A7D80D] hover:!bg-[#9BC90C] disabled:!opacity-70 !text-black text-[16px] font-semibold flex items-center justify-center gap-2 focus:!ring-0 focus:!ring-offset-0 focus-visible:!ring-0 focus-visible:!ring-offset-0"
+            >
+              {processingPayment ? (
+                <>
+                  <LoadingDots size="sm" color="#000000" />
+                  <span>Processing transaction</span>
+                </>
+              ) : submittingToBackend ? (
+                <>
+                  <LoadingDots size="sm" color="#000000" />
+                  <span>Submitting</span>
+                </>
+              ) : (
+                'Continue'
+              )}
+            </Button>
+          )}
+        </div>
+        <div className="py-1.5 text-center">
+          <p className="text-[13px] leading-[1.2] font-normal text-[#545454]">
+            Powered by{' '}
+            <span className="font-semibold text-[#000000]">{getCompanyContext()?.companyName || 'Blockchain'}</span>
+          </p>
+        </div>
       </div>
 
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />

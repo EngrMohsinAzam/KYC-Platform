@@ -113,9 +113,9 @@ function StartContent() {
       </div>
 
       {/* Main: mobile = center illustration in middle; desktop = card 723×623, top 96px, left 279px */}
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-center justify-center px-4 pt-2 pb-32 md:py-8 min-h-0">
+      <main className="flex-1 w-full overflow-hidden flex flex-col items-center justify-center px-4 pt-2 pb-32 md:py-8 min-h-0">
         <div
-          className="w-full max-w-[680px] md:w-[723px] md:max-w-[min(723px,calc(100vw-80px))] md:max-h-[min(623px,calc(100dvh-128px))] md:min-h-0 flex flex-col items-center md:bg-white md:rounded-[14px]  md:border-2 md:border-[#D3D3D3]  md:px-8 md:py-[37px]  md:flex md:overflow-y-auto flex-1 md:flex-initial min-h-0"
+          className="w-full max-w-[680px] md:w-[723px] md:max-w-[min(723px,calc(100vw-80px))] md:max-h-[min(623px,calc(100dvh-128px))] md:min-h-0 flex flex-col items-center md:bg-white md:rounded-[14px]  md:border-2 md:border-[#D3D3D3]  md:px-8 md:py-[37px]  md:flex md:overflow-hidden flex-1 md:flex-initial min-h-0"
           style={{ opacity: 1 }}
         >
           {/* Title + Subtitle - centered: Inter 24px/700 #000, 16px/400 #545454 */}

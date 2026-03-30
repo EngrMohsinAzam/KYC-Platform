@@ -48,14 +48,14 @@ export default function SelectIndustryPage() {
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.push('/verify/employment-status')} />
 
-      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 pb-[170px] md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
+      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 pb-[170px] md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden">
         {/* Desktop heading */}
         <section className="hidden md:block text-center mb-3 md:mb-4">
           <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
             Tell us about yourself
           </h1>
           <p className="mt-1 font-sans text-[16px] leading-[100%] font-normal text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -74,7 +74,7 @@ export default function SelectIndustryPage() {
           </p>
 
           {/* Scrollable options area on desktop to mirror design */}
-          <div className="md:flex-1 md:overflow-y-auto md:pr-2">
+          <div className="md:flex-1 md:overflow-hidden md:pr-2">
             <div className="flex flex-col items-start gap-1">
               {INDUSTRY_OPTIONS.map((opt) => (
                 <button
@@ -123,7 +123,7 @@ export default function SelectIndustryPage() {
       {/* Mobile: helper text + bottom Continue button, lime with black text */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
         <p className="mb-3 font-sans text-[14px] leading-[1.4] font-normal text-center text-[#545454]">
-          We&apos;re required to collect this verify your identity.
+          Local regulation requires us to ask
         </p>
         <button
           type="button"

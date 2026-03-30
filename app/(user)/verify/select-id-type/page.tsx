@@ -101,14 +101,14 @@ export default function SelectIdType() {
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.back()} />
 
-      <main className="flex-1 w-full overflow-hidden md:overflow-y-auto flex flex-col items-start md:items-center md:justify-center px-4 pt-4 md:pt-6 pb-32 md:pb-6">
+      <main className="flex-1 w-full overflow-hidden flex flex-col items-start md:items-center md:justify-center px-4 pt-4 md:pt-6 pb-32 md:pb-6">
         {/* Desktop: Tell us about yourself */}
         <section className="hidden md:block text-center mb-4">
           <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
             Tell us about yourself
           </h1>
           <p className="mt-2 font-sans text-[16px] font-normal leading-[100%] text-[#545454]">
-            We&apos;re required to collect this to verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -132,15 +132,15 @@ export default function SelectIdType() {
           {/* Input fields - mobile: light gray, very small gap; desktop: keep existing */}
           <div className="space-y-1">
             {/* Country: light gray bg, top rounded 12px, bottom rounded 5px */}
-            <div className="relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] md:rounded-tl-[12px] md:rounded-tr-[12px] md:rounded-br-[5px] md:rounded-bl-[5px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] pl-4 pr-10 py-2 flex flex-col justify-center focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
-              <span className="font-sans text-[11px] leading-tight text-[#888888]">Country</span>
+            <div className="relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] md:rounded-tl-[12px] md:rounded-tr-[12px] md:rounded-br-[5px] md:rounded-bl-[5px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] pl-4 pr-10 flex items-center focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <select
                 value={country}
                 onChange={(e) => setCountry(e.target.value)}
-                className="mt-0.5 w-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer"
+                className="w-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
+                style={{ color: country ? '#000000' : '#545454' }}
               >
-                <option value="" className="text-[#888888]">
-                  {' '}
+                <option value="" className="text-[#545454]">
+                  Country
                 </option>
                 {countryOptions.map((option) => (
                   <option key={option.value} value={option.value}>

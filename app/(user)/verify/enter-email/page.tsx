@@ -322,14 +322,14 @@ export default function EnterEmailPage() {
       </div>
 
       {/* Main Content - mobile: left-aligned; desktop: centered */}
-      <main className="flex-1 min-h-0 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 md:pt-6 pb-28 md:pb-6 overflow-hidden md:overflow-y-auto">
+      <main className="flex-1 min-h-0 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 md:pt-6 pb-28 md:pb-6 overflow-hidden">
         {/* Desktop: Tell us about yourself - same typography as previous (Inter 20px/700 #000, 16px/400 #545454) */}
         <section className="hidden md:block text-center mb-4">
           <h1 className="font-sans text-[28px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
             Tell us about yourself
           </h1>
           <p className="mt-2 font-sans text-[18px] font-normal leading-[100%] text-[#545454]">
-            We&apos;re required to collect this to verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -483,7 +483,7 @@ export default function EnterEmailPage() {
                 Paste from clipboard
               </button>
 
-              {/* Desktop OTP Buttons: Go to email (lime), Resend email (gray) */}
+              {/* Desktop OTP Buttons: Verify (lime), Resend email (gray) */}
               <div className="hidden md:flex flex-col mt-4 space-y-2">
                 <button
                   type="button"
@@ -491,7 +491,7 @@ export default function EnterEmailPage() {
                   disabled={otpLoading || otp.join("").length !== 6}
                   className="h-[50px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {otpLoading ? <SpinnerIcon color="#000000" /> : "Go to email"}
+                {otpLoading ? <SpinnerIcon color="#000000" /> : "Verify"}
                 </button>
                 <button
                   type="button"
@@ -560,7 +560,7 @@ export default function EnterEmailPage() {
               disabled={otpLoading || otp.join("").length !== 6}
               className="h-[50px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {otpLoading ? <SpinnerIcon color="#000000" /> : "Go to email"}
+                {otpLoading ? <SpinnerIcon color="#000000" /> : "Verify"}
             </button>
             <button
               type="button"

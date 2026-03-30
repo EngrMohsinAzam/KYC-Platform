@@ -44,14 +44,14 @@ export default function PlanUsePage() {
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.push('/verify/monthly-income')} />
 
-      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 pb-[170px] md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-y-auto md:overflow-visible">
+      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-2 pb-[170px] md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden">
         {/* Desktop heading */}
         <section className="hidden md:block text-center mb-3 md:mb-4">
           <h1 className="font-sans text-[20px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
             Tell us about yourself
           </h1>
           <p className="mt-1 font-sans text-[18px] font-normal leading-[100%] tracking-[0%] text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -69,7 +69,7 @@ export default function PlanUsePage() {
           </p>
 
           {/* Options - scrollable on desktop, 1px gap, radii like previous stacked inputs */}
-          <div className="md:flex-1 md:overflow-y-auto md:min-h-0">
+          <div className="md:flex-1 md:overflow-hidden md:min-h-0">
             <div className="flex flex-col gap-[1px]">
               {PLAN_OPTIONS.map((opt, index) => {
                 const isSelected = selected === opt.id

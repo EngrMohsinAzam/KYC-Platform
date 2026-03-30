@@ -45,7 +45,7 @@ export default function MonthlyActivityPage() {
             Tell us about yourself
           </h1>
           <p className="mt-1 font-sans text-[16px] leading-[100%] font-normal text-[#545454]">
-            We&apos;re required to collect this verify your identity.
+            Local regulation requires us to ask
           </p>
         </section>
 
@@ -130,7 +130,7 @@ export default function MonthlyActivityPage() {
       {/* Mobile: helper text + bottom Continue button - lime, black text like other pages */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
         <p className="mb-3 font-sans text-[14px] font-normal leading-[100%] tracking-[0%] text-center text-[#545454]">
-          We&apos;re required to collect this verify your identity.
+          Local regulation requires us to ask
         </p>
         <button
           type="button"
