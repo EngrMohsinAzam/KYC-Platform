@@ -238,8 +238,8 @@ export default function EnterAddressPage() {
           <div className="space-y-1">
             {/* Address: top 12, bottom 5 */}
             <div
-              className={`relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
-                errorAddress ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20' : ''
+              className={`relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors ${
+                errorAddress ? 'border-red-500 focus-within:border-red-500' : ''
               }`}
             >
               <input
@@ -281,7 +281,7 @@ export default function EnterAddressPage() {
             </div>
 
             {/* Apt/Suite: middle field, small radius all around */}
-            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
+            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors">
               <input
                 type="text"
                 placeholder="Apt, Suite, Unit, Building"
@@ -301,8 +301,8 @@ export default function EnterAddressPage() {
 
             {/* City: middle field */}
             <div
-              className={`relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
-                errorCity ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20' : ''
+              className={`relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors ${
+                errorCity ? 'border-red-500 focus-within:border-red-500' : ''
               }`}
             >
               <input
@@ -325,8 +325,8 @@ export default function EnterAddressPage() {
 
             {/* Postal code: bottom field, top 5, bottom 12 */}
             <div
-              className={`relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
-                errorPostalCode ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20' : ''
+              className={`relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors ${
+                errorPostalCode ? 'border-red-500 focus-within:border-red-500' : ''
               }`}
             >
               <input
