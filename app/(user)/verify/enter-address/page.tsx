@@ -161,7 +161,6 @@ export default function EnterAddressPage() {
         postalCode: line4,
       },
     });
-    setLoading(false);
     router.push("/verify/employment-status");
   };
 
