@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
+import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 import { useAppContext } from '@/context/useAppContext'
 // PoweredBy intentionally omitted on this premium camera screen
 import dynamic from 'next/dynamic'
@@ -705,13 +706,7 @@ export default function UploadSelfie() {
 
     return (
       <div className="min-h-screen h-[100dvh] md:h-screen bg-black flex flex-col overflow-hidden">
-        <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
-          <button type="button" onClick={() => router.back()} className="p-2 text-white hover:opacity-80" aria-label="Go back">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        </div>
+        <VerifyMobileBackRow variant="light" className="!pt-2 !pb-1" onBack={() => router.back()} />
         <main className="flex-1 flex flex-col items-center justify-start min-h-0 overflow-hidden px-4 pt-4 pb-[92px] md:py-10">
           <h1 className="text-white text-[18px] md:text-[20px] font-semibold text-center mb-6 mt-2">
             Centre your self on the screen

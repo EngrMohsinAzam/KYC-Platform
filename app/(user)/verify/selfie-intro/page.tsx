@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/Button'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
@@ -56,19 +57,7 @@ export default function SelfieIntroPage() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
-      {/* Mobile: back arrow */}
-      <div className="md:hidden flex-shrink-0 pl-1 pr-4 pt-5 pb-0">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={handleBack}
-          className="h-8 w-5 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
+      <VerifyMobileBackRow onBack={handleBack} className="!pb-0" />
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 pt-6 pb-[92px] md:pb-6 md:px-6 md:pt-6">
         {/* Desktop card wrapper */}

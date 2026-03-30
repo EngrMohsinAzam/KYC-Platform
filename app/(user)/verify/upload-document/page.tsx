@@ -396,6 +396,7 @@ import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { HiOutlineCamera, HiOutlinePhotograph } from 'react-icons/hi'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 
 const Lottie = dynamic(() => import('lottie-react'), { ssr: false })
 
@@ -1210,18 +1211,11 @@ export default function UploadDocument() {
     <div className="min-h-screen h-[100dvh] md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       {/* Mobile: back chevron - hide when camera is open in card */}
       {!isCameraActive && !isCameraLoading ? (
-        <div className="md:hidden flex-shrink-0 px-4 pt-2 pb-1">
-          <button
-            type="button"
-            aria-label="Go back"
-            onClick={() => router.push('/verify/upload-id-type')}
-            className="h-8 w-5 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-        </div>
+        <VerifyMobileBackRow
+          variant="muted"
+          className="!pt-2 !pb-1"
+          onBack={() => router.push('/verify/upload-id-type')}
+        />
       ) : null}
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 py-3 md:overflow-hidden md:px-6 md:py-4">
@@ -1321,20 +1315,15 @@ export default function UploadDocument() {
                 <div className="absolute inset-0 bg-black/35" />
 
                 {/* Top back arrow */}
-                <div className="absolute top-0 left-0 right-0 px-4 pt-3 z-[60]">
-                  <button
-                    type="button"
-                    aria-label="Go back"
-                    onClick={() => {
+                <div className="absolute top-0 left-0 right-0 z-[60]">
+                  <VerifyMobileBackRow
+                    variant="light"
+                    className="!pt-3 !pb-0"
+                    onBack={() => {
                       stopCamera()
                       router.push('/verify/upload-id-type')
                     }}
-                    className="h-10 w-10 inline-flex items-center justify-center text-white/90 hover:text-white transition-colors"
-                  >
-                    <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-                    </svg>
-                  </button>
+                  />
                 </div>
 
                 {/* Center: only the ID window shows live camera (unblurred), rest stays blurred */}

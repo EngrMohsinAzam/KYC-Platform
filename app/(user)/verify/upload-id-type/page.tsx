@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 
 /* White card wrapper for each icon (per reference design) - icons from id-type-select */
 function IconCard({ children }: { children: React.ReactNode }) {
@@ -38,19 +39,11 @@ export default function UploadIdTypePage() {
 
   return (
     <div className="h-screen min-h-[100dvh] md:min-h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
-      {/* Mobile: back chevron - tight to top */}
-      <div className="md:hidden flex-shrink-0 pl-1 pr-4 pt-5 pb-1">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => router.push('/verify/id-issuing-country')}
-          className="h-8 w-5 inline-flex items-center justify-center text-[#828282] hover:text-[#000000] transition-colors"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
+      <VerifyMobileBackRow
+        variant="muted"
+        padX="pl-[25px] pr-4"
+        onBack={() => router.push('/verify/id-issuing-country')}
+      />
 
       <main className="flex-1 flex flex-col items-center md:justify-center min-h-0 overflow-hidden pl-[25px] pr-4 pt-2 pb-6 md:px-4 md:py-4 md:pt-4">
         {/* Desktop: Tell us about yourself + subtitle (centered on page) */}

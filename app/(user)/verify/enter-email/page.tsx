@@ -489,9 +489,9 @@ export default function EnterEmailPage() {
                   type="button"
                   onClick={() => void handleVerifyOtp()}
                   disabled={otpLoading || otp.join("").length !== 6}
-                  className="h-[50px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-white text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {otpLoading ? <SpinnerIcon color="#ffffff" /> : "Go to email"}
+                  className="h-[50px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {otpLoading ? <SpinnerIcon color="#000000" /> : "Go to email"}
                 </button>
                 <button
                   type="button"
@@ -537,41 +537,30 @@ export default function EnterEmailPage() {
 
       {/* Mobile: button same width as input (px-4 = main content padding) */}
       {step === "email" ? (
-        <div className="md:hidden fixed bottom-0 left-0 right-0   pt-2 bg-gradient-to-t from-white to-transparent flex flex-col items-center gap-2">
-          <div className="px-4 flex flex-col items-center w-full">
-            <button
-              type="button"
-              onClick={() => void handleContinue()}
-              disabled={loading}
-              className="w-full h-[50px] rounded-[12px] mx-4 bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-              ) : (
-                "Continue"
-              )}
-            </button>
-          </div>
-
-          <div className="py-3 mt-2 w-full text-center border-t border-gray-200 bg-white">
-            <p className="text-xs  text-gray-500">
-              Powered by{" "}
-              <span className="font-semibold text-gray-700">
-                {getCompanyContext()?.companyName}
-              </span>
-            </p>
-          </div>
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+          <button
+            type="button"
+            onClick={() => void handleContinue()}
+            disabled={loading}
+            className="w-full h-[50px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? (
+              <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+            ) : (
+              "Continue"
+            )}
+          </button>
         </div>
       ) : (
-        <div className="md:hidden fixed bottom-0 left-0 right-0   pt-2 bg-gradient-to-t from-white to-transparent flex flex-col items-center gap-2">
-          <div className="space-y-2 w-full px-4">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+          <div className="space-y-2 w-full">
             <button
               type="button"
               onClick={() => void handleVerifyOtp()}
               disabled={otpLoading || otp.join("").length !== 6}
-              className="h-[50px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-white text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {otpLoading ? <SpinnerIcon color="#ffffff" /> : "Go to email"}
+              className="h-[50px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {otpLoading ? <SpinnerIcon color="#000000" /> : "Go to email"}
             </button>
             <button
               type="button"
@@ -583,14 +572,6 @@ export default function EnterEmailPage() {
                 ? `Resend email (${resendTimer}s)`
                 : "Resend email"}
             </button>
-          </div>
-           <div className="py-3 mt-2 w-full text-center border-t border-gray-200 bg-white">
-            <p className="text-xs  text-gray-500">
-              Powered by{" "}
-              <span className="font-semibold text-gray-700">
-                {getCompanyContext()?.companyName}
-              </span>
-            </p>
           </div>
         </div>
       )}

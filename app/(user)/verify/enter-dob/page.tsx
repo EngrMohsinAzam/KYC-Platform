@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { PoweredBy } from '@/components/verify/PoweredBy'
+import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 import { SpinnerIcon } from '@/components/verify/SpinnerIcon'
 
 export default function EnterDobPage() {
@@ -96,18 +97,7 @@ export default function EnterDobPage() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <div className="md:hidden px-4 pt-5">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => router.push('/verify/enter-name')}
-          className="h-8 w-5 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
+      <VerifyMobileBackRow onBack={() => router.push('/verify/enter-name')} className="!pb-0" />
 
       <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <section className="hidden md:block text-center mb-7">
