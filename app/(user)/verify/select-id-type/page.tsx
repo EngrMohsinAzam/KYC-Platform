@@ -196,7 +196,7 @@ export default function SelectIdType() {
               disabled={!canProceed || !!pausedMessage || loading}
               className="w-full h-[54px] rounded-[12px] bg-[#000000] hover:opacity-90 active:opacity-80 text-white text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#000000] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? <SpinnerIcon color="#ffffff" /> : 'Continue'}
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
           </div>
         </div>

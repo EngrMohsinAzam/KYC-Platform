@@ -87,7 +87,6 @@ export default function EnterPhonePage() {
         phone: fullPhone,
       },
     })
-    setLoading(false)
     router.push('/verify/enter-name')
   }
 

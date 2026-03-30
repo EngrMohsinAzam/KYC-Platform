@@ -119,7 +119,7 @@ export default function EmploymentStatusPage() {
               disabled={!canProceed || loading}
               className="w-full max-w-[670px] h-[54px] rounded-[12px] bg-[#000000] hover:opacity-90 active:opacity-80 focus:outline-none focus:ring-2 focus:ring-[#000000] focus:ring-offset-2 text-white text-[16px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? <SpinnerIcon color="#ffffff" /> : 'Continue'}
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </button>
             <button
               type="button"

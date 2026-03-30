@@ -51,7 +51,6 @@ export default function EnterNamePage() {
         fatherName: current.fatherName || '',
       },
     })
-    setLoading(false)
     router.push('/verify/enter-dob')
   }
 

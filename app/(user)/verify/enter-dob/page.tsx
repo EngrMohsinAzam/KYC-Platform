@@ -61,7 +61,6 @@ export default function EnterDobPage() {
         dateOfBirth: trimmed,
       },
     })
-    setLoading(false)
     router.push('/verify/enter-address')
   }
 

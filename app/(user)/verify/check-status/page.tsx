@@ -175,7 +175,7 @@ export default function CheckStatus() {
               disabled={loading || !email}
               className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold flex items-center justify-center gap-2 mx-auto"
             >
-              {loading ? <SpinnerIcon color="#ffffff" /> : 'Check Status'}
+              {loading ? <SpinnerIcon color="#000000" /> : 'Check Status'}
             </Button>
           </div>
         </div>

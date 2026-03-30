@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useAppContext } from "@/context/useAppContext";
@@ -51,6 +51,7 @@ export default function EnterAddressPage() {
   const [errorCity, setErrorCity] = useState<string | null>(null);
   const [errorPostalCode, setErrorPostalCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement | null>(null);
 
   const searchSuggestions = useCallback(
     async (query: string) => {
@@ -110,6 +111,8 @@ export default function EnterAddressPage() {
     }
     setShowSuggestions(false);
     setSuggestions([]);
+    // Return to non-focused visual state after choosing a suggestion.
+    setTimeout(() => addressInputRef.current?.blur(), 0);
   };
 
   const handleContinue = () => {
@@ -243,6 +246,7 @@ export default function EnterAddressPage() {
               }`}
             >
               <input
+                ref={addressInputRef}
                 type="text"
                 placeholder="Address"
                 value={addressLine1}

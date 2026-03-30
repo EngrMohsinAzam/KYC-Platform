@@ -140,7 +140,7 @@ export default function ResidentSelection() {
               disabled={!selected || loading}
               className="w-full max-w-[670px] h-[54px] !rounded-[12px] !bg-[#000000] hover:!opacity-90 active:!opacity-80 focus:!ring-2 focus:!ring-[#000000] focus:!ring-offset-2 disabled:opacity-50 !text-white text-[16px] font-semibold"
             >
-              {loading ? <SpinnerIcon color="#ffffff" /> : 'Continue'}
+              {loading ? <SpinnerIcon color="#000000" /> : 'Continue'}
             </Button>
 
             <button
