@@ -41,7 +41,7 @@ export default function SelectIndustryPage() {
   const handleContinue = () => {
     if (!selected) return
     setLoading(true)
-    router.push('/verify/investment-source')
+    router.push('/verify/monthly-activity')
   }
 
   return (

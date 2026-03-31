@@ -4,10 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { useAppContext } from "@/context/useAppContext";
+import { getCompanyContext } from "@/app/(public)/utils/kyc-company-context";
 import { PoweredBy } from "@/components/verify/PoweredBy";
 import { VerifyMobileBackRow } from "@/components/verify/VerifyMobileBackRow";
 import { SpinnerIcon } from "@/components/verify/SpinnerIcon";
-import { getCompanyContext } from "@/app/(public)/utils/kyc-company-context";
 type GeocodeSuggestion = {
   display_name: string;
   lat: string;
@@ -385,28 +385,18 @@ export default function EnterAddressPage() {
       </main>
       <PoweredBy />
       {/* Mobile: helper text + bottom Continue button, lime with black text */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0  pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
-        <div className="px-4 pb-2">
-          <p className="mb-3 font-sans text-[14px] leading-[1.4] font-normal text-center text-[#545454]">
-            Local regulation requires us to ask
-          </p>
-          <button
-            type="button"
-            onClick={() => void handleContinue()}
-            disabled={loading || !canProceed}
-            className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? <SpinnerIcon color="#000000" /> : "Continue"}
-          </button>
-        </div>
-        <div className="py-3 mt-2 w-full text-center border-t border-gray-200 bg-white">
-          <p className="text-xs  text-gray-500">
-            Powered by{" "}
-            <span className="font-semibold text-gray-700">
-              {getCompanyContext()?.companyName}
-            </span>
-          </p>
-        </div>
+      <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+        <p className="mb-3 font-sans text-[14px] leading-[1.4] font-normal text-center text-[#545454]">
+          Local regulation requires us to ask
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleContinue()}
+          disabled={loading || !canProceed}
+          className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {loading ? <SpinnerIcon color="#000000" /> : "Continue"}
+        </button>
       </div>
     </div>
   );

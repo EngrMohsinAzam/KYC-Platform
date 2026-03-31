@@ -25,7 +25,7 @@ export default function MonthlyIncomePage() {
   const handleContinue = () => {
     if (!selected) return
     setLoading(true)
-    router.push('/verify/plan-use')
+    router.push('/verify/source-of-wealth')
   }
 
   return (

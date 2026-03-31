@@ -39,7 +39,7 @@ export default function SourceOfWealthPage() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
-      <VerifyMobileBackRow onBack={() => router.push('/verify/plan-use')} />
+      <VerifyMobileBackRow onBack={() => router.push('/verify/monthly-income')} />
 
       <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         {/* Desktop heading */}
@@ -123,7 +123,7 @@ export default function SourceOfWealthPage() {
             </button>
             <button
               type="button"
-              onClick={() => router.push('/verify/plan-use')}
+              onClick={() => router.push('/verify/monthly-income')}
               className="flex items-center justify-center gap-2 text-[#545454] text-[14px] leading-none font-normal mt-4 mx-auto hover:text-[#000000] transition-colors"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
