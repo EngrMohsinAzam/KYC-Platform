@@ -57,9 +57,9 @@ export default function SelfieIntroPage() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
-      <VerifyMobileBackRow onBack={handleBack} className="!pb-0" />
+      <VerifyMobileBackRow onBack={handleBack} className="!pt-3 !pb-0" />
 
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 pt-6 pb-[92px] md:pb-6 md:px-6 md:pt-6">
+      <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 pt-2 pb-[92px] md:pb-6 md:px-6 md:pt-6">
         {/* Desktop card wrapper */}
         <div className="w-full md:max-w-[680px] md:mx-auto md:bg-white md:rounded-[14px] md:border-[1.5px] md:border-[#E8E8E9] md:shadow-md md:px-6 md:py-6 flex flex-col min-h-0">
           {/* Title + subtitle */}
@@ -72,14 +72,14 @@ export default function SelfieIntroPage() {
             </p>
           </div>
 
-          {/* Center animation (slightly lower on mobile) */}
-          <div className="flex-1 min-h-0 flex items-center justify-center pt-10 pb-6 md:py-8">
+          {/* Center animation (mobile size per provided layout) */}
+          <div className="flex-1 min-h-0 flex items-center justify-center pt-4 pb-6 md:py-8">
             {animationData ? (
-              <div className="w-[260px] md:w-[320px] aspect-square">
+              <div className="w-[168px] h-[197px] md:w-[320px] md:h-[320px]">
                 <Lottie animationData={animationData} loop className="w-full h-full" />
               </div>
             ) : (
-              <div className="w-[260px] md:w-[320px] aspect-square rounded-2xl bg-[#F5F5F5]" />
+              <div className="w-[168px] h-[197px] md:w-[320px] md:h-[320px] rounded-2xl bg-[#F5F5F5]" />
             )}
           </div>
 
