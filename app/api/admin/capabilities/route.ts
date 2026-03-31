@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { API_BASE_URL } from '@/app/(public)/config'
-
+export const dynamic = 'force-dynamic' // 
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')

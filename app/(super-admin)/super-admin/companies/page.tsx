@@ -10,7 +10,7 @@ import {
   superAdminApproveCompany,
   superAdminRejectCompany,
 } from '@/app/api/super-admin-api'
-import { APP_BASE_URL } from '@/app/(public)/config'
+import { API_BASE_URL } from '@/app/(public)/config'
 import { LoadingDots } from '@/components/ui/LoadingDots'
 
 const INDUSTRIES = [
@@ -348,7 +348,7 @@ export default function SuperAdminCompaniesPage() {
     }
   }
 
-  const base = typeof window !== 'undefined' ? window.location.origin : (APP_BASE_URL || 'https://www.digiportid.com')
+  const base = typeof window !== 'undefined' ? window.location.origin : (API_BASE_URL || 'https://www.digiportid.com')
   const kycUrl = credentialsModal?.credentials?.kycUrl || (credentialsModal?.company?.companySlug && credentialsModal?.company?.companyId
     ? `${base}/verify/start/${credentialsModal.company.companySlug}/${credentialsModal.company.companyId}`
     : '')

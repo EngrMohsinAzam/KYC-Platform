@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Footer } from '@/components/layout/Footer'
 import { getSignupEmailCookie } from '@/app/(public)/utils/signup-cookie'
 import { getCompanyToken } from '@/app/api/company-api'
-import { APP_BASE_URL } from '@/app/(public)/config'
+import { API_BASE_URL } from '@/app/(public)/config'
 
 type StatusData = {
   email: string
@@ -42,7 +42,7 @@ function AccountStatusContent() {
   const [emailInput, setEmailInput] = useState('')
   const [signedIn, setSignedIn] = useState(false)
 
-  const base = typeof window !== 'undefined' ? window.location.origin : (APP_BASE_URL || 'https://www.digiportid.com')
+  const base = typeof window !== 'undefined' ? window.location.origin : (API_BASE_URL || 'https://www.digiportid.com')
   const kycUrl = data?.kycUrl || (data?.companySlug && data?.companyId
     ? `${base}/verify/start/${data.companySlug}/${data.companyId}`
     : '')
