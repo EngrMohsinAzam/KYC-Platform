@@ -727,12 +727,6 @@ export default function ReviewContent() {
       if (!state.personalInfo.lastName?.trim()) {
         missingFields.push('Last name')
       }
-      if (!state.personalInfo.fatherName?.trim()) {
-        missingFields.push("Father's name")
-      }
-      if (!state.personalInfo.idNumber?.trim()) {
-        missingFields.push('ID number')
-      }
       if (!state.personalInfo.email?.trim()) {
         missingFields.push('Email address')
       }
@@ -797,8 +791,6 @@ export default function ReviewContent() {
     } else {
       if (!personalInfo.firstName?.trim()) missingFields.push('First name')
       if (!personalInfo.lastName?.trim()) missingFields.push('Last name')
-      if (!personalInfo.fatherName?.trim()) missingFields.push("Father's name")
-      if (!personalInfo.idNumber?.trim()) missingFields.push('ID number')
       if (!personalInfo.email?.trim()) missingFields.push('Email address')
       if (!personalInfo.phone?.trim()) missingFields.push('Phone number')
     }
@@ -1169,7 +1161,6 @@ export default function ReviewContent() {
         fullName: fullName,
         firstName: personalInfo.firstName?.trim() || '',
         lastName: personalInfo.lastName?.trim() || '',
-        fatherName: personalInfo.fatherName?.trim() || '',
         email: personalInfo.email.trim(),
         phone: personalInfo.phone.trim(),
         address: personalInfo.address?.trim() || '',
@@ -1180,7 +1171,6 @@ export default function ReviewContent() {
         identityDocumentFront: state.documentImageFront || '',
         identityDocumentBack: state.documentImageBack || '',
         liveInImage: state.selfieImage || '',
-        cnic: personalInfo.idNumber?.trim() || '',
         transactionHash: txHash,
         feeUnit: 2,
         ...(company && { companyId: company.companyId, companySlug: company.companySlug }),
