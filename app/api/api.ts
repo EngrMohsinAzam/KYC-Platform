@@ -25,6 +25,10 @@ const base64ToFile = (base64String: string, filename: string): File => {
     mimeType = 'image/png'
   } else if (base64String.includes('data:image/jpeg') || base64String.includes('data:image/jpg')) {
     mimeType = 'image/jpeg'
+  } else if (base64String.includes('data:video/mp4')) {
+    mimeType = 'video/mp4'
+  } else if (base64String.includes('data:video/webm')) {
+    mimeType = 'video/webm'
   }
   
   // Create File object
@@ -39,7 +43,6 @@ export const submitKYCData = async (data: {
   fullName: string
   firstName?: string
   lastName?: string
-  fatherName?: string
   email: string
   phone?: string
   address?: string
@@ -63,7 +66,6 @@ export const submitKYCData = async (data: {
   identityDocumentBack?: string // base64
   liveInImage?: string // base64
   faceVerificationVideo?: string // base64/video data URL
-  cnic?: string // CNIC number
   companyId?: string
   companySlug?: string
   transactionHash?: string
@@ -130,12 +132,6 @@ export const submitKYCData = async (data: {
     formData.append('companySlug', data.companySlug!.trim())
     formData.append('legalFirstName', legalFirstName)
     formData.append('legalLastName', legalLastName)
-    // Keep backward-compatible keys for older backend parsers.
-    if (data.fullName?.trim()) formData.append('fullName', data.fullName.trim())
-    if (data.firstName && data.firstName.trim()) formData.append('firstName', data.firstName.trim())
-    if (data.lastName && data.lastName.trim()) formData.append('lastName', data.lastName.trim())
-    if (data.fatherName && data.fatherName.trim()) formData.append('fatherName', data.fatherName.trim())
-    
     // Required fields
     formData.append('email', data.email.trim())
     if (data.phone && data.phone.trim()) formData.append('phone', data.phone.trim())
@@ -147,11 +143,7 @@ export const submitKYCData = async (data: {
     formData.append('countryOfPermanentResidence', countryOfPermanentResidence)
     formData.append('stateOfResidence', stateOfResidence)
     formData.append('idType', normalizedIdType)
-    // Keep previous field names too for compatibility.
-    if (data.countryName && data.countryName.trim()) formData.append('countryName', data.countryName.trim())
-    if (data.cityName && data.cityName.trim()) formData.append('cityName', data.cityName.trim())
-    if (data.usaResidence && data.usaResidence.trim()) formData.append('usaResidence', data.usaResidence.trim())
-    formData.append('feeUnit', String(data.feeUnit || 2))
+    if (data.feeUnit != null) formData.append('feeUnit', String(data.feeUnit))
     if (data.dateOfBirth?.trim()) formData.append('dateOfBirth', data.dateOfBirth.trim())
     if (data.employmentStatus?.trim()) formData.append('employmentStatus', data.employmentStatus.trim())
     if (data.industry?.trim()) formData.append('industry', data.industry.trim())
@@ -160,9 +152,6 @@ export const submitKYCData = async (data: {
     if (data.monthlyIncome?.trim()) formData.append('monthlyIncome', data.monthlyIncome.trim())
     if (data.formerFirstName?.trim()) formData.append('formerFirstName', data.formerFirstName.trim())
     if (data.governmentCountryName?.trim()) formData.append('governmentCountryName', data.governmentCountryName.trim())
-    
-    // Add CNIC if provided (backend expects 'cnicNumber')
-    if (data.cnic && data.cnic.trim()) formData.append('cnicNumber', data.cnic.trim())
     
     // Add blockchain transaction details if available
     if (data.transactionHash) {

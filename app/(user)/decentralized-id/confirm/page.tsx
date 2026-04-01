@@ -297,9 +297,9 @@ export default function ConfirmBlockstamp() {
 
       // Map ID type to backend format
       const idTypeMap: Record<string, string> = {
-        'national-id': 'CNIC',
-        'passport': 'Passport',
-        'drivers-license': 'License'
+        'national-id': 'national_id',
+        'passport': 'passport',
+        'drivers-license': 'driving_license'
       }
       const idType = idTypeMap[state.selectedIdType || ''] || 'CNIC'
 
@@ -322,15 +322,16 @@ export default function ConfirmBlockstamp() {
         userId: anonymousId,
         blockchainAddressId: state.connectedWallet || '',
         fullName: `${personalInfo.firstName} ${personalInfo.lastName}`,
+        legalFirstName: personalInfo.firstName || '',
+        legalLastName: personalInfo.lastName || '',
         email: personalInfo.email,
         phone: personalInfo.phone,
         address: personalInfo.address || '',
-        countryName: state.selectedCountry || '',
-        cityName: state.selectedCity || '',
+        countryOfPermanentResidence: state.selectedCountry || '',
+        stateOfResidence: state.selectedCity || '',
         idType: idType,
-        usaResidence: state.isResidentUSA ? 'yes' : 'no',
         identityDocumentFront: state.documentImageFront,
-        identityDocumentBack: state.documentImageBack || state.documentImageFront, // Use front if no back (for passport)
+        identityDocumentBack: state.documentImageBack || '',
         liveInImage: state.selfieImage,
         transactionHash: transactionHash,
         blockNumber: receipt?.blockNumber?.toString() || '',
