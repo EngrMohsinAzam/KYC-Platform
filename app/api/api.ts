@@ -41,15 +41,28 @@ export const submitKYCData = async (data: {
   lastName?: string
   fatherName?: string
   email: string
-  phone: string
+  phone?: string
   address?: string
-  countryName: string
-  cityName: string
+  countryName?: string
+  cityName?: string
+  countryOfPermanentResidence?: string
+  stateOfResidence?: string
+  legalFirstName?: string
+  legalLastName?: string
   idType: string
-  usaResidence: string
+  usaResidence?: string
+  dateOfBirth?: string
+  employmentStatus?: string
+  industry?: string
+  fundSource?: string
+  moneyDepositAndWithdrawal?: string
+  monthlyIncome?: string
+  formerFirstName?: string
+  governmentCountryName?: string
   identityDocumentFront: string // base64
-  identityDocumentBack: string // base64
-  liveInImage: string // base64
+  identityDocumentBack?: string // base64
+  liveInImage?: string // base64
+  faceVerificationVideo?: string // base64/video data URL
   cnic?: string // CNIC number
   companyId?: string
   companySlug?: string
@@ -63,6 +76,18 @@ export const submitKYCData = async (data: {
 }): Promise<{ success: boolean; message?: string; data?: any; errors?: any[]; isBackendIssue?: boolean }> => {
   try {
     const formData = new FormData()
+    const normalizeIdType = (raw: string): 'passport' | 'national_id' | 'driving_license' => {
+      const v = (raw || '').trim().toLowerCase()
+      if (v === 'passport') return 'passport'
+      if (v === 'national-id' || v === 'national_id' || v === 'cnic') return 'national_id'
+      if (v === 'drivers-license' || v === 'driving_license' || v === 'license') return 'driving_license'
+      return 'national_id'
+    }
+    const normalizedIdType = normalizeIdType(data.idType)
+    const legalFirstName = (data.legalFirstName || data.firstName || '').trim()
+    const legalLastName = (data.legalLastName || data.lastName || '').trim()
+    const countryOfPermanentResidence = (data.countryOfPermanentResidence || data.countryName || '').trim()
+    const stateOfResidence = (data.stateOfResidence || data.cityName || '').trim()
     
     // Add text fields - ensure no empty strings for required fields
     // Validate required fields before sending
@@ -74,32 +99,23 @@ export const submitKYCData = async (data: {
     if (!data.blockchainAddressId || data.blockchainAddressId.trim() === '') {
       requiredFields.push('blockchainAddressId')
     }
-    if (!data.fullName || data.fullName.trim() === '') {
-      requiredFields.push('fullName')
-    }
+    if (!data.companyId || data.companyId.trim() === '') requiredFields.push('companyId')
+    if (!data.companySlug || data.companySlug.trim() === '') requiredFields.push('companySlug')
     if (!data.email || data.email.trim() === '') {
       requiredFields.push('email')
     }
-    if (!data.phone || data.phone.trim() === '') {
-      requiredFields.push('phone')
-    }
-    if (!data.countryName || data.countryName.trim() === '') {
-      requiredFields.push('countryName')
-    }
-    if (!data.cityName || data.cityName.trim() === '') {
-      requiredFields.push('cityName')
-    }
+    if (!countryOfPermanentResidence) requiredFields.push('countryOfPermanentResidence')
+    if (!stateOfResidence) requiredFields.push('stateOfResidence')
+    if (!legalFirstName) requiredFields.push('legalFirstName')
+    if (!legalLastName) requiredFields.push('legalLastName')
     if (!data.idType || data.idType.trim() === '') {
       requiredFields.push('idType')
-    }
-    if (!data.usaResidence || data.usaResidence.trim() === '') {
-      requiredFields.push('usaResidence')
     }
     if (!data.identityDocumentFront || data.identityDocumentFront.trim() === '') {
       requiredFields.push('identityDocumentFront')
     }
-    if (!data.liveInImage || data.liveInImage.trim() === '') {
-      requiredFields.push('liveInImage')
+    if ((normalizedIdType === 'national_id' || normalizedIdType === 'driving_license') && (!data.identityDocumentBack || data.identityDocumentBack.trim() === '')) {
+      requiredFields.push('identityDocumentBack')
     }
     
     if (requiredFields.length > 0) {
@@ -110,33 +126,40 @@ export const submitKYCData = async (data: {
     // Always send blockchainAddressId - backend requires it
     const blockchainAddressId = data.blockchainAddressId.trim()
     formData.append('blockchainAddressId', blockchainAddressId)
-    formData.append('fullName', data.fullName.trim())
-    // Add individual name fields if provided
-    // Add optional name fields (only if they have values)
+    formData.append('companyId', data.companyId!.trim())
+    formData.append('companySlug', data.companySlug!.trim())
+    formData.append('legalFirstName', legalFirstName)
+    formData.append('legalLastName', legalLastName)
+    // Keep backward-compatible keys for older backend parsers.
+    if (data.fullName?.trim()) formData.append('fullName', data.fullName.trim())
     if (data.firstName && data.firstName.trim()) formData.append('firstName', data.firstName.trim())
     if (data.lastName && data.lastName.trim()) formData.append('lastName', data.lastName.trim())
     if (data.fatherName && data.fatherName.trim()) formData.append('fatherName', data.fatherName.trim())
     
     // Required fields
     formData.append('email', data.email.trim())
-    formData.append('phone', data.phone.trim())
+    if (data.phone && data.phone.trim()) formData.append('phone', data.phone.trim())
     
     // Optional address field
     if (data.address && data.address.trim()) formData.append('address', data.address.trim())
     
     // Required location fields
-    formData.append('countryName', data.countryName.trim())
-    formData.append('cityName', data.cityName.trim())
-    formData.append('idType', data.idType.trim())
-    formData.append('usaResidence', data.usaResidence.trim())
+    formData.append('countryOfPermanentResidence', countryOfPermanentResidence)
+    formData.append('stateOfResidence', stateOfResidence)
+    formData.append('idType', normalizedIdType)
+    // Keep previous field names too for compatibility.
+    if (data.countryName && data.countryName.trim()) formData.append('countryName', data.countryName.trim())
+    if (data.cityName && data.cityName.trim()) formData.append('cityName', data.cityName.trim())
+    if (data.usaResidence && data.usaResidence.trim()) formData.append('usaResidence', data.usaResidence.trim())
     formData.append('feeUnit', String(data.feeUnit || 2))
-
-    if (data.companyId?.trim()) {
-      formData.append('companyId', data.companyId.trim())
-    }
-    if (data.companySlug?.trim()) {
-      formData.append('companySlug', data.companySlug.trim())
-    }
+    if (data.dateOfBirth?.trim()) formData.append('dateOfBirth', data.dateOfBirth.trim())
+    if (data.employmentStatus?.trim()) formData.append('employmentStatus', data.employmentStatus.trim())
+    if (data.industry?.trim()) formData.append('industry', data.industry.trim())
+    if (data.fundSource?.trim()) formData.append('fundSource', data.fundSource.trim())
+    if (data.moneyDepositAndWithdrawal?.trim()) formData.append('moneyDepositAndWithdrawal', data.moneyDepositAndWithdrawal.trim())
+    if (data.monthlyIncome?.trim()) formData.append('monthlyIncome', data.monthlyIncome.trim())
+    if (data.formerFirstName?.trim()) formData.append('formerFirstName', data.formerFirstName.trim())
+    if (data.governmentCountryName?.trim()) formData.append('governmentCountryName', data.governmentCountryName.trim())
     
     // Add CNIC if provided (backend expects 'cnicNumber')
     if (data.cnic && data.cnic.trim()) formData.append('cnicNumber', data.cnic.trim())
@@ -168,22 +191,34 @@ export const submitKYCData = async (data: {
       throw err
     }
     
-    try {
-      const backFile = base64ToFile(data.identityDocumentBack, 'identity-document-back.jpg')
-      formData.append('identityDocumentBack', backFile)
-    } catch (err) {
-      throw err
+    if (data.identityDocumentBack && data.identityDocumentBack.trim()) {
+      try {
+        const backFile = base64ToFile(data.identityDocumentBack, 'identity-document-back.jpg')
+        formData.append('identityDocumentBack', backFile)
+      } catch (err) {
+        throw err
+      }
     }
     
-    try {
-      const selfieFile = base64ToFile(data.liveInImage, 'live-in-image.jpg')
-      formData.append('liveInImage', selfieFile)
-    } catch (err) {
-      throw err
+    if (data.liveInImage && data.liveInImage.trim()) {
+      try {
+        const selfieFile = base64ToFile(data.liveInImage, 'live-in-image.jpg')
+        formData.append('liveInImage', selfieFile)
+      } catch (err) {
+        throw err
+      }
+    }
+    if (data.faceVerificationVideo && data.faceVerificationVideo.trim()) {
+      try {
+        const videoFile = base64ToFile(data.faceVerificationVideo, 'face-verification-video.mp4')
+        formData.append('faceVerificationVideo', videoFile)
+      } catch {
+        // keep non-blocking to avoid breaking image-only submissions
+      }
     }
     
     // Check for empty critical fields
-    const criticalFields = ['userId', 'blockchainAddressId', 'email', 'fullName', 'phone', 'countryName', 'cityName', 'idType', 'usaResidence']
+    const criticalFields = ['userId', 'companyId', 'companySlug', 'blockchainAddressId', 'email', 'countryOfPermanentResidence', 'stateOfResidence', 'legalFirstName', 'legalLastName', 'idType']
     const emptyFields: string[] = []
     for (const [key, value] of formData.entries()) {
       if (criticalFields.includes(key)) {
@@ -256,10 +291,11 @@ export const submitKYCData = async (data: {
         // If validation errors exist, add them to the message
         if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length > 0) {
           const validationErrors = errorData.errors.map((err: any) => {
+            if (!err) return 'Unknown validation error'
             if (typeof err === 'string') return err
-            if (err.field && err.message) return `${err.field}: ${err.message}`
-            if (err.message) return err.message
-            return JSON.stringify(err)
+            if (typeof err === 'object' && err.field && err.message) return `${err.field}: ${err.message}`
+            if (typeof err === 'object' && err.message) return String(err.message)
+            return String(err)
           }).join(', ')
           errorMessage += ` - Validation errors: ${validationErrors}`
         } else if (errorData.errors && Array.isArray(errorData.errors) && errorData.errors.length === 0) {

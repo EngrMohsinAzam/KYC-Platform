@@ -1261,9 +1261,11 @@ export default function ReviewContent() {
         } else if (result.errors && Array.isArray(result.errors) && result.errors.length > 0) {
           // If there are specific validation errors, show them
           const validationErrors = result.errors.map((err: any) => {
+            if (!err) return 'Unknown validation error'
             if (typeof err === 'string') return err
-            if (err.field && err.message) return `${err.field}: ${err.message}`
-            return JSON.stringify(err)
+            if (typeof err === 'object' && err.field && err.message) return `${err.field}: ${err.message}`
+            if (typeof err === 'object' && err.message) return String(err.message)
+            return String(err)
           }).join('\n')
           errorMessage = `Validation failed:\n${validationErrors}`
         } else if (result.message?.includes('Validation failed')) {
