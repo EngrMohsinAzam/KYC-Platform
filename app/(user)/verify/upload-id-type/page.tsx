@@ -46,7 +46,7 @@ export default function UploadIdTypePage() {
   }
 
   return (
-    <div className="h-screen min-h-[100dvh] md:min-h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+    <div className="h-full md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       <VerifyMobileBackRow
         variant="muted"
         padX="pl-[25px] pr-4"

@@ -30,7 +30,7 @@ export default function EmploymentStatusPage() {
     'inline-flex h-[51px] px-4 rounded-[12px] bg-[#EBEBEB] items-center gap-3 text-left font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] transition-colors'
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+    <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
         <VerifyMobileBackRow nested onBack={() => router.push('/verify/enter-address')} />
         {/* Desktop heading */}

@@ -74,7 +74,7 @@ export default function ResidentSelection() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+    <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.back()} />
 
       <main className="flex-1 w-full overflow-hidden flex flex-col items-start md:items-center md:justify-center px-4 pt-4 pb-32 md:pt-6 md:pb-6 md:min-h-0">

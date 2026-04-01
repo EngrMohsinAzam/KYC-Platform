@@ -17,7 +17,7 @@ export default function FormerNamePage() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+    <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.push('/verify/source-of-wealth')} />
 
       <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">

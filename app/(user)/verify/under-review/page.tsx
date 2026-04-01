@@ -10,7 +10,7 @@ export default function UnderReview() {
   const router = useRouter()
 
   return (
-      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#FFFFFF] flex flex-col">
+      <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] md:bg-[#FFFFFF] flex flex-col">
       <Header showClose />
       <main className="flex-1 px-4 md:px-0 pt-8 pb-24 md:flex md:items-center md:justify-center min-h-0 overflow-hidden md:overflow-visible">
         <div className="w-full max-w-md md:bg-white p-4 rounded-2xl md:shadow-lg md:p-8 md:my-8 border-[1.5px] border-[#E8E8E9]">

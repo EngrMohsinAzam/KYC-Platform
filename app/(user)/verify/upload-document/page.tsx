@@ -1208,7 +1208,7 @@ export default function UploadDocument() {
   const instructionText = "Upload a clear image of your ID's both side to continue or Capture a live photo of your document.";
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+    <div className="h-full md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       {/* Mobile: back chevron - hide when camera is open in card */}
       {!isCameraActive && !isCameraLoading ? (
         <VerifyMobileBackRow

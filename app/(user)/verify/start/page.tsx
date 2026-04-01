@@ -80,7 +80,7 @@ function StartContent() {
 
   if (hasCompanyLink && loading) {
     return (
-      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex items-center justify-center">
+      <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-primary" />
       </div>
     )
@@ -88,7 +88,7 @@ function StartContent() {
 
   if (hasCompanyLink && error) {
     return (
-      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col items-center justify-center p-4">
+      <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 max-w-[640px] w-full text-center">
           <p className="text-red-600 mb-4">{error}</p>
           <Link href="/" className="text-sm text-[#6B7280] hover:underline">X Close</Link>
@@ -99,7 +99,7 @@ function StartContent() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+    <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       {/* Mobile: top-right X close */}
       <div className="md:hidden flex-shrink-0 flex justify-end pt-3 pr-4 pb-1">
         <button
@@ -200,7 +200,7 @@ export default function StartVerificationPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex items-center justify-center">
+        <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex items-center justify-center">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-primary" />
         </div>
       }

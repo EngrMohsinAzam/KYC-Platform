@@ -705,7 +705,7 @@ export default function UploadSelfie() {
   }
 
     return (
-      <div className="min-h-screen h-[100dvh] md:h-screen bg-black flex flex-col overflow-hidden">
+      <div className="h-full md:h-screen bg-black flex flex-col overflow-hidden">
         <VerifyMobileBackRow variant="light" className="!pt-2 !pb-1" onBack={() => router.back()} />
         <main className="flex-1 flex flex-col items-center justify-start min-h-0 overflow-hidden px-4 pt-2 pb-[92px] md:py-10">
           <h1 className="text-white text-[18px] md:text-[20px] font-semibold text-center mb-7 mt-0">

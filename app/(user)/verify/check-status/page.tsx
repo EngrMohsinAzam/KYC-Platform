@@ -102,7 +102,7 @@ export default function CheckStatus() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+    <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <Header showBack title="Check Verification Status" />
       <main className="flex-1 px-4 md:px-0 pt-6 pb-24 md:flex md:items-center md:justify-center min-h-0 overflow-hidden md:overflow-visible">
         <div className="w-full max-w-md md:bg-white md:rounded-2xl md:p-8 md:my-8 md:border-[1.5px] md:border-[#E8E8E9]">

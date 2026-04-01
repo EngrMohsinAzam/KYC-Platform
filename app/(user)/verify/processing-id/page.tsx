@@ -36,7 +36,7 @@ export default function ProcessingIdPage() {
   }, [router, searchParams])
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+    <div className="h-full md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-6 pt-24 md:pt-16 md:items-center">
         <div className="w-full max-w-[680px]">
           <h1 className="text-[#000000] text-[26px] md:text-[26px] font-bold leading-[100%] tracking-[0%] text-left md:text-center">

@@ -287,7 +287,7 @@ export default function EnterEmailPage() {
 
   if (checking) {
     return (
-      <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+      <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
         <main className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
         </main>
@@ -296,7 +296,7 @@ export default function EnterEmailPage() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-white flex flex-col">
+    <div className="h-full md:h-screen overflow-hidden bg-white flex flex-col">
       {/* Mobile: close X only (no back arrow) */}
       <div className="md:hidden flex justify-end pr-4 pt-5 pb-1">
         <button

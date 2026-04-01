@@ -30,7 +30,7 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+    <div className="h-full md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       <VerifyMobileBackRow onBack={() => router.push('/verify/former-name')} className="flex-shrink-0" />
 
       <main className="flex-1 flex flex-col items-center md:justify-center px-4 pt-3 pb-[170px] md:pb-6 md:pt-6 md:min-h-0 min-h-0 overflow-hidden">

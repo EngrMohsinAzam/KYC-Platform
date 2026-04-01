@@ -209,7 +209,7 @@ export default function EnterAddressPage() {
     "w-full h-[51px] bg-transparent placeholder:text-[#545454] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] px-4 border-0 outline-none focus:outline-none focus:ring-0";
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+    <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
       <VerifyMobileBackRow onBack={() => router.push("/verify/enter-dob")} />
 
       <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">

@@ -56,7 +56,7 @@ export default function SelfieIntroPage() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
+    <div className="h-full md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
       <VerifyMobileBackRow onBack={handleBack} className="!pt-3 !pb-0" />
 
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden px-4 pt-2 pb-[92px] md:pb-6 md:px-6 md:pt-6">

@@ -18,7 +18,7 @@ export default function StartVerificationCompanyRedirectPage() {
   }, [router, slug, id])
 
   return (
-    <div className="min-h-screen bg-[#FFFFFF] flex items-center justify-center">
+    <div className="h-full bg-[#FFFFFF] flex items-center justify-center">
       <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-gray-900" />
     </div>
   )

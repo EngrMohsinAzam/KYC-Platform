@@ -1,4 +1,5 @@
 import { CompanyBanner } from '@/components/verify/CompanyBanner'
+import { VerifyScrollLock } from '@/components/verify/VerifyScrollLock'
 import { Inter } from 'next/font/google'
 
 const inter = Inter({
@@ -12,9 +13,10 @@ export default function VerifyLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className={`${inter.className} min-h-screen flex flex-col bg-[#FFFFFF]`}>
+    <div className={`${inter.className} h-[100dvh] overflow-hidden flex flex-col bg-[#FFFFFF]`}>
+      <VerifyScrollLock />
       <CompanyBanner />
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {children}
       </main>
     </div>
