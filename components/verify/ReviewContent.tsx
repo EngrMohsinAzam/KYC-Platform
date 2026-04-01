@@ -863,35 +863,44 @@ export default function ReviewContent() {
       setProcessingPayment(true)
       console.log('⏳ Processing payment state set to true')
 
-      // Check network
-      const networkInfo = await getNetworkInfo()
-      if (!networkInfo) {
-        setError('Unable to detect network. Please ensure your wallet is connected.')
-        setProcessingPayment(false)
-        return
-      }
-      if (!networkInfo.isCorrectNetwork) {
-        setError(`Please switch to ${networkInfo.requiredNetworkName}`)
-        setProcessingPayment(false)
-        return
-      }
+      // Temporary dev mode: skip on-chain fee transaction and submit metadata directly.
+      // Keep a synthetic reference so backend field shape stays compatible.
+      const skipFeeStep = true
+      let txHash: string
+      if (skipFeeStep) {
+        txHash = `offchain-${Date.now()}`
+        setTransactionHash(txHash)
+        console.log('⏭️ Skipping fee transaction, using synthetic reference:', txHash)
+      } else {
+        // Check network
+        const networkInfo = await getNetworkInfo()
+        if (!networkInfo) {
+          setError('Unable to detect network. Please ensure your wallet is connected.')
+          setProcessingPayment(false)
+          return
+        }
+        if (!networkInfo.isCorrectNetwork) {
+          setError(`Please switch to ${networkInfo.requiredNetworkName}`)
+          setProcessingPayment(false)
+          return
+        }
 
-      // Check balance with timeout
-      console.log('💰 Checking BNB balance...')
-      let balance: string
-      try {
-        const balancePromise = checkBNBBalance(address)
-        const timeoutPromise = new Promise<string>((_, reject) => {
-          setTimeout(() => reject(new Error('Balance check timeout. Please check your network connection.')), 30000)
-        })
-        balance = await Promise.race([balancePromise, timeoutPromise])
-        console.log('💰 BNB Balance:', balance)
-      } catch (balanceError: any) {
-        console.error('❌ Error checking balance:', balanceError)
-        // If balance check fails, we'll still try to proceed (the contract will validate balance)
-        console.warn('⚠️ Continuing despite balance check error - contract will validate balance')
-        balance = '0' // Set default, contract will check actual balance
-      }
+        // Check balance with timeout
+        console.log('💰 Checking BNB balance...')
+        let balance: string
+        try {
+          const balancePromise = checkBNBBalance(address)
+          const timeoutPromise = new Promise<string>((_, reject) => {
+            setTimeout(() => reject(new Error('Balance check timeout. Please check your network connection.')), 30000)
+          })
+          balance = await Promise.race([balancePromise, timeoutPromise])
+          console.log('💰 BNB Balance:', balance)
+        } catch (balanceError: any) {
+          console.error('❌ Error checking balance:', balanceError)
+          // If balance check fails, we'll still try to proceed (the contract will validate balance)
+          console.warn('⚠️ Continuing despite balance check error - contract will validate balance')
+          balance = '0' // Set default, contract will check actual balance
+        }
       
       // Calculate actual required BNB amount dynamically (based on current BNB price for $2 USD + gas)
       console.log('💰 Calculating required BNB amount...')
@@ -1025,15 +1034,14 @@ export default function ReviewContent() {
         return
       }
       
-      // Submit to smart contract (this will handle the $2 payment)
+        // Submit to smart contract (this will handle the $2 payment)
       console.log('========================================')
       console.log('🔗 STEP 1: Submitting KYC to smart contract...')
       console.log('========================================')
       console.log('Anonymous ID:', anonymousId)
       console.log('Wallet Address:', address)
       
-      let txHash: string
-      try {
+        try {
       
         
         // Add timeout protection (longer for mobile to account for app switching)
@@ -1058,13 +1066,13 @@ export default function ReviewContent() {
           console.log('⏳ If MetaMask popup doesn\'t appear, check if it\'s blocked by your browser')
           console.log('⏳ DO NOT cancel the transaction - it will process once confirmed!')
         }
-        txHash = await Promise.race([txPromise, timeoutPromise]) as string
+          txHash = await Promise.race([txPromise, timeoutPromise]) as string
         
         setTransactionHash(txHash)
         console.log('✅ Transaction successful!')
         console.log('Transaction Hash:', txHash)
         console.log('========================================\n')
-      } catch (txError: any) {
+        } catch (txError: any) {
         console.error('❌ Transaction failed:', txError)
         
         // Provide more specific error messages (mobile-friendly)
@@ -1102,9 +1110,10 @@ export default function ReviewContent() {
           errorMessage = `Transaction failed: ${txError.message}`
         }
         
-        setError(errorMessage)
-        setProcessingPayment(false)
-        throw new Error(errorMessage)
+          setError(errorMessage)
+          setProcessingPayment(false)
+          throw new Error(errorMessage)
+        }
       }
 
       // Now submit to backend
@@ -1125,6 +1134,10 @@ export default function ReviewContent() {
       }
 
       // Prepare submission data - ensure no empty strings for required fields
+      const personalInfo = state.personalInfo
+      if (!personalInfo) {
+        throw new Error('Personal information is required.')
+      }
       const fullName = `${personalInfo.firstName || ''} ${personalInfo.lastName || ''}`.trim()
       if (!fullName) {
         throw new Error('Full name is required. Please ensure first name and last name are provided.')
