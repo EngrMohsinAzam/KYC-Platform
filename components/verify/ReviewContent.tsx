@@ -1126,9 +1126,9 @@ export default function ReviewContent() {
       // Map frontend ID type to backend expected format
       const mapIdTypeToBackend = (frontendIdType: string): string => {
         const idTypeMap: Record<string, string> = {
-          'national-id': 'CNIC',
-          'passport': 'Passport',
-          'drivers-license': 'License'
+          'national-id': 'national_id',
+          'passport': 'passport',
+          'drivers-license': 'driving_license'
         }
         return idTypeMap[frontendIdType] || frontendIdType
       }
@@ -1172,15 +1172,14 @@ export default function ReviewContent() {
         userId: personalInfo.email.trim(),
         blockchainAddressId: address.trim(),
         fullName: fullName,
-        firstName: personalInfo.firstName?.trim() || '',
-        lastName: personalInfo.lastName?.trim() || '',
+        legalFirstName: personalInfo.firstName?.trim() || '',
+        legalLastName: personalInfo.lastName?.trim() || '',
         email: personalInfo.email.trim(),
         phone: personalInfo.phone.trim(),
         address: personalInfo.address?.trim() || '',
-        countryName: state.selectedCountry.trim(),
-        cityName: state.selectedCity.trim(),
+        countryOfPermanentResidence: state.selectedCountry.trim(),
+        stateOfResidence: state.selectedCity.trim(),
         idType: mapIdTypeToBackend(state.selectedIdType.trim()),
-        usaResidence: state.isResidentUSA ? 'yes' : 'no',
         identityDocumentFront: state.documentImageFront || '',
         identityDocumentBack: state.documentImageBack || '',
         liveInImage: state.selfieImage || '',
@@ -1198,17 +1197,14 @@ export default function ReviewContent() {
         hasFrontImage: !!submissionData.identityDocumentFront,
         hasBackImage: !!submissionData.identityDocumentBack,
         hasSelfie: !!submissionData.liveInImage,
-        hasCountry: !!submissionData.countryName,
-        hasCity: !!submissionData.cityName,
+        hasCountry: !!submissionData.countryOfPermanentResidence,
+        hasCity: !!submissionData.stateOfResidence,
         hasIdType: !!submissionData.idType,
         hasTxHash: !!submissionData.transactionHash,
       })
 
       if (!submissionData.identityDocumentFront) {
         throw new Error('Front document image is missing')
-      }
-      if (!submissionData.liveInImage) {
-        throw new Error('Selfie image is missing')
       }
       if (!submissionData.email) {
         throw new Error('Email is missing')
@@ -1223,8 +1219,8 @@ export default function ReviewContent() {
         frontImageLength: submissionData.identityDocumentFront?.length || 0,
         backImageLength: submissionData.identityDocumentBack?.length || 0,
         selfieImageLength: submissionData.liveInImage?.length || 0,
-        country: submissionData.countryName,
-        city: submissionData.cityName,
+        country: submissionData.countryOfPermanentResidence,
+        city: submissionData.stateOfResidence,
         idType: submissionData.idType,
       })
 
@@ -1276,10 +1272,9 @@ export default function ReviewContent() {
             '✓ Email address\n' +
             '✓ Full name (first + last)\n' +
             '✓ Phone number\n' +
-            '✓ Country and city\n' +
+            '✓ Country and state/city\n' +
             '✓ ID type\n' +
             '✓ Front document image\n' +
-            '✓ Selfie image\n' +
             '✓ Blockchain wallet address\n\n' +
             'If all fields are filled, this may be a backend configuration issue.'
         }
@@ -1291,10 +1286,9 @@ export default function ReviewContent() {
           blockchainAddressId: submissionData.blockchainAddressId,
           fullName: submissionData.fullName,
           phone: submissionData.phone,
-          countryName: submissionData.countryName,
-          cityName: submissionData.cityName,
+          countryOfPermanentResidence: submissionData.countryOfPermanentResidence,
+          stateOfResidence: submissionData.stateOfResidence,
           idType: submissionData.idType,
-          usaResidence: submissionData.usaResidence,
           hasFrontImage: !!submissionData.identityDocumentFront,
           hasBackImage: !!submissionData.identityDocumentBack,
           hasSelfie: !!submissionData.liveInImage,
