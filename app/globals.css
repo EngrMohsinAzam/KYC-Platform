@@ -40,6 +40,28 @@ textarea {
   touch-action: manipulation;
 }
 
+/* verify/enter-address: browsers paint autofilled inputs (saved address) with a light blue/yellow layer — not an app bug.
+   Inset box-shadow matches our field backgrounds so it doesn’t look like a second field on top. */
+.verify-address-autofill:-webkit-autofill,
+.verify-address-autofill:-webkit-autofill:hover,
+.verify-address-autofill:-webkit-autofill:focus,
+.verify-address-autofill:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ebebeb inset !important;
+  box-shadow: 0 0 0 1000px #ebebeb inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000;
+}
+
+@media (min-width: 768px) {
+  .verify-address-autofill:-webkit-autofill,
+  .verify-address-autofill:-webkit-autofill:hover,
+  .verify-address-autofill:-webkit-autofill:focus,
+  .verify-address-autofill:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px rgba(20, 17, 28, 0.102) inset !important;
+    box-shadow: 0 0 0 1000px rgba(20, 17, 28, 0.102) inset !important;
+  }
+}
+
 /* Focus visible for better accessibility */
 :focus-visible {
   outline: 2px solid #1A202C;

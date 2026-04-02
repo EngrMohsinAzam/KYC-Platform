@@ -65,6 +65,7 @@ export default function EnterDobPage() {
   }
 
   const canProceed = dateOfBirth.trim().length > 0
+  const dobEmpty = !dateOfBirth.trim()
 
   useEffect(() => {
     const fromState = state.personalInfo?.dateOfBirth || ''
@@ -118,6 +119,14 @@ export default function EnterDobPage() {
           </p>
 
           <div className="relative">
+            {dobEmpty && (
+              <span
+                className="pointer-events-none absolute left-4 top-1/2 z-[2] -translate-y-1/2 font-sans text-[16px] font-normal text-[#545454]"
+                aria-hidden
+              >
+                mm/dd/yy
+              </span>
+            )}
             <input
               ref={inputRef}
               type="date"
@@ -129,7 +138,11 @@ export default function EnterDobPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && canProceed && !loading) handleContinue()
               }}
-              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 bg-[#14111C1A] text-[#000000] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden ${
+              className={`w-full h-[48px] md:h-[52px] rounded-[12px] md:rounded-[10px] border-[1.5px] pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-[#6D3CCC]/20 bg-[#14111C1A] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] [color-scheme:light] appearance-none md:[&::-webkit-calendar-picker-indicator]:opacity-0 md:[&::-webkit-calendar-picker-indicator]:absolute md:[&::-webkit-calendar-picker-indicator]:inset-0 md:[&::-webkit-calendar-picker-indicator]:w-full md:[&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:cursor-pointer max-md:[&::-webkit-calendar-picker-indicator]:!w-0 max-md:[&::-webkit-calendar-picker-indicator]:!h-0 max-md:[&::-webkit-calendar-picker-indicator]:!min-w-0 max-md:[&::-webkit-calendar-picker-indicator]:!overflow-hidden ${
+                dobEmpty
+                  ? 'text-transparent caret-[#000000] selection:bg-transparent [&::-webkit-datetime-edit]:text-transparent [&::-webkit-datetime-edit-fields-wrapper]:text-transparent [&::-webkit-datetime-edit-text]:text-transparent [&::-webkit-datetime-edit-month-field]:text-transparent [&::-webkit-datetime-edit-day-field]:text-transparent [&::-webkit-datetime-edit-year-field]:text-transparent'
+                  : 'text-[#000000]'
+              } ${
                 error ? 'border-red-500 focus:border-red-500' : 'border-transparent focus:border-[#6D3CCC]'
               }`}
             />

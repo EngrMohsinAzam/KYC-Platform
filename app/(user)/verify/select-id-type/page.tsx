@@ -12,9 +12,9 @@ import { getKycPausedStatus } from '@/app/api/api'
 
 export default function SelectIdType() {
   const router = useRouter()
-  const { dispatch } = useAppContext()
-  const [country, setCountry] = useState('')
-  const [city, setCity] = useState('')
+  const { state, dispatch } = useAppContext()
+  const [country, setCountry] = useState(state.selectedCountry || '')
+  const [city, setCity] = useState(state.selectedCity || '')
   const [pausedMessage, setPausedMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -66,21 +66,22 @@ export default function SelectIdType() {
   }, [])
 
   useEffect(() => {
-    if (country) {
-      setCity('')
+    if (country && country !== state.selectedCountry) {
       dispatch({ type: 'SET_COUNTRY', payload: country })
+    }
+    if (country) {
       const opts = getCitiesForCountry(country)
-      if (opts.length === 0) {
+      if (opts.length === 0 && state.selectedCity) {
         dispatch({ type: 'SET_CITY', payload: '' })
       }
     }
-  }, [country, dispatch])
+  }, [country, dispatch, state.selectedCountry, state.selectedCity])
 
   useEffect(() => {
-    if (city) {
+    if (city && city !== state.selectedCity) {
       dispatch({ type: 'SET_CITY', payload: city })
     }
-  }, [city, dispatch])
+  }, [city, dispatch, state.selectedCity])
 
   const handleNext = () => {
     if (pausedMessage) return
@@ -135,8 +136,12 @@ export default function SelectIdType() {
             <div className="relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] md:rounded-tl-[12px] md:rounded-tr-[12px] md:rounded-br-[5px] md:rounded-bl-[5px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] pl-4 pr-10 flex items-center focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <select
                 value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="w-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
+                onChange={(e) => {
+                  const nextCountry = e.target.value
+                  setCountry(nextCountry)
+                  setCity('')
+                }}
+                className="w-full h-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[1.35] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
                 style={{ color: country ? '#000000' : '#545454' }}
               >
                 <option value="" className="text-[#545454]">
@@ -164,7 +169,7 @@ export default function SelectIdType() {
                 <select
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="w-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
+                  className="w-full h-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[1.35] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
                   style={{ color: city ? '#000000' : '#545454' }}
                 >
                   <option value="" className="text-[#545454]">

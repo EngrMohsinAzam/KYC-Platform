@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { PoweredBy } from '@/components/verify/PoweredBy'
 import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
@@ -10,10 +10,34 @@ import { getCountryOptions } from '@/app/(public)/utils/countries'
 export default function IdIssuingCountryPage() {
   const router = useRouter()
   const [country, setCountry] = useState('')
+  const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
   const countryOptions = getCountryOptions()
 
   const canProceed = !!country
+  const selectedLabel =
+    countryOptions.find((o) => o.value === country)?.label ?? ''
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open])
 
   const handleContinue = () => {
     if (!country) return
@@ -49,31 +73,79 @@ export default function IdIssuingCountryPage() {
             Enter your country name
           </p>
 
-          {/* Country dropdown - same styling as other verify inputs */}
-          <div className="relative w-full h-[51px] rounded-[12px] bg-[#EBEBEB] border-2 border-transparent focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 pl-4 pr-10 flex items-center transition-colors">
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              className="w-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
-              style={{ color: country ? '#000000' : '#545454' }}
+          {/* Custom dropdown: native select options cannot be sized on mobile; list uses smaller type + scroll */}
+          <div ref={rootRef} className="relative z-10 w-full">
+            <button
+              type="button"
+              aria-haspopup="listbox"
+              aria-expanded={open}
+              onClick={() => setOpen((v) => !v)}
+              className={`relative flex h-[54px] w-full min-h-[54px] items-center rounded-[12px] bg-[#EBEBEB] pl-4 pr-10 text-left font-sans transition-colors md:bg-[#14111C1A] ${
+                open
+                  ? 'border border-[#A7D80D] ring-2 ring-[#A7D80D]/20'
+                  : 'border border-[#E5E5E5] focus:outline-none focus-visible:border-[#A7D80D] focus-visible:ring-2 focus-visible:ring-[#A7D80D]/20'
+              }`}
             >
-              <option value="" className="text-[#545454]">
-                Select country
-              </option>
-              {countryOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
-            <svg
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#545454] pointer-events-none"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+              <span
+                className={`line-clamp-2 w-full text-[16px] font-normal leading-[1.35] ${
+                  selectedLabel ? 'text-[#000000]' : 'text-[#545454]'
+                }`}
+              >
+                {selectedLabel || 'Select country'}
+              </span>
+              <svg
+                className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#545454] transition-transform ${open ? 'rotate-180' : ''}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+
+            {open && (
+              <ul
+                role="listbox"
+                className="absolute left-0 right-0 top-[calc(100%+6px)] z-[100] max-h-[min(240px,42vh)] overflow-y-auto overscroll-y-contain rounded-[10px] border border-[#E8E8E9] bg-white py-1 shadow-lg md:max-h-[280px]"
+              >
+                <li role="none">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={!country}
+                    className="w-full border-b border-[#E8E8E9] px-3 py-2.5 text-left font-sans text-[13px] font-normal leading-[1.35] text-[#545454] last:border-b-0 hover:bg-[#E8E8E9] md:text-[14px]"
+                    onClick={() => {
+                      setCountry('')
+                      setOpen(false)
+                    }}
+                  >
+                    Select country
+                  </button>
+                </li>
+                {countryOptions.map((opt) => (
+                  <li key={opt.value} role="none">
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={country === opt.value}
+                      className="w-full border-b border-[#E8E8E9] px-3 py-2 text-left font-sans text-[13px] font-normal leading-[1.35] text-[#000000] last:border-b-0 hover:bg-[#E8E8E9] md:py-2.5 md:text-[14px]"
+                      onClick={() => {
+                        setCountry(opt.value)
+                        setOpen(false)
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Mobile: Continue in flow, 12px gap above button (match reference) */}
@@ -107,7 +179,6 @@ export default function IdIssuingCountryPage() {
             </button>
           </div>
         </div>
-
       </main>
 
       <PoweredBy />

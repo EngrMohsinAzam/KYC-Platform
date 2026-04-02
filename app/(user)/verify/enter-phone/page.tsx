@@ -123,7 +123,7 @@ export default function EnterPhonePage() {
           
 
           {/* Combined country code + phone field, styled like other inputs */}
-          <div className="w-full h-[50px] md:mt-3 flex items-stretch gap-px">
+          <div className="w-full h-[50px] md:mt-3 flex items-stretch gap-1">
             <div
               aria-label={`Country code ${phoneCountryLabel}`}
               className="flex-shrink-0 w-[120px] md:w-[140px] flex items-center justify-between pl-4 pr-3 rounded-tl-[12px] rounded-tr-[5px] rounded-br-[5px] rounded-bl-[12px] bg-[#EBEBEB] border-0 md:border-r-0 md:rounded-tl-[12px] md:rounded-tr-[5px] md:rounded-br-[5px] md:rounded-bl-[12px] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] cursor-default select-none"

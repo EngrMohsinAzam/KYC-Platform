@@ -51,7 +51,19 @@ export default function EnterAddressPage() {
   const [errorCity, setErrorCity] = useState<string | null>(null);
   const [errorPostalCode, setErrorPostalCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const addressInputRef = useRef<HTMLInputElement | null>(null);
+
+  /** Android: keep focused field above the soft keyboard (layout is fixed height + bottom bar). */
+  const scrollFieldIntoView = useCallback((el: HTMLInputElement | null) => {
+    if (!el || typeof window === "undefined") return;
+    if (window.matchMedia("(min-width: 768px)").matches) return;
+    const run = () =>
+      el.scrollIntoView({ block: "center", behavior: "smooth" });
+    requestAnimationFrame(run);
+    window.setTimeout(run, 120);
+    window.setTimeout(run, 320);
+  }, []);
 
   const searchSuggestions = useCallback(
     async (query: string) => {
@@ -205,14 +217,48 @@ export default function EnterAddressPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const syncKeyboard = () => {
+      if (window.matchMedia("(min-width: 768px)").matches) {
+        setKeyboardInset(0);
+        return;
+      }
+      const overlap = Math.max(
+        0,
+        window.innerHeight - vv.height - vv.offsetTop,
+      );
+      setKeyboardInset(overlap);
+    };
+    syncKeyboard();
+    vv.addEventListener("resize", syncKeyboard);
+    vv.addEventListener("scroll", syncKeyboard);
+    return () => {
+      vv.removeEventListener("resize", syncKeyboard);
+      vv.removeEventListener("scroll", syncKeyboard);
+    };
+  }, []);
+
+  /* verify-address-autofill: globals.css resets WebKit autofill paint so device “saved address” matches field gray */
   const inputBase =
-    "w-full h-[51px] bg-transparent placeholder:text-[#545454] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] px-4 border-0 outline-none focus:outline-none focus:ring-0";
+    "verify-address-autofill w-full h-[51px] bg-transparent placeholder:text-[#545454] font-sans text-[16px] font-normal leading-[100%] tracking-[0%] text-[#000000] px-4 border-0 outline-none focus:outline-none focus:ring-0";
 
   return (
-    <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-[#FFFFFF] md:h-screen">
       <VerifyMobileBackRow onBack={() => router.push("/verify/enter-dob")} />
 
-      <main className="flex-1 flex flex-col items-start md:items-center md:justify-center px-4 pt-3 pb-28 md:pt-6 md:pb-6 md:min-h-0 min-h-0 overflow-hidden md:overflow-visible">
+      <main
+        className="flex min-h-0 flex-1 flex-col items-start overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 pt-3 pb-28 md:min-h-0 md:items-center md:justify-center md:overflow-visible md:pb-6 md:pt-6"
+        style={
+          keyboardInset > 0
+            ? {
+                paddingBottom: `calc(7rem + ${keyboardInset}px + env(safe-area-inset-bottom, 0px))`,
+              }
+            : undefined
+        }
+      >
         {/* Desktop heading */}
         <section className="hidden md:block text-center mb-3 md:mb-4">
           <h1 className="font-sans text-[28px] font-bold leading-[100%] tracking-[0%] text-[#000000]">
@@ -236,38 +282,40 @@ export default function EnterAddressPage() {
             What is your residential address?
           </p>
 
-          {/* Inputs styled like select-id-type (stacked, light gray, small gap, focus border lime) */}
+          {/* Inputs: same border + focus ring as select-id-type / other verify fields */}
           <div className="space-y-1">
-            {/* Address: top 12, bottom 5 */}
-            <div
-              className={`relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors ${
-                errorAddress ? 'border-red-500 focus-within:border-red-500' : ''
-              }`}
-            >
-              <input
-                ref={addressInputRef}
-                type="text"
-                placeholder="Address"
-                value={addressLine1}
-                onChange={(e) => {
-                  setAddressLine1(e.target.value.replace(/^\s+/, ""));
-                  setErrorAddress(null);
-                }}
-                onFocus={() =>
-                  suggestions.length > 0 && setShowSuggestions(true)
-                }
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !loading) handleContinue();
-                }}
-                className={`${inputBase} rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px]`}
-                autoComplete="off"
-              />
-              {errorAddress && (
-                <p className="text-sm text-red-600 mt-1">{errorAddress}</p>
-              )}
+            {/* Address: top 12, bottom 5 — suggestions outside bordered box */}
+            <div className="relative w-full">
+              <div
+                className={`w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
+                  errorAddress
+                    ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
+                    : ''
+                }`}
+              >
+                <input
+                  ref={addressInputRef}
+                  type="text"
+                  placeholder="Address"
+                  value={addressLine1}
+                  onChange={(e) => {
+                    setAddressLine1(e.target.value.replace(/^\s+/, ""));
+                    setErrorAddress(null);
+                  }}
+                  onFocus={(e) => {
+                    scrollFieldIntoView(e.target);
+                    if (suggestions.length > 0) setShowSuggestions(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !loading) handleContinue();
+                  }}
+                  className={`${inputBase} rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px]`}
+                  autoComplete="off"
+                />
+              </div>
               {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-white border border-[#E8E8E9] rounded-[10px] shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-[#E8E8E9] rounded-[10px] shadow-lg max-h-60 overflow-y-auto">
                   {suggestions.map((s, i) => (
                     <button
                       key={`${s.lat}-${s.lon}-${i}`}
@@ -282,9 +330,12 @@ export default function EnterAddressPage() {
                 </div>
               )}
             </div>
+            {errorAddress && (
+              <p className="text-sm text-red-600 mt-1">{errorAddress}</p>
+            )}
 
             {/* Apt/Suite: middle field, small radius all around */}
-            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors">
+            <div className="relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
               <input
                 type="text"
                 placeholder="Apt, Suite, Unit, Building"
@@ -295,6 +346,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !loading) handleContinue();
                 }}
+                onFocus={(e) => scrollFieldIntoView(e.target)}
                 className={`${inputBase} rounded-[5px] pr-14`}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] md:text-[11px] text-[#828282] pointer-events-none">
@@ -304,8 +356,10 @@ export default function EnterAddressPage() {
 
             {/* City: middle field */}
             <div
-              className={`relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors ${
-                errorCity ? 'border-red-500 focus-within:border-red-500' : ''
+              className={`relative w-full h-[51px] rounded-[5px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
+                errorCity
+                  ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
+                  : ''
               }`}
             >
               <input
@@ -319,6 +373,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !loading) handleContinue();
                 }}
+                onFocus={(e) => scrollFieldIntoView(e.target)}
                 className={`${inputBase} rounded-[5px]`}
               />
               {errorCity && (
@@ -328,8 +383,10 @@ export default function EnterAddressPage() {
 
             {/* Postal code: bottom field, top 5, bottom 12 */}
             <div
-              className={`relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border-[1.5px] border-[#D3D3D3] focus-within:border-[#A7D80D] transition-colors ${
-                errorPostalCode ? 'border-red-500 focus-within:border-red-500' : ''
+              className={`relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] flex items-center px-0 bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors ${
+                errorPostalCode
+                  ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
+                  : ''
               }`}
             >
               <input
@@ -343,6 +400,7 @@ export default function EnterAddressPage() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !loading) handleContinue();
                 }}
+                onFocus={(e) => scrollFieldIntoView(e.target)}
                 className={`${inputBase} rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px]`}
               />
               {errorPostalCode && (

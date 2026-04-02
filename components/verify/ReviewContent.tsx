@@ -1601,9 +1601,9 @@ export default function ReviewContent() {
         <PoweredBy />
       </div>
 
-      {/* Mobile fixed bottom bar: button + PoweredBy (single divider line) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white border-t border-[#E8E8E9]">
-        <div className="px-4 pt-2 pb-[max(10px,env(safe-area-inset-bottom))]">
+      {/* Mobile fixed bottom bar: same as other verify pages — divider between CTA and Powered by (not above button) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-20 bg-white">
+        <div className="px-4 pt-2 pb-2">
           {!isConnected ? (
             <Button
               onClick={handleOpenWalletModal}
@@ -1634,7 +1634,7 @@ export default function ReviewContent() {
             </Button>
           )}
         </div>
-        <div className="py-1.5 text-center">
+        <div className="border-t border-[#E8E8E9] py-1.5 text-center pb-[max(10px,env(safe-area-inset-bottom))]">
           <p className="text-[13px] leading-[1.2] font-normal text-[#545454]">
             Powered by{' '}
             <span className="font-semibold text-[#000000]">{getCompanyContext()?.companyName || 'Blockchain'}</span>
