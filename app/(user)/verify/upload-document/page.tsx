@@ -528,7 +528,7 @@ export default function UploadDocument() {
     if (state.documentImageBack && !backImage) {
       setBackImage(state.documentImageBack)
     }
-  }, [state.documentImageFront, state.documentImageBack])
+  }, [backImage, frontImage, state.documentImageBack, state.documentImageFront])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1144,6 +1144,8 @@ export default function UploadDocument() {
       
       // Clear any previous back image
       setBackImage(null)
+      // Also clear stored back image so it can't auto-restore/skip the back step
+      dispatch({ type: 'SET_DOCUMENT_IMAGE_BACK', payload: '' })
       
       console.log('✅ Switched to back side - ready for NEW back image upload')
       return
@@ -1206,6 +1208,7 @@ export default function UploadDocument() {
   const sideLabel = currentSide === 'front' ? 'Front Side' : 'Back Side';
   const pageTitle = idTypeLabel;
   const instructionText = "Upload a clear image of your ID's both side to continue or Capture a live photo of your document.";
+  const showReviewCard = !!currentImage && !isCameraActive && !isCameraLoading;
 
   return (
     <div className="h-full md:h-screen max-h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
@@ -1272,31 +1275,65 @@ export default function UploadDocument() {
               <span aria-hidden>←</span>
               Back to Previous
             </button>
-            {/* Hidden inputs for intro card - camera input has id so Take Photo always opens camera on mobile */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileChange}
-              className="hidden"
-              aria-label="Upload ID document"
-            />
-            <input
-              id="doc-camera-input"
-              ref={cameraInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={handleFileChange}
-              className="hidden"
-              aria-label="Take photo with camera"
-            />
           </div>
           </div>
         )}
 
         {!showIntroCard && (
         <div className="flex-1 min-h-0 w-full overflow-hidden flex flex-col md:flex-row md:items-center md:justify-center md:py-4">
+          {/* Device upload review UI (fixes white blink after selecting file) */}
+          {showReviewCard ? (
+            <div className="w-full md:max-w-[680px] md:mx-auto flex flex-col min-h-0 md:bg-white md:rounded-[14px] md:border md:border-[#E8E8E9] md:shadow-md md:px-5 md:py-4 md:max-h-[90vh] md:overflow-hidden md:scale-[0.97] md:origin-center">
+              <div className="flex-shrink-0">
+                <h1 className="text-[20px] md:text-[22px] leading-tight font-bold text-[#000000] mb-2 md:mb-1.5 w-full font-sans">
+                  {pageTitle}
+                </h1>
+                {needsBackSide ? (
+                  <p className="font-sans font-normal text-[16px] leading-[120%] text-[#545454] mb-3">
+                    {currentSide === 'front' ? "Step 1 of 2: Front Side" : "Step 2 of 2: Back Side"}
+                  </p>
+                ) : (
+                  <p className="font-sans font-normal text-[16px] leading-[120%] text-[#545454] mb-3">
+                    Please confirm your passport photo is clear and readable.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex-1 min-h-0 flex flex-col items-center justify-center">
+                <div className="w-full max-w-[520px] aspect-square rounded-[16px] bg-[#F5F5F5] border border-[#E8E8E9] overflow-hidden flex items-center justify-center">
+                  {currentImage ? (
+                    <Image
+                      src={currentImage}
+                      alt={`${sideLabel} preview`}
+                      width={900}
+                      height={900}
+                      unoptimized
+                      className="w-full h-full object-contain bg-white"
+                    />
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="flex-shrink-0 flex flex-col gap-3 pt-4 pb-2 md:pb-0">
+                <button
+                  type="button"
+                  onClick={handleContinue}
+                  disabled={!canContinue}
+                  className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-black text-[16px] font-semibold transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {currentSide === 'front' && needsBackSide ? 'Continue to Back Side' : 'Continue'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRetake}
+                  className="w-full h-[56px] rounded-[14px] bg-transparent border-2 border-[#000000] text-[#000000] text-[16px] font-semibold hover:bg-[#F5F5F5] transition-colors"
+                >
+                  Choose another file
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {/* Single in-card camera (mobile + desktop) - not full screen; capture crops to frame */}
           {(isCameraActive || isCameraLoading) ? (
             <>
@@ -1450,6 +1487,27 @@ export default function UploadDocument() {
         </div>
         )}
       </main>
+
+      {/* Hidden inputs (mounted for all states) */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-label={`Upload ID document ${currentSide}`}
+      />
+      <input
+        id="doc-camera-input"
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+        aria-label={`Take photo with camera ${currentSide}`}
+      />
+
       <PoweredBy />
     </div>
   )

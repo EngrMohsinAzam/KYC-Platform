@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAppContext } from '@/context/useAppContext'
@@ -17,6 +17,9 @@ export default function SelectIdType() {
   const [city, setCity] = useState(state.selectedCity || '')
   const [pausedMessage, setPausedMessage] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [openPanel, setOpenPanel] = useState<'country' | 'state' | null>(null)
+  const countryPickerRef = useRef<HTMLDivElement>(null)
+  const statePickerRef = useRef<HTMLDivElement>(null)
 
   const countryOptions = getCountryOptions()
   const cityOptions = country ? getCitiesForCountry(country) : []
@@ -66,6 +69,33 @@ export default function SelectIdType() {
   }, [])
 
   useEffect(() => {
+    if (!openPanel) return
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (countryPickerRef.current?.contains(t)) return
+      if (statePickerRef.current?.contains(t)) return
+      setOpenPanel(null)
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [openPanel])
+
+  useEffect(() => {
+    if (!openPanel) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpenPanel(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [openPanel])
+
+  useEffect(() => {
+    if (openPanel === 'state' && cityOptions.length === 0) {
+      setOpenPanel(null)
+    }
+  }, [cityOptions.length, openPanel])
+
+  useEffect(() => {
     if (country && country !== state.selectedCountry) {
       dispatch({ type: 'SET_COUNTRY', payload: country })
     }
@@ -97,6 +127,11 @@ export default function SelectIdType() {
 
   const hasStates = cityOptions.length > 0
   const canProceed = Boolean(country && (!hasStates || city))
+
+  const countryLabel =
+    countryOptions.find((o) => o.value === country)?.label ?? ''
+  const stateLabel =
+    cityOptions.find((o) => o.value === city)?.label ?? ''
 
   return (
     <div className="h-full md:h-screen overflow-hidden bg-[#FFFFFF] flex flex-col">
@@ -132,63 +167,164 @@ export default function SelectIdType() {
 
           {/* Input fields - mobile: light gray, very small gap; desktop: keep existing */}
           <div className="space-y-1">
-            {/* Country: light gray bg, top rounded 12px, bottom rounded 5px */}
-            <div className="relative w-full h-[51px] rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] md:rounded-tl-[12px] md:rounded-tr-[12px] md:rounded-br-[5px] md:rounded-bl-[5px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] pl-4 pr-10 flex items-center focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
-              <select
-                value={country}
-                onChange={(e) => {
-                  const nextCountry = e.target.value
-                  setCountry(nextCountry)
-                  setCity('')
-                }}
-                className="w-full h-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[1.35] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
-                style={{ color: country ? '#000000' : '#545454' }}
+            {/* Country — custom list (same pattern as verify/id-issuing-country for mobile) */}
+            <div
+              ref={countryPickerRef}
+              className="relative z-30 w-full"
+            >
+              <button
+                type="button"
+                aria-haspopup="listbox"
+                aria-expanded={openPanel === 'country'}
+                onClick={() =>
+                  setOpenPanel((p) => (p === 'country' ? null : 'country'))
+                }
+                className={`relative flex h-[54px] w-full min-h-[54px] items-center rounded-tl-[12px] rounded-tr-[12px] rounded-br-[5px] rounded-bl-[5px] bg-[#EBEBEB] pl-4 pr-10 text-left font-sans transition-colors md:bg-[#14111C1A] ${
+                  openPanel === 'country'
+                    ? 'border border-[#A7D80D] ring-2 ring-[#A7D80D]/20'
+                    : 'border border-[#E5E5E5] focus:outline-none focus-visible:border-[#A7D80D] focus-visible:ring-2 focus-visible:ring-[#A7D80D]/20'
+                }`}
               >
-                <option value="" className="text-[#545454]">
-                  Country
-                </option>
-                {countryOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <svg
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#545454] pointer-events-none"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-
-            {hasStates && (
-              /* State: opposite radii from spec (top 5, bottom 12) */
-              <div className="relative w-full h-[51px] rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] bg-[#EBEBEB] md:bg-[#14111C1A] border border-[#E5E5E5] pl-4 pr-10 flex items-center focus-within:border-[#A7D80D] focus-within:ring-2 focus-within:ring-[#A7D80D]/20 transition-colors">
-                <select
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full h-full bg-transparent border-0 p-0 font-sans text-[16px] font-normal leading-[1.35] tracking-[0%] text-[#000000] appearance-none focus:outline-none focus:ring-0 cursor-pointer [color-scheme:light]"
-                  style={{ color: city ? '#000000' : '#545454' }}
+                <span
+                  className={`line-clamp-2 w-full text-[16px] font-normal leading-[1.35] ${
+                    countryLabel ? 'text-[#000000]' : 'text-[#545454]'
+                  }`}
                 >
-                  <option value="" className="text-[#545454]">
-                    State
-                  </option>
-                  {cityOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                  {countryLabel || 'Country'}
+                </span>
                 <svg
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#545454] pointer-events-none"
+                  className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#545454] transition-transform ${openPanel === 'country' ? 'rotate-180' : ''}`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
+                  aria-hidden
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
+              </button>
+              {openPanel === 'country' && (
+                <ul
+                  role="listbox"
+                  className="absolute left-0 right-0 top-[calc(100%+6px)] z-[100] max-h-[min(240px,42vh)] overflow-y-auto overscroll-y-contain rounded-[10px] border border-[#E8E8E9] bg-white py-1 shadow-lg md:max-h-[280px]"
+                >
+                  <li role="none">
+                    <button
+                      type="button"
+                      role="option"
+                      aria-selected={!country}
+                      className="w-full border-b border-[#E8E8E9] px-3 py-2.5 text-left font-sans text-[13px] font-normal leading-[1.35] text-[#545454] hover:bg-[#E8E8E9] md:text-[14px]"
+                      onClick={() => {
+                        setCountry('')
+                        setCity('')
+                        setOpenPanel(null)
+                      }}
+                    >
+                      Country
+                    </button>
+                  </li>
+                  {countryOptions.map((option) => (
+                    <li key={option.value} role="none">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={country === option.value}
+                        className="w-full border-b border-[#E8E8E9] px-3 py-2 text-left font-sans text-[13px] font-normal leading-[1.35] text-[#000000] last:border-b-0 hover:bg-[#E8E8E9] md:py-2.5 md:text-[14px]"
+                        onClick={() => {
+                          setCountry(option.value)
+                          setCity('')
+                          setOpenPanel(null)
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {hasStates && (
+              <div
+                ref={statePickerRef}
+                className="relative z-20 w-full"
+              >
+                <button
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded={openPanel === 'state'}
+                  onClick={() =>
+                    setOpenPanel((p) => (p === 'state' ? null : 'state'))
+                  }
+                  className={`relative flex h-[54px] w-full min-h-[54px] items-center rounded-tl-[5px] rounded-tr-[5px] rounded-br-[12px] rounded-bl-[12px] bg-[#EBEBEB] pl-4 pr-10 text-left font-sans transition-colors md:bg-[#14111C1A] ${
+                    openPanel === 'state'
+                      ? 'border border-[#A7D80D] ring-2 ring-[#A7D80D]/20'
+                      : 'border border-[#E5E5E5] focus:outline-none focus-visible:border-[#A7D80D] focus-visible:ring-2 focus-visible:ring-[#A7D80D]/20'
+                  }`}
+                >
+                  <span
+                    className={`line-clamp-2 w-full text-[16px] font-normal leading-[1.35] ${
+                      stateLabel ? 'text-[#000000]' : 'text-[#545454]'
+                    }`}
+                  >
+                    {stateLabel || 'State'}
+                  </span>
+                  <svg
+                    className={`pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#545454] transition-transform ${openPanel === 'state' ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+                {openPanel === 'state' && (
+                  <ul
+                    role="listbox"
+                    className="absolute left-0 right-0 top-[calc(100%+6px)] z-[100] max-h-[min(240px,42vh)] overflow-y-auto overscroll-y-contain rounded-[10px] border border-[#E8E8E9] bg-white py-1 shadow-lg md:max-h-[280px]"
+                  >
+                    <li role="none">
+                      <button
+                        type="button"
+                        role="option"
+                        aria-selected={!city}
+                        className="w-full border-b border-[#E8E8E9] px-3 py-2.5 text-left font-sans text-[13px] font-normal leading-[1.35] text-[#545454] hover:bg-[#E8E8E9] md:text-[14px]"
+                        onClick={() => {
+                          setCity('')
+                          setOpenPanel(null)
+                        }}
+                      >
+                        State
+                      </button>
+                    </li>
+                    {cityOptions.map((option) => (
+                      <li key={option.value} role="none">
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={city === option.value}
+                          className="w-full border-b border-[#E8E8E9] px-3 py-2 text-left font-sans text-[13px] font-normal leading-[1.35] text-[#000000] last:border-b-0 hover:bg-[#E8E8E9] md:py-2.5 md:text-[14px]"
+                          onClick={() => {
+                            setCity(option.value)
+                            setOpenPanel(null)
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             )}
           </div>
