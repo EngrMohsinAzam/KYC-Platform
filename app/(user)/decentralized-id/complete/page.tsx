@@ -140,7 +140,7 @@ export default function VerificationComplete() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-x-hidden overflow-y-auto md:overflow-hidden">
+    <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-hidden">
       {/* Mobile: consistent verify back row */}
       <VerifyMobileBackRow
         variant="muted"
@@ -148,10 +148,11 @@ export default function VerificationComplete() {
         onBack={() => window.history.back()}
       />
 
-      <main className="flex-1 w-full min-h-0 overflow-y-auto md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-2 pb-[calc(72px+env(safe-area-inset-bottom))] md:py-6">
+      {/* Fixed, non-scroll layout on mobile (footer is fixed) */}
+      <main className="flex-1 w-full min-h-0 overflow-hidden flex flex-col items-center md:justify-center px-4 pt-2 pb-[calc(72px+env(safe-area-inset-bottom))] md:py-6">
         {/* Header illustration */}
         <div className="w-full max-w-[560px] md:max-w-[600px] flex flex-col items-center">
-          <div className="w-[120px] h-[80px] md:w-[140px] md:h-[92px] mb-2 flex items-center justify-center">
+          <div className="w-[104px] h-[70px] md:w-[140px] md:h-[92px] mb-2 flex items-center justify-center">
             {/* Simple illustration (card + badge) */}
             <svg viewBox="0 0 120 80" className="w-full h-full">
               <path d="M15 55L60 30l45 25-45 25-45-25z" fill="#EAF6C7" />
@@ -213,7 +214,7 @@ export default function VerificationComplete() {
 
             {/* QR card */}
             <div className="mt-4 bg-white rounded-[18px] p-4 md:p-6 flex items-center justify-center">
-              <div className="w-[180px] h-[180px] md:w-[210px] md:h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
+              <div className="w-[160px] h-[160px] md:w-[210px] md:h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
                 {qrDots.map((on, i) => (
                   <div key={i} className={`w-full h-full rounded-full ${on ? 'bg-white' : 'bg-white/30'}`} />
                 ))}
@@ -221,8 +222,8 @@ export default function VerificationComplete() {
             </div>
           </div>
 
-          {/* Buttons (match reference on mobile: single Share button visible) */}
-          <div className="mt-4 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pb-4 md:pb-0">
+          {/* Buttons */}
+          <div className="mt-3 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
             <button
               type="button"
               onClick={handleShare}
@@ -241,7 +242,7 @@ export default function VerificationComplete() {
             <button
               type="button"
               onClick={handleDownload}
-              className="hidden md:flex w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[16px] font-semibold items-center justify-center gap-2 transition-colors"
+              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v10m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
