@@ -4,6 +4,8 @@ import { useMemo, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { clearKYCCache, clearAllKYCCaches } from '@/app/(public)/utils/kyc-cache'
+import { PoweredBy } from '@/components/verify/PoweredBy'
+import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 
 export default function VerificationComplete() {
   const { state, dispatch } = useAppContext()
@@ -138,22 +140,15 @@ export default function VerificationComplete() {
   }
 
   return (
-    <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-hidden">
-      {/* Mobile: back arrow */}
-      <div className="md:hidden px-4 pt-5 flex-shrink-0">
-        <button
-          type="button"
-          aria-label="Go back"
-          onClick={() => window.history.back()}
-          className="h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
-        >
-          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-      </div>
+    <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-x-hidden overflow-y-auto md:overflow-hidden">
+      {/* Mobile: consistent verify back row */}
+      <VerifyMobileBackRow
+        variant="muted"
+        className="md:hidden !pt-3 !pb-1"
+        onBack={() => window.history.back()}
+      />
 
-      <main className="flex-1 w-full min-h-0 overflow-hidden md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-3 pb-8 md:py-6">
+      <main className="flex-1 w-full min-h-0 overflow-y-auto md:overflow-y-auto flex flex-col items-center md:justify-center px-4 pt-2 pb-[calc(72px+env(safe-area-inset-bottom))] md:py-6">
         {/* Header illustration */}
         <div className="w-full max-w-[560px] md:max-w-[600px] flex flex-col items-center">
           <div className="w-[120px] h-[80px] md:w-[140px] md:h-[92px] mb-2 flex items-center justify-center">
@@ -171,7 +166,7 @@ export default function VerificationComplete() {
             </svg>
           </div>
 
-          <h1 className="text-[28px] md:text-[24px] font-bold leading-[110%] text-[#000000] text-center">
+          <h1 className="text-[26px] md:text-[24px] font-bold leading-[110%] text-[#000000] text-center">
             Verification pending
           </h1>
           <p className="mt-1 text-[14px] md:text-[13px] text-[#545454] text-center">
@@ -181,7 +176,7 @@ export default function VerificationComplete() {
 
         {/* Card */}
         <div className="w-full max-w-[560px] md:max-w-[600px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm mt-4 px-0 md:px-6 md:py-5">
-          <div className="bg-[#D9D9D9] rounded-[18px] overflow-hidden p-5 md:p-6">
+          <div className="bg-[#D9D9D9] rounded-[18px] overflow-hidden p-4 md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <p className="text-[12px] text-[#545454] leading-tight">
@@ -217,8 +212,8 @@ export default function VerificationComplete() {
             </div>
 
             {/* QR card */}
-            <div className="mt-5 bg-white rounded-[18px] p-5 md:p-6 flex items-center justify-center">
-              <div className="w-[210px] h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
+            <div className="mt-4 bg-white rounded-[18px] p-4 md:p-6 flex items-center justify-center">
+              <div className="w-[180px] h-[180px] md:w-[210px] md:h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
                 {qrDots.map((on, i) => (
                   <div key={i} className={`w-full h-full rounded-full ${on ? 'bg-white' : 'bg-white/30'}`} />
                 ))}
@@ -226,8 +221,8 @@ export default function VerificationComplete() {
             </div>
           </div>
 
-          {/* Buttons */}
-          <div className="mt-4 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          {/* Buttons (match reference on mobile: single Share button visible) */}
+          <div className="mt-4 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 pb-4 md:pb-0">
             <button
               type="button"
               onClick={handleShare}
@@ -246,7 +241,7 @@ export default function VerificationComplete() {
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="hidden md:flex w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[16px] font-semibold items-center justify-center gap-2 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v10m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
@@ -265,6 +260,7 @@ export default function VerificationComplete() {
           </button>
         </div>
       </main>
+      <PoweredBy />
     </div>
   )
 }
