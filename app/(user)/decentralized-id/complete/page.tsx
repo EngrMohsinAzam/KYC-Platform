@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/Button'
 import { useAppContext } from '@/context/useAppContext'
 import { clearKYCCache, clearAllKYCCaches } from '@/app/(public)/utils/kyc-cache'
 import { PoweredBy } from '@/components/verify/PoweredBy'
-import { VerifyMobileBackRow } from '@/components/verify/VerifyMobileBackRow'
 
 export default function VerificationComplete() {
   const { state, dispatch } = useAppContext()
@@ -141,15 +140,20 @@ export default function VerificationComplete() {
 
   return (
     <div className="min-h-screen h-[100dvh] md:h-screen bg-white flex flex-col overflow-hidden">
-      {/* Mobile: consistent verify back row */}
-      <VerifyMobileBackRow
-        variant="muted"
-        className="md:hidden !pt-3 !pb-1"
-        onBack={() => window.history.back()}
-      />
+      {/* Mobile back button, overlayed so it does not consume vertical space */}
+      <button
+        type="button"
+        aria-label="Go back"
+        onClick={() => window.history.back()}
+        className="md:hidden absolute top-3 left-3 z-10 h-8 w-8 inline-flex items-center justify-center text-[#000000] hover:opacity-80 transition-opacity"
+      >
+        <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" />
+        </svg>
+      </button>
 
       {/* Fixed, non-scroll layout on mobile (footer is fixed) */}
-      <main className="flex-1 w-full min-h-0 overflow-hidden flex flex-col items-center md:justify-center px-4 pt-0 pb-[calc(72px+env(safe-area-inset-bottom))] md:py-6">
+      <main className="flex-1 w-full min-h-0 overflow-hidden flex flex-col items-center md:justify-center px-4 pt-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:py-6">
         {/* Header illustration */}
         <div className="w-full max-w-[560px] md:max-w-[600px] flex flex-col items-center">
           <div className="w-[90px] h-[60px] md:w-[140px] md:h-[92px] mb-1 flex items-center justify-center">
@@ -176,7 +180,7 @@ export default function VerificationComplete() {
         </div>
 
         {/* Card */}
-        <div className="w-full max-w-[560px] md:max-w-[600px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm mt-1 px-0 md:px-6 md:py-5">
+        <div className="w-full max-w-[560px] md:max-w-[600px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm mt-0.5 px-0 md:px-6 md:py-5">
           <div className="bg-[#D9D9D9] rounded-[16px] overflow-hidden p-3 md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
@@ -213,8 +217,8 @@ export default function VerificationComplete() {
             </div>
 
             {/* QR card */}
-            <div className="mt-3 bg-white rounded-[16px] p-3 md:p-6 flex items-center justify-center">
-              <div className="w-[132px] h-[132px] md:w-[210px] md:h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
+            <div className="mt-2.5 bg-white rounded-[16px] p-3 md:p-6 flex items-center justify-center">
+              <div className="w-[120px] h-[120px] md:w-[210px] md:h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
                 {qrDots.map((on, i) => (
                   <div key={i} className={`w-full h-full rounded-full ${on ? 'bg-white' : 'bg-white/30'}`} />
                 ))}
@@ -223,13 +227,13 @@ export default function VerificationComplete() {
           </div>
 
           {/* Buttons */}
-          <div className="mt-2 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-4">
+          <div className="mt-2 md:mt-5 grid grid-cols-2 gap-2.5 md:grid-cols-2 md:gap-4">
             <button
               type="button"
               onClick={handleShare}
-              className="w-full h-[50px] md:h-[56px] rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[15px] md:text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-[46px] md:h-[56px] rounded-[12px] md:rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[14px] md:text-[16px] font-semibold flex items-center justify-center gap-1.5 md:gap-2 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -242,9 +246,9 @@ export default function VerificationComplete() {
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full h-[50px] md:h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[15px] md:text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-[46px] md:h-[56px] rounded-[12px] md:rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[14px] md:text-[16px] font-semibold flex items-center justify-center gap-1.5 md:gap-2 transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v10m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
               </svg>
               Download
