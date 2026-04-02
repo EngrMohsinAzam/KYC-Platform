@@ -149,10 +149,10 @@ export default function VerificationComplete() {
       />
 
       {/* Fixed, non-scroll layout on mobile (footer is fixed) */}
-      <main className="flex-1 w-full min-h-0 overflow-hidden flex flex-col items-center md:justify-center px-4 pt-2 pb-[calc(72px+env(safe-area-inset-bottom))] md:py-6">
+      <main className="flex-1 w-full min-h-0 overflow-hidden flex flex-col items-center md:justify-center px-4 pt-0 pb-[calc(72px+env(safe-area-inset-bottom))] md:py-6">
         {/* Header illustration */}
         <div className="w-full max-w-[560px] md:max-w-[600px] flex flex-col items-center">
-          <div className="w-[104px] h-[70px] md:w-[140px] md:h-[92px] mb-2 flex items-center justify-center">
+          <div className="w-[90px] h-[60px] md:w-[140px] md:h-[92px] mb-1 flex items-center justify-center">
             {/* Simple illustration (card + badge) */}
             <svg viewBox="0 0 120 80" className="w-full h-full">
               <path d="M15 55L60 30l45 25-45 25-45-25z" fill="#EAF6C7" />
@@ -167,43 +167,43 @@ export default function VerificationComplete() {
             </svg>
           </div>
 
-          <h1 className="text-[26px] md:text-[24px] font-bold leading-[110%] text-[#000000] text-center">
+          <h1 className="text-[22px] md:text-[24px] font-bold leading-[110%] text-[#000000] text-center">
             Verification pending
           </h1>
-          <p className="mt-1 text-[14px] md:text-[13px] text-[#545454] text-center">
+          <p className="mt-0 text-[13px] md:text-[13px] text-[#545454] text-center">
             Your anonymous ID has been created
           </p>
         </div>
 
         {/* Card */}
-        <div className="w-full max-w-[560px] md:max-w-[600px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm mt-4 px-0 md:px-6 md:py-5">
-          <div className="bg-[#D9D9D9] rounded-[18px] overflow-hidden p-4 md:p-6">
+        <div className="w-full max-w-[560px] md:max-w-[600px] md:border md:border-[#E8E8E9] md:rounded-[14px] md:shadow-sm mt-1 px-0 md:px-6 md:py-5">
+          <div className="bg-[#D9D9D9] rounded-[16px] overflow-hidden p-3 md:p-6">
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-[12px] text-[#545454] leading-tight">
+                <p className="text-[11px] md:text-[12px] text-[#545454] leading-tight">
                   Digital Identity
                   <br />
                   Verified by Blockchain
                 </p>
-                <div className="mt-4">
-                  <p className="text-[12px] font-semibold text-[#545454]">Anonymous ID</p>
-                  <p className="mt-1 text-[14px] font-medium text-[#000000]">{anonymousId}</p>
+                <div className="mt-2.5">
+                  <p className="text-[11px] md:text-[12px] font-semibold text-[#545454]">Anonymous ID</p>
+                  <p className="mt-0.5 text-[12px] md:text-[14px] font-medium text-[#000000]">{anonymousId}</p>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-6">
+                <div className="mt-2.5 grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[12px] font-semibold text-[#545454]">Blockchain</p>
-                    <p className="mt-1 text-[13px] text-[#000000]">Mira-20</p>
+                    <p className="text-[11px] md:text-[12px] font-semibold text-[#545454]">Blockchain</p>
+                    <p className="mt-0.5 text-[12px] md:text-[13px] text-[#000000]">Mira-20</p>
                   </div>
                   <div>
-                    <p className="text-[12px] font-semibold text-[#545454]">Verified</p>
-                    <p className="mt-1 text-[13px] text-[#000000]">Oct 24, 2025</p>
+                    <p className="text-[11px] md:text-[12px] font-semibold text-[#545454]">Verified</p>
+                    <p className="mt-0.5 text-[12px] md:text-[13px] text-[#000000]">Oct 24, 2025</p>
                   </div>
                 </div>
               </div>
 
               {/* Check badge */}
               <div className="flex-shrink-0 mt-1">
-                <div className="w-10 h-10 rounded-full bg-[#EDEDED] flex items-center justify-center">
+                <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-[#EDEDED] flex items-center justify-center">
                   <svg className="w-5 h-5 text-[#FFFFFF]" viewBox="0 0 24 24" fill="none">
                     <path d="M12 2l3 3.5L20 6l-1 5 3 3-3 3 1 5-5-.5L12 22l-3-3.5L4 18l1-5-3-3 3-3-1-5 5 .5L12 2z" fill="#BDBDBD" />
                     <path d="M9.5 12.5l1.8 1.8 3.6-4" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -213,8 +213,8 @@ export default function VerificationComplete() {
             </div>
 
             {/* QR card */}
-            <div className="mt-4 bg-white rounded-[18px] p-4 md:p-6 flex items-center justify-center">
-              <div className="w-[160px] h-[160px] md:w-[210px] md:h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
+            <div className="mt-3 bg-white rounded-[16px] p-3 md:p-6 flex items-center justify-center">
+              <div className="w-[132px] h-[132px] md:w-[210px] md:h-[210px] bg-[#A7D80D] rounded-[10px] grid grid-cols-10 gap-1 p-2">
                 {qrDots.map((on, i) => (
                   <div key={i} className={`w-full h-full rounded-full ${on ? 'bg-white' : 'bg-white/30'}`} />
                 ))}
@@ -223,11 +223,11 @@ export default function VerificationComplete() {
           </div>
 
           {/* Buttons */}
-          <div className="mt-3 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          <div className="mt-2 md:mt-5 grid grid-cols-1 md:grid-cols-2 gap-2.5 md:gap-4">
             <button
               type="button"
               onClick={handleShare}
-              className="w-full h-[56px] rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-[50px] md:h-[56px] rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[15px] md:text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -242,7 +242,7 @@ export default function VerificationComplete() {
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-[50px] md:h-[56px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] text-[#000000] text-[15px] md:text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v10m0 0l4-4m-4 4l-4-4M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2" />
