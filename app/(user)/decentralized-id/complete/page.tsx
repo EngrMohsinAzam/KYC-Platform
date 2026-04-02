@@ -231,7 +231,7 @@ export default function VerificationComplete() {
             <button
               type="button"
               onClick={handleShare}
-              className="w-full h-[50px] md:h-[56px] rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[15px] md:text-[16px] font-semibold flex items-center justify-center gap-2 transition-colors"
+              className="hidden md:flex w-full h-[50px] md:h-[56px] rounded-[14px] bg-[#E0E0E0] hover:bg-[#D5D5D5] text-[#000000] text-[15px] md:text-[16px] font-semibold items-center justify-center gap-2 transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
