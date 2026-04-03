@@ -34,7 +34,7 @@ export default function UnderReview() {
           <div className="md:block fixed md:relative bottom-0 left-0 right-0 p-4 bg-white md:bg-transparent border-t md:border-t-0 border-surface-light space-y-3 flex flex-col items-center">
             <Button
               onClick={() => router.push('/')}
-              className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold"
+              className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#A7D80D] hover:!bg-[#9BC90C] !text-black font-semibold focus:!ring-2 focus:!ring-[#A7D80D] focus:!ring-offset-2"
             >
               Go to Home
             </Button>

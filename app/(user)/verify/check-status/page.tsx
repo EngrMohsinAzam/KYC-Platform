@@ -124,7 +124,7 @@ export default function CheckStatus() {
                 value={email}
                 onChange={handleEmailChange}
                 disabled={loading}
-              className="w-full h-[48px] md:h-[54px] rounded-[12px] bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] border-[1.5px] border-[#E8E8E9] focus:border-[#6D3CCC] focus:ring-2 focus:ring-[#6D3CCC]/20"
+              className="w-full h-[48px] md:h-[54px] rounded-[12px] bg-[#14111C1A] placeholder:text-[#828282] text-[#000000] border-[1.5px] border-[#E8E8E9] focus:border-[#A7D80D] focus:ring-2 focus:ring-[#A7D80D]/25"
               />
             </div>
 
@@ -173,7 +173,7 @@ export default function CheckStatus() {
             <Button
               onClick={handleCheckStatus}
               disabled={loading || !email}
-              className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#6D3CCC] hover:!bg-[#8558D9] !text-white font-semibold flex items-center justify-center gap-2 mx-auto"
+              className="w-full max-w-[341px] md:max-w-[670px] h-[54px] !rounded-[12px] !bg-[#A7D80D] hover:!bg-[#9BC90C] !text-black font-semibold flex items-center justify-center gap-2 mx-auto focus:!ring-2 focus:!ring-[#A7D80D] focus:!ring-offset-2 disabled:!opacity-50"
             >
               {loading ? <SpinnerIcon color="#000000" /> : 'Check Status'}
             </Button>
