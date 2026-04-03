@@ -378,7 +378,7 @@ export default function EnterEmailPage() {
                   type="button"
                   onClick={() => void handleContinue()}
                   disabled={loading}
-                  className="w-full h-[50px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full h-[50px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                 >
                   {loading ? <SpinnerIcon color="#000000" /> : "Continue"}
                 </button>
@@ -537,30 +537,28 @@ export default function EnterEmailPage() {
 
       {/* Mobile: button same width as input (px-4 = main content padding) */}
       {step === "email" ? (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-2 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] bg-gradient-to-t from-[#FFFFFF] via-[#FFFFFF] to-transparent flex flex-col">
           <button
             type="button"
             onClick={() => void handleContinue()}
             disabled={loading}
-            className="w-full h-[50px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-busy={loading}
+            className="w-full h-[54px] rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            {loading ? (
-              <span className="inline-block w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-            ) : (
-              "Continue"
-            )}
+            {loading ? <SpinnerIcon color="#000000" size={24} /> : "Continue"}
           </button>
         </div>
       ) : (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pb-8 pt-2 bg-gradient-to-t from-[#FFFFFF] to-transparent flex flex-col">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 px-4 pt-2 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] bg-gradient-to-t from-[#FFFFFF] via-[#FFFFFF] to-transparent flex flex-col">
           <div className="space-y-2 w-full">
             <button
               type="button"
               onClick={() => void handleVerifyOtp()}
               disabled={otpLoading || otp.join("").length !== 6}
-              className="h-[50px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {otpLoading ? <SpinnerIcon color="#000000" /> : "Verify"}
+              aria-busy={otpLoading}
+              className="h-[54px] w-full rounded-[12px] bg-[#A7D80D] hover:opacity-95 active:opacity-90 text-black text-[16px] font-semibold transition-opacity focus:outline-none focus:ring-2 focus:ring-[#A7D80D] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {otpLoading ? <SpinnerIcon color="#000000" size={24} /> : "Verify"}
             </button>
             <button
               type="button"
