@@ -1387,7 +1387,7 @@ export default function ReviewContent() {
       <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
         <VerifyMobileBackRow variant="muted" onBack={() => router.push('/verify/upload-selfie')} className="!pt-3 !pb-0 flex-shrink-0" />
         {/* Reserve space for fixed PoweredBy footer + safe area so Download is never covered */}
-        <main className="flex-1 flex flex-col items-center justify-start min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-1 pb-[calc(88px+env(safe-area-inset-bottom,0px))] md:pb-6">
+        <main className="flex-1 flex flex-col items-center justify-start min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-1 pb-[calc(200px+env(safe-area-inset-bottom,0px))] md:pb-6">
           <section className="w-full max-w-[420px] text-center mb-2 md:mb-4 flex-shrink-0">
             <div className="flex justify-center mb-1.5 md:mb-3">
               <img src="/verification-pending.svg" alt="Verification pending" className="w-[72px] h-[72px] md:w-[90px] md:h-[90px] object-contain" />
@@ -1440,7 +1440,7 @@ export default function ReviewContent() {
             <button
               type="button"
               onClick={handleShare}
-              className="hidden md:flex w-full h-[56px] rounded-[14px] bg-[#D3D3D3] hover:bg-[#C8C8C8] border border-[#C8C8C8] items-center justify-center gap-2 text-[#000000] font-semibold text-[14px] leading-[1]"
+              className="w-full h-[64px] rounded-[14px] bg-[#D3D3D3] hover:bg-[#C8C8C8] border border-[#C8C8C8] flex items-center justify-center gap-2 text-[#000000] font-semibold text-[14px] leading-[1]"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
@@ -1450,7 +1450,7 @@ export default function ReviewContent() {
             <button
               type="button"
               onClick={handleDownload}
-              className="w-full h-[52px] md:h-[64px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] flex items-center justify-center gap-2 text-[#000000] font-semibold text-[15px] md:text-[14px] leading-[1]"
+              className="w-full h-[64px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] flex items-center justify-center gap-2 text-[#000000] font-semibold text-[14px] leading-[1]"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
