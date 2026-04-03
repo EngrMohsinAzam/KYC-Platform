@@ -1385,64 +1385,73 @@ export default function ReviewContent() {
 
     return (
       <div className="min-h-screen h-[100dvh] md:h-screen bg-[#FFFFFF] flex flex-col overflow-hidden">
-        <VerifyMobileBackRow variant="muted" onBack={() => router.push('/verify/upload-selfie')} className="!pt-3 !pb-0" />
-        <main className="flex-1 flex flex-col items-center justify-start min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-2 pb-4">
-          <section className="w-full max-w-[420px] text-center mb-4 flex-shrink-0">
-            <div className="flex justify-center mb-3">
-              <img src="/verification-pending.svg" alt="Verification pending" className="w-[90px] h-[90px] object-contain" />
+        <VerifyMobileBackRow variant="muted" onBack={() => router.push('/verify/upload-selfie')} className="!pt-3 !pb-0 flex-shrink-0" />
+        {/* Reserve space for fixed PoweredBy footer + safe area so Download is never covered */}
+        <main className="flex-1 flex flex-col items-center justify-start min-h-0 overflow-y-auto overflow-x-hidden px-4 pt-1 pb-[calc(88px+env(safe-area-inset-bottom,0px))] md:pb-6">
+          <section className="w-full max-w-[420px] text-center mb-2 md:mb-4 flex-shrink-0">
+            <div className="flex justify-center mb-1.5 md:mb-3">
+              <img src="/verification-pending.svg" alt="Verification pending" className="w-[72px] h-[72px] md:w-[90px] md:h-[90px] object-contain" />
             </div>
-            <h1 className="text-[24px] md:text-[26px] leading-[1.05] font-bold text-[#000000] mb-1">Verification pending</h1>
-            <p className="text-[14px] md:text-[15px] leading-[1.25] font-normal text-[#545454]">Your anonymous ID has been created</p>
+            <h1 className="text-[22px] md:text-[26px] leading-[1.05] font-bold text-[#000000] mb-0.5 md:mb-1">Verification pending</h1>
+            <p className="text-[13px] md:text-[15px] leading-[1.25] font-normal text-[#545454]">Your anonymous ID has been created</p>
           </section>
 
-          <div className="w-full max-w-[420px] bg-[#D3D3D3] rounded-[24px] px-4 py-4 flex-shrink-0">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-[13px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Digital Identity</p>
-                <p className="text-[14px] md:text-[22px] font-normal text-[#3A3A3A] leading-[1.2] mt-1">Verified by Blockchain</p>
+          <div className="w-full max-w-[420px] bg-[#D3D3D3] rounded-[20px] md:rounded-[24px] px-3 py-3 md:px-4 md:py-4 flex-shrink-0">
+            <div className="flex items-start justify-between mb-2 md:mb-4">
+              <div className="min-w-0 pr-2">
+                <p className="text-[12px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Digital Identity</p>
+                <p className="text-[13px] md:text-[14px] font-normal text-[#3A3A3A] leading-[1.2] mt-0.5 md:mt-1">Verified by Blockchain</p>
               </div>
-              <span className="w-8 h-8 rounded-full bg-[#ECECEC] flex items-center justify-center text-[#BDBDBD]">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+              <span className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#ECECEC] flex-shrink-0 flex items-center justify-center text-[#BDBDBD]">
+                <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </span>
             </div>
 
-            <div className="mb-2">
-              <p className="text-[13px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Anonymous ID</p>
-              <p className="text-[15px] md:text-[20px] leading-[1.15] font-normal text-[#3A3A3A] mt-1">{displayAid}</p>
+            <div className="mb-1.5 md:mb-2">
+              <p className="text-[12px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Anonymous ID</p>
+              <p className="text-[13px] md:text-[15px] leading-[1.2] font-normal text-[#3A3A3A] mt-0.5 break-all">{displayAid}</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-3">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 mb-2 md:mb-3">
               <div>
-                <p className="text-[13px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Blockchain</p>
-                <p className="text-[15px] md:text-[20px] leading-[1.1] font-normal text-[#3A3A3A] mt-1">Mira-20</p>
+                <p className="text-[12px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Blockchain</p>
+                <p className="text-[13px] md:text-[15px] leading-[1.1] font-normal text-[#3A3A3A] mt-0.5">Mira-20</p>
               </div>
               <div>
-                <p className="text-[13px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Verified</p>
-                <p className="text-[15px] md:text-[20px] leading-[1.1] font-normal text-[#3A3A3A] mt-1">{verifiedDate}</p>
+                <p className="text-[12px] md:text-[14px] font-semibold text-[#3A3A3A] leading-[1.1]">Verified</p>
+                <p className="text-[13px] md:text-[15px] leading-[1.1] font-normal text-[#3A3A3A] mt-0.5">{verifiedDate}</p>
               </div>
             </div>
 
-            <div className="bg-[#F5F5F5] rounded-[18px] p-3 flex justify-center items-center min-h-[170px]">
+            <div className="bg-[#F5F5F5] rounded-[14px] md:rounded-[18px] p-2 md:p-3 flex justify-center items-center min-h-[120px] md:min-h-[170px]">
               {qrCodeDataUrl ? (
-                <img src={qrCodeDataUrl} alt="Transaction QR Code" className="w-[150px] h-[150px] object-contain" />
+                <img src={qrCodeDataUrl} alt="Transaction QR Code" className="w-[120px] h-[120px] md:w-[150px] md:h-[150px] object-contain" />
               ) : (
-                <div className="w-[150px] h-[150px] flex items-center justify-center bg-white rounded-[14px]">
+                <div className="w-[120px] h-[120px] md:w-[150px] md:h-[150px] flex items-center justify-center bg-white rounded-[12px] md:rounded-[14px]">
                   <div className="w-8 h-8 border-2 border-[#A7D80D] border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </div>
           </div>
 
-          <div className="w-full max-w-[420px] mt-4 flex flex-col gap-3">
-            <button type="button" onClick={handleShare} className="w-full h-[64px] rounded-[14px] bg-[#D3D3D3] hover:bg-[#C8C8C8] border border-[#C8C8C8] flex items-center justify-center gap-2 text-[#000000] font-semibold text-[14px] leading-[1]">
+          <div className="w-full max-w-[420px] mt-3 md:mt-4 flex flex-col gap-3 flex-shrink-0">
+            <button
+              type="button"
+              onClick={handleShare}
+              className="hidden md:flex w-full h-[56px] rounded-[14px] bg-[#D3D3D3] hover:bg-[#C8C8C8] border border-[#C8C8C8] items-center justify-center gap-2 text-[#000000] font-semibold text-[14px] leading-[1]"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
               </svg>
               Share
             </button>
-            <button type="button" onClick={handleDownload} className="w-full h-[64px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] flex items-center justify-center gap-2 text-[#000000] font-semibold text-[14px] leading-[1]">
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="w-full h-[52px] md:h-[64px] rounded-[14px] bg-[#A7D80D] hover:bg-[#9BC90C] flex items-center justify-center gap-2 text-[#000000] font-semibold text-[15px] md:text-[14px] leading-[1]"
+            >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
